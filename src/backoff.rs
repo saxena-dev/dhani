@@ -76,24 +76,40 @@ impl Backoff {
         Self { initial, max, rng }
     }
 
-    /// The delay after `failures` consecutive failures: uniform in
-    /// `[0, min(max, initial · 2^(failures − 1))]`, and zero for `failures == 0`. The exponent
-    /// saturates at `max` instead of overflowing.
+    /// The delay after `failures` consecutive failures; see [`full_jitter`].
     pub(crate) fn delay(&mut self, failures: u32) -> Duration {
-        if failures == 0 {
-            return Duration::ZERO;
-        }
-        let ceiling = match 1u32.checked_shl(failures - 1) {
-            Some(factor) => self.initial.saturating_mul(factor).min(self.max),
-            None => self.max,
-        };
-        // Durations beyond u64 nanoseconds (about 584 years) are clamped.
-        let ceiling_nanos = u64::try_from(ceiling.as_nanos()).unwrap_or(u64::MAX);
-        // Multiply-shift maps a uniform u64 onto 0..=ceiling_nanos.
-        let span = u128::from(ceiling_nanos) + 1;
-        let nanos = (u128::from(self.rng.next_u64()) * span) >> 64;
-        Duration::from_nanos(u64::try_from(nanos).unwrap_or(ceiling_nanos))
+        full_jitter(self.initial, self.max, failures, &mut self.rng)
     }
+}
+
+/// Full jitter: uniform in `[0, min(max, initial · 2^(failures − 1))]`, and zero for
+/// `failures == 0`. The exponent saturates at `max` instead of overflowing.
+#[cfg_attr(
+    not(test),
+    allow(
+        dead_code,
+        reason = "first used by REST retries (M3.2) and feed reconnects (M11.3)"
+    )
+)]
+pub(crate) fn full_jitter(
+    initial: Duration,
+    max: Duration,
+    failures: u32,
+    rng: &mut SplitMix64,
+) -> Duration {
+    if failures == 0 {
+        return Duration::ZERO;
+    }
+    let ceiling = match 1u32.checked_shl(failures - 1) {
+        Some(factor) => initial.saturating_mul(factor).min(max),
+        None => max,
+    };
+    // Durations beyond u64 nanoseconds (about 584 years) are clamped.
+    let ceiling_nanos = u64::try_from(ceiling.as_nanos()).unwrap_or(u64::MAX);
+    // Multiply-shift maps a uniform u64 onto 0..=ceiling_nanos.
+    let span = u128::from(ceiling_nanos) + 1;
+    let nanos = (u128::from(rng.next_u64()) * span) >> 64;
+    Duration::from_nanos(u64::try_from(nanos).unwrap_or(ceiling_nanos))
 }
 
 #[cfg(test)]
