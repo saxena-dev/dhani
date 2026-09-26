@@ -667,3 +667,72 @@ async fn token_renewal_is_not_retried() {
     );
     assert_eq!(server.requests().len(), 1);
 }
+
+fn quote(client: &DhanClient) -> impl Future<Output = Outcome> + Send + 'static {
+    let client = client.clone();
+    async move {
+        let body = serde_json::json!({"NSE_EQ": [1333]});
+        client
+            .__execute_for_tests(EndpointId::MarketQuoteLtp, &[], &[], Some(body), None)
+            .await
+    }
+}
+
+// §5.4 step 6: every attempt takes its own grant, so a retried quote waits for the 1 s quote
+// window rather than only the (sub-second) backoff.
+#[tokio::test(start_paused = true)]
+async fn a_retry_takes_a_second_grant() {
+    let server = FaultHttp::start(vec![
+        Reply::text(503, "Service Unavailable"),
+        Reply::json(200, r#"{"data":{},"status":"success"}"#),
+    ])
+    .await;
+    let limiter = RateLimiter::default();
+    let client = fault_client_with(
+        &server.base_url(),
+        Timeouts::default(),
+        BodyLimits::default(),
+        limiter.clone(),
+    );
+    drive(quote(&client)).await.unwrap();
+    assert_eq!(server.requests().len(), 2);
+    let waited = gap(&server, 0, 1);
+    assert!(
+        waited >= Duration::from_secs(1) && waited < Duration::from_secs(2),
+        "{waited:?}"
+    );
+    assert_eq!(limiter.__outstanding(), 0);
+}
+
+// Case 10 with a saturated window: a call dropped while waiting for admission sends nothing and
+// returns its reservation.
+#[tokio::test(start_paused = true)]
+async fn a_call_dropped_while_waiting_for_admission_sends_nothing() {
+    let server = FaultHttp::start(vec![
+        Reply::json(200, r#"{"data":{},"status":"success"}"#),
+        Reply::json(200, r#"{"data":{},"status":"success"}"#),
+    ])
+    .await;
+    let limiter = RateLimiter::default();
+    let client = fault_client_with(
+        &server.base_url(),
+        Timeouts::default(),
+        BodyLimits::default(),
+        limiter.clone(),
+    );
+    drive(quote(&client)).await.unwrap();
+    let before = limiter.__outstanding();
+    // The quote window is now full for a second: the next call parks in admission.
+    let waiting = tokio::spawn(quote(&client));
+    for _ in 0..64 {
+        tokio::task::yield_now().await;
+    }
+    assert!(!waiting.is_finished());
+    waiting.abort();
+    assert!(waiting.await.unwrap_err().is_cancelled());
+    // A caller parked in admission holds no grant yet; this pins that cancelling it leaves
+    // nothing behind (grant refunds themselves are unit-tested in the limiter).
+    assert_eq!(limiter.__outstanding(), before);
+    tokio::time::advance(Duration::from_secs(2)).await;
+    assert_eq!((server.requests().len(), server.connections()), (1, 1));
+}

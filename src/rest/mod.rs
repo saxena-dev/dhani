@@ -15,4 +15,4 @@ mod transport;
 )]
 pub use self::{api::*, models::*};
 pub use client::{BodyLimits, DhanClient, DhanClientBuilder, RetryPolicy, Timeouts};
-pub use ratelimit::RateLimiter;
+pub use ratelimit::{AdmissionLimits, QuotaProfile, RateLimiter, WallClock, Window, WindowPeriod};
