@@ -9,6 +9,13 @@ use crate::labels::{EndpointId, RateClass};
 use crate::obs::Redactor;
 use crate::types::BoundedText;
 
+mod parse;
+#[allow(
+    unused_imports,
+    reason = "used by the transport's response classification when it lands"
+)]
+pub(crate) use parse::{classify_kind, unparsed_body_detail};
+
 /// The crate's result type.
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 
