@@ -35,9 +35,9 @@ impl UnknownValue {
 
     #[cfg_attr(
         not(test),
-        expect(
+        allow(
             dead_code,
-            reason = "first used by the shared enums in types::common (M1.2); remove this expectation then"
+            reason = "first used by the shared enums in types::common (M1.2); remove this allowance then"
         )
     )]
     pub(crate) fn new(raw: &str) -> Self {
@@ -99,9 +99,9 @@ impl<T: WireEnum> Inbound<T> {
     /// Classifies a wire string: an exact match is `Known`, anything else `Unknown`.
     #[cfg_attr(
         not(test),
-        expect(
+        allow(
             dead_code,
-            reason = "first used by the shared enums in types::common (M1.2); remove this expectation then"
+            reason = "first used by the shared enums in types::common (M1.2); remove this allowance then"
         )
     )]
     pub(crate) fn from_wire(s: &str) -> Self {
@@ -133,9 +133,9 @@ impl<T: WireEnum> Inbound<T> {
 /// object or null is an error (null is handled by an enclosing `Option`).
 #[cfg_attr(
     not(test),
-    expect(
+    allow(
         dead_code,
-        reason = "first used by the shared enums in types::common (M1.2); remove this expectation then"
+        reason = "first used by the shared enums in types::common (M1.2); remove this allowance then"
     )
 )]
 pub(crate) fn deserialize_inbound<'de, T: WireEnum, D: Deserializer<'de>>(
@@ -187,9 +187,9 @@ pub(crate) fn deserialize_inbound<'de, T: WireEnum, D: Deserializer<'de>>(
 /// not echoed into the error.
 #[cfg_attr(
     not(test),
-    expect(
+    allow(
         dead_code,
-        reason = "first used by the shared enums in types::common (M1.2); remove this expectation then"
+        reason = "first used by the shared enums in types::common (M1.2); remove this allowance then"
     )
 )]
 pub(crate) fn deserialize_strict<'de, T: WireEnum, D: Deserializer<'de>>(
@@ -255,9 +255,9 @@ pub(crate) fn deserialize_strict<'de, T: WireEnum, D: Deserializer<'de>>(
 /// ```
 #[cfg_attr(
     not(test),
-    expect(
+    allow(
         unused_macros,
-        reason = "first used by the shared enums in types::common (M1.2); remove this expectation then"
+        reason = "first used by the shared enums in types::common (M1.2); remove this allowance then"
     )
 )]
 macro_rules! wire_enum {
