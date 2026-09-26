@@ -10,7 +10,7 @@ use crate::types::BoundedText;
 const ERROR_KEYS: [&str; 3] = ["errorType", "errorCode", "errorMessage"];
 
 #[cfg_attr(
-    not(test),
+    not(any(test, feature = "rest")),
     allow(dead_code, reason = "used by the transport's response classification")
 )]
 impl ApiError {
@@ -105,7 +105,7 @@ fn code_from_text(code: &str, redactor: &Redactor) -> ApiErrorCode {
 /// 3. any other parsed broker error: `Api`;
 /// 4. no parsable body: `HttpStatus`.
 #[cfg_attr(
-    not(test),
+    not(any(test, feature = "rest")),
     allow(dead_code, reason = "used by the transport's response classification")
 )]
 pub(crate) fn classify_kind(
@@ -147,7 +147,7 @@ pub(crate) fn classify_kind(
 /// The detail for a non-2xx response whose body [`ApiError::parse`] rejected; it describes the
 /// body without repeating it.
 #[cfg_attr(
-    not(test),
+    not(any(test, feature = "rest")),
     allow(dead_code, reason = "used by the transport's response classification")
 )]
 pub(crate) fn unparsed_body_detail(bytes: &[u8]) -> String {

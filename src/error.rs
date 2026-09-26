@@ -10,9 +10,12 @@ use crate::obs::Redactor;
 use crate::types::BoundedText;
 
 mod parse;
-#[allow(
-    unused_imports,
-    reason = "used by the transport's response classification when it lands"
+#[cfg_attr(
+    not(feature = "rest"),
+    allow(
+        unused_imports,
+        reason = "used by the transport's response classification"
+    )
 )]
 pub(crate) use parse::{classify_kind, unparsed_body_detail};
 
@@ -477,7 +480,10 @@ impl ApiErrorCode {
     const OTHER_MAX_BYTES: usize = 32;
 
     /// `Other` with `code` cut to at most 32 bytes on a character boundary.
-    #[cfg_attr(not(test), allow(dead_code, reason = "used by ApiError::parse"))]
+    #[cfg_attr(
+        not(any(test, feature = "rest")),
+        allow(dead_code, reason = "used by ApiError::parse")
+    )]
     pub(crate) fn other(code: &str) -> Self {
         let mut end = code.len().min(Self::OTHER_MAX_BYTES);
         while !code.is_char_boundary(end) {
