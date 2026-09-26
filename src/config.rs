@@ -9,8 +9,9 @@ pub enum Environment {
     /// The production environment (the default).
     #[default]
     Live,
-    /// The DhanHQ sandbox (DOC:3840-3896). Only the REST base URL differs from [`Live`]
-    /// (Appendix A D23); sandbox WebSocket endpoints are undocumented (OQ-22).
+    /// The DhanHQ sandbox (DOC:3840-3896), which dhani supports (Appendix A D23). Only the REST
+    /// base URL differs from [`Live`]: the documentation gives no sandbox counterpart for the
+    /// other hosts, and sandbox WebSocket endpoints are undocumented (OQ-22).
     ///
     /// [`Live`]: Environment::Live
     Sandbox,
@@ -74,8 +75,9 @@ fn fixed(url: &str) -> Url {
 impl Urls {
     /// The documented base URLs for `env`.
     ///
-    /// [`Environment::Sandbox`] changes only [`rest`](Urls::rest) (Appendix A D23); every other
-    /// field keeps its production value.
+    /// [`Environment::Sandbox`] changes only [`rest`](Urls::rest); every other field keeps its
+    /// production value, because the documentation gives no sandbox counterpart for those hosts
+    /// (OQ-22).
     pub fn for_env(env: Environment) -> Self {
         let rest = match env {
             Environment::Live => REST_LIVE,
