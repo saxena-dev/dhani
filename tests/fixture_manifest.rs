@@ -26,6 +26,8 @@ struct Fixture {
     path: String,
     sha256: String,
     bytes: u64,
+    /// Endpoint-matrix row ids served by this fixture.
+    endpoints: Vec<String>,
 }
 
 fn parse_manifest(text: &str) -> Result<Vec<Fixture>, String> {
@@ -60,7 +62,10 @@ fn parse_manifest(text: &str) -> Result<Vec<Fixture>, String> {
                 return Err(format!("{path}: unknown class {class:?}"));
             }
             text("origin")?;
-            text("endpoint")?;
+            let endpoints = text("endpoint")?
+                .split(',')
+                .map(|e| e.trim().to_owned())
+                .collect();
             let bytes = e
                 .get("bytes")
                 .and_then(toml::Value::as_integer)
@@ -70,6 +75,7 @@ fn parse_manifest(text: &str) -> Result<Vec<Fixture>, String> {
                 path,
                 sha256: text("sha256")?,
                 bytes,
+                endpoints,
             })
         })
         .collect::<Result<Vec<_>, String>>()?;
@@ -212,6 +218,94 @@ fn submodule_is_at_the_pinned_commit() {
     );
 }
 
+/// The MVP rows of the REST endpoint matrix with the fixtures it names for each, matched by
+/// file basename against the manifest paths. An empty list would mark a row whose fixture
+/// column says "missing"; no MVP row is missing.
+const MVP_ROWS: [(&str, &[&str]); 30] = [
+    ("A5", &["auth_issued_token.json"]),
+    ("A6", &["auth_issued_token.json"]),
+    ("A7", &["profile.json"]),
+    ("O1", &["place_order.json"]),
+    ("O2", &["place_slice_order.json"]),
+    ("O3", &["modify_pending_order.json"]),
+    ("O4", &["cancel_given_order.json"]),
+    ("O5", &["get-current-orders-list.json"]),
+    ("O6", &["get-order-by-id.json"]),
+    ("O7", &["get-order-by-correlation-id.json"]),
+    ("O8", &["get_all_trades.json"]),
+    ("O9", &["get_trade_book_by_orderid.json"]),
+    ("P1", &["get-current-holdings.json"]),
+    ("P2", &["get_positions.json"]),
+    ("P3", &["convert_position.json", "empty"]),
+    ("P4", &["empty"]),
+    ("M1", &["get_fund_limits.json"]),
+    ("M2", &["margin_calculator.json"]),
+    ("M3", &["multi_margin.json"]),
+    ("T1", &["get_ledger_report.json"]),
+    ("T2", &["get_trade_history.json"]),
+    ("Q1", &["quote_ltp.json"]),
+    ("Q2", &["quote_ohlc.json"]),
+    ("Q3", &["quote_full.json"]),
+    ("H1", &["historical_daily_data.json", "candles.json"]),
+    ("H2", &["intraday_minute_data.json", "candles.json"]),
+    ("X1", &["option_chain_data.json"]),
+    ("X2", &["expiry_list.json"]),
+    ("I1", &["security_list.json", "scrip_master_compact.csv"]),
+    ("I2", &["scrip_master_detailed.csv"]),
+];
+
+/// Problems with MVP-row coverage: a row with no fixture, or a named fixture that is not in the
+/// manifest or does not list the row.
+fn mvp_coverage(fixtures: &[Fixture], rows: &[(&str, &[&str])]) -> Vec<String> {
+    let mut problems = Vec::new();
+    for &(row, names) in rows {
+        if names.is_empty() {
+            continue;
+        }
+        if !fixtures
+            .iter()
+            .any(|f| f.endpoints.iter().any(|e| e == row))
+        {
+            problems.push(format!("MVP row {row} has no fixture in the manifest"));
+        }
+        for name in names {
+            let listed = fixtures
+                .iter()
+                .find(|f| f.path.rsplit('/').next() == Some(name));
+            match listed {
+                None => problems.push(format!(
+                    "MVP row {row}: fixture {name} is not in the manifest"
+                )),
+                Some(f) if !f.endpoints.iter().any(|e| e == row) => problems.push(format!(
+                    "MVP row {row}: fixture {name} does not list the row"
+                )),
+                Some(_) => {}
+            }
+        }
+    }
+    problems
+}
+
+#[test]
+fn every_mvp_row_has_a_fixture() {
+    let fixtures = load();
+    let problems = mvp_coverage(&fixtures, &MVP_ROWS);
+    let missing = MVP_ROWS
+        .iter()
+        .filter(|(_, names)| names.is_empty())
+        .count();
+    println!(
+        "MVP-row check: {} rows, {missing} missing, {} problems",
+        MVP_ROWS.len(),
+        problems.len()
+    );
+    assert!(
+        problems.is_empty(),
+        "MVP coverage problems:\n  {}",
+        problems.join("\n  ")
+    );
+}
+
 /// Checker self-tests on synthetic input.
 mod checker {
     use super::*;
@@ -225,6 +319,34 @@ mod checker {
         bytes = 3
         endpoint = "O1"
     "#;
+
+    #[test]
+    fn mvp_coverage_reports_gaps() {
+        let fixtures =
+            parse_manifest(&ENTRY.replace("endpoint = \"O1\"", "endpoint = \"O1, O2\"")).unwrap();
+        assert_eq!(fixtures[0].endpoints, ["O1", "O2"]);
+        let rows: [(&str, &[&str]); 4] = [
+            ("O1", &["a.json"]),
+            ("O2", &["a.json"]),
+            ("O3", &[]),
+            ("O4", &["b.json"]),
+        ];
+        assert_eq!(
+            mvp_coverage(&fixtures, &rows),
+            [
+                "MVP row O4 has no fixture in the manifest",
+                "MVP row O4: fixture b.json is not in the manifest",
+            ]
+        );
+        let rows: [(&str, &[&str]); 1] = [("O5", &["a.json"])];
+        assert_eq!(
+            mvp_coverage(&fixtures, &rows),
+            [
+                "MVP row O5 has no fixture in the manifest",
+                "MVP row O5: fixture a.json does not list the row"
+            ]
+        );
+    }
 
     #[test]
     fn empty_manifest_has_no_fixtures() {

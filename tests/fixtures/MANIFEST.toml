@@ -419,3 +419,225 @@ sha256 = "8d6b1a4756e99260877447281b8da903814d53dc4121c3f0ad3a5a2097d715fa"
 bytes = 1407
 endpoint = "W2"
 note = "keeps the duplicate Remarks key"
+
+[[fixture]]
+path = "tests/fixtures/synth/quote_ltp.json"
+class = "synthesized"
+origin = "OAS:#/components/schemas/LTPResponse"
+method = "oas-schema"
+sha256 = "7563fd486f1080a2f560c8283c54c8251cc67d23429e812e91764208832d191f"
+bytes = 67
+endpoint = "Q1"
+note = "segment/security nesting from LEGACY:market-quote"
+
+[[fixture]]
+path = "tests/fixtures/synth/quote_ohlc.json"
+class = "synthesized"
+origin = "OAS:#/components/schemas/OHLCResponse"
+method = "oas-schema"
+sha256 = "f3e32fd05d2d93707c4553a97d0842c1ddd423c1d0950a5faacdda09b1ace563"
+bytes = 120
+endpoint = "Q2"
+note = "segment/security nesting from LEGACY:market-quote"
+
+[[fixture]]
+path = "tests/fixtures/synth/quote_full.json"
+class = "synthesized"
+origin = "OAS:#/components/schemas/QuoteResponse"
+method = "oas-schema"
+sha256 = "cd1c6f7f1aefcab4b391484d42d8f6bb66d0cb31703f99fba13f0d258ee6455c"
+bytes = 674
+endpoint = "Q3"
+note = "segment/security nesting from LEGACY:market-quote; 5 buy and 5 sell depth levels"
+
+[[fixture]]
+path = "tests/fixtures/synth/option_chain_data.json"
+class = "synthesized"
+origin = "OAS:#/components/schemas/OptionChainResponse"
+method = "oas-schema"
+sha256 = "2a9ebb9c68d723b306f6b7192ccda0d5e80ee109e02aaed9d2135802a2a4661a"
+bytes = 1026
+endpoint = "X1"
+note = "OptionData from OAS:#/components/schemas/OptionData; strike keys are placeholders (format not specified)"
+
+[[fixture]]
+path = "tests/fixtures/synth/multi_order_ack.json"
+class = "synthesized"
+origin = "OAS:#/components/schemas/PlaceMultiOrderResponse"
+method = "oas-schema"
+sha256 = "31c2eca6ec02aa33f7c4a1c892b70d8479252141b80c3d7f9da34b8b2ed14c32"
+bytes = 132
+endpoint = "C6"
+note = "items from OAS:#/components/schemas/MultiOrderResponseOrder"
+
+[[fixture]]
+path = "tests/fixtures/synth/super_order_list.json"
+class = "synthesized"
+origin = "DOC:1583-1612"
+method = "field-table"
+sha256 = "62fd06f38f6b7b4a1ca26fe26d262198af48be20b83a5ba581d7195500dea522"
+bytes = 769
+endpoint = "S4"
+note = "legDetails item properties from OAS:#/components/schemas/SuperOrder"
+
+[[fixture]]
+path = "tests/fixtures/synth/scrip_master_compact.csv"
+class = "synthesized"
+origin = "DOC:5755-5797"
+method = "field-table"
+sha256 = "5e3fbf0f546bb99153d135aea68ac893298abb6946fc803b15aa4a9af7e88433"
+bytes = 456
+endpoint = "I1"
+note = "SEM_SMST_SECURITY_ID and the row 2 exchange, security id, instrument, trading symbol and custom symbol from FIX:security_list.json; other columns are placeholders"
+
+[[fixture]]
+path = "tests/fixtures/synth/scrip_master_detailed.csv"
+class = "synthesized"
+origin = "DOC:5755-5797"
+method = "field-table"
+sha256 = "1ab936f273367fbd2eb4589d2f83999f53dd47926a891a8596294ed539fa924a"
+bytes = 1036
+endpoint = "I2,I3"
+note = "row 2 uses the second listed value of each enum column"
+
+[[fixture]]
+path = "tests/fixtures/synth/global_scrip_master.csv"
+class = "synthesized"
+origin = "DOC:5810-5831"
+method = "field-table"
+sha256 = "c665a4f14e14b034d31c48374e7a3eca360ccacec29bffebe55095d18a016786"
+bytes = 405
+endpoint = "I4"
+note = "DOC:5810-5831 is the whole column table (the design cites 5810-5829); row 2 uses the second listed exchange"
+
+[[fixture]]
+path = "tests/fixtures/synth/global_market_status.json"
+class = "synthesized"
+origin = "DOC:2274-2307"
+method = "field-table"
+sha256 = "352dd0fb2ecd6bd362af5ea49dac7ac4b4709e995005b4ab0a0fc9db9cb3feea"
+bytes = 117
+endpoint = "G1"
+
+[[fixture]]
+path = "tests/fixtures/synth/global_fund_limit.json"
+class = "synthesized"
+origin = "DOC:2191-2227"
+method = "field-table"
+sha256 = "9b17ef496a97b3d7ea037e5f830dd1c3dd73e29963409d58cbc88678274b37c2"
+bytes = 141
+endpoint = "G2"
+
+[[fixture]]
+path = "tests/fixtures/synth/global_holdings.json"
+class = "synthesized"
+origin = "DOC:2229-2272"
+method = "field-table"
+sha256 = "16a8db8e54e277ca2e797284bd450290be6ea1b7c90a60b58628a027cf29086e"
+bytes = 288
+endpoint = "G3"
+
+[[fixture]]
+path = "tests/fixtures/synth/global_orders.json"
+class = "synthesized"
+origin = "DOC:2309-2368"
+method = "field-table"
+sha256 = "4465d9a33d5b04cf005442ebf482ea6f91f75ea8330f18554a7baeb8a1367a2b"
+bytes = 689
+endpoint = "G4"
+
+[[fixture]]
+path = "tests/fixtures/synth/global_order.json"
+class = "synthesized"
+origin = "DOC:2370-2436"
+method = "field-table"
+sha256 = "29893968c1f4debeb2b3f0abe0d5f9b6ad93d79cd1391053076fd63bdc77dba7"
+bytes = 687
+endpoint = "G5"
+
+[[fixture]]
+path = "tests/fixtures/synth/global_trades.json"
+class = "synthesized"
+origin = "DOC:2494-2541"
+method = "field-table"
+sha256 = "062019fb7a16affb1910d5d7fd240cce1d8380b66cc121973739eca241d47be1"
+bytes = 438
+endpoint = "G6,G7"
+note = "DOC:2438-2492 documents the same fields"
+
+[[fixture]]
+path = "tests/fixtures/synth/global_margin.json"
+class = "synthesized"
+origin = "DOC:2543-2594"
+method = "field-table"
+sha256 = "43bfaecbea7e7b001a618ca700229da41dfbed9780a2b0da5ec45d3f6ce97429"
+bytes = 96
+endpoint = "G8"
+
+[[fixture]]
+path = "tests/fixtures/synth/global_estimate.json"
+class = "synthesized"
+origin = "DOC:2657-2709"
+method = "field-table"
+sha256 = "8bdd8705860d646cf837ef6c3abbef814cbb95007c2744ac73663ef452470efc"
+bytes = 112
+endpoint = "G9"
+
+[[fixture]]
+path = "tests/fixtures/synth/global_order_ack.json"
+class = "synthesized"
+origin = "DOC:2727-2784"
+method = "field-table"
+sha256 = "77cb0e12f7cd0ff77868f0be9cfb7047f5c34966b672e17aab7ed2a4fca63c17"
+bytes = 44
+endpoint = "G10,G11,G12"
+
+[[fixture]]
+path = "tests/fixtures/ws/global_trade.bin"
+class = "derived"
+origin = "DOC:2111-2122"
+method = "hex-encoding"
+sha256 = "896720f4f5ac0b8fe4a8da16c3841997b6bf84c3ab30182e93d4591b8a9f4102"
+bytes = 27
+endpoint = "W5"
+note = "encoded from the DOC sample decoded packet"
+
+[[fixture]]
+path = "tests/fixtures/ws/global_prev_close.bin"
+class = "derived"
+origin = "DOC:2111-2122"
+method = "hex-encoding"
+sha256 = "6824b4cdc94130877c7812dd0dbfd1efe5105bdb7342549027a43e7ed94f9cce"
+bytes = 15
+endpoint = "W5"
+note = "encoded from the DOC sample decoded packet"
+
+[[fixture]]
+path = "tests/fixtures/ws/global_circuit_limit.bin"
+class = "derived"
+origin = "DOC:2111-2122"
+method = "hex-encoding"
+sha256 = "041ce41978a86a3685ad104a147405ebf4fd265ae45dc2d8b0f28865d1c3443e"
+bytes = 19
+endpoint = "W5"
+note = "encoded from the DOC sample decoded packet"
+
+[[fixture]]
+path = "tests/fixtures/ws/global_week52.bin"
+class = "derived"
+origin = "DOC:2111-2122"
+method = "hex-encoding"
+sha256 = "de5eef4ebd357ddf91f12308b47a61e62d621be5d2133e9791cbb36f525c89b2"
+bytes = 19
+endpoint = "W5"
+note = "encoded from the DOC sample decoded packet"
+
+[[fixture]]
+path = "tests/fixtures/ws/global_batch.bin"
+class = "derived"
+origin = "DOC:2111-2122"
+method = "hex-encoding"
+sha256 = "bf5ec7544dbc2932d7291ab585d9509c1996111d4811af28f46eff48fddf7c47"
+bytes = 80
+endpoint = "W5"
+note = "the four global packets concatenated, exercising batching (DOC:1927)"
