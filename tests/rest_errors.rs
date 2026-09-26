@@ -189,3 +189,23 @@ async fn the_validation_error_shape_keeps_its_code() {
         Some("VALIDATION_ERROR")
     );
 }
+
+#[tokio::test]
+async fn credentials_echoed_in_a_broker_message_are_redacted() {
+    let body = serde_json::json!({
+        "errorType": "Input_Exception",
+        "errorCode": "DH-905",
+        "errorMessage": format!("bad request for {} with {}", support::mock::CLIENT_ID, support::mock::ACCESS_TOKEN),
+    })
+    .to_string();
+    let err = fail_with(400, "application/json", &body).await;
+    assert_eq!(err.kind(), ErrorKind::Api);
+    let message = message(&err).expect("the message is kept, redacted");
+    let rendered = format!("{err} {err:?} {message}");
+    assert!(!rendered.contains(support::mock::CLIENT_ID), "{rendered}");
+    assert!(
+        !rendered.contains(support::mock::ACCESS_TOKEN),
+        "{rendered}"
+    );
+    assert!(!rendered.contains("U0VOVElORUwtU0lH"), "{rendered}");
+}

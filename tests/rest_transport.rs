@@ -626,3 +626,44 @@ async fn a_bodiless_delete_has_no_content_type() {
         Some(support::mock::ACCESS_TOKEN)
     );
 }
+
+// Redirects are never followed: credential headers must not reach another host.
+#[tokio::test(start_paused = true)]
+async fn a_redirect_is_not_followed() {
+    let elsewhere = FaultHttp::start(vec![Reply::json(200, EMPTY_LIST)]).await;
+    let redirect = Reply::Respond {
+        status: 302,
+        headers: vec![("location", format!("{}/v2/orders", elsewhere.base_url()))],
+        body: Vec::new(),
+    };
+    let server = FaultHttp::start(vec![redirect]).await;
+    let err = drive(read(&fault_client(&server))).await.unwrap_err();
+    assert_eq!(
+        (err.kind(), err.http_status(), err.attempts()),
+        (ErrorKind::HttpStatus, Some(302), 1)
+    );
+    assert_eq!(server.requests().len(), 1);
+    assert_eq!(elsewhere.connections(), 0);
+}
+
+// Session calls get exactly one attempt, even on a retryable status.
+#[tokio::test(start_paused = true)]
+async fn token_renewal_is_not_retried() {
+    let server = FaultHttp::start(vec![
+        Reply::text(503, "Service Unavailable"),
+        Reply::json(200, r#"{"accessToken":"x"}"#),
+    ])
+    .await;
+    let client = fault_client(&server);
+    let call = async move {
+        client
+            .__execute_for_tests(EndpointId::AccountRenewToken, &[], &[], None, None)
+            .await
+    };
+    let err = drive(call).await.unwrap_err();
+    assert_eq!(
+        (err.kind(), err.http_status(), err.attempts()),
+        (ErrorKind::HttpStatus, Some(503), 1)
+    );
+    assert_eq!(server.requests().len(), 1);
+}
