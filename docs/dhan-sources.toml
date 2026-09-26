@@ -1,0 +1,1570 @@
+# DhanHQ documentation sources cited by this repository.
+#
+# Citation forms used in source, tests and docs:
+#   DOC:<a> or DOC:<a>-<b>   1-based line(s) in the documentation export named by [snapshot];
+#                            the export itself is never committed. Each [[page]] records where
+#                            its per-page Markdown sits inside the export (export_lines), so a
+#                            DOC range resolves to the official page(s) it came from.
+#   OAS:<METHOD> <path>      an operation in the OpenAPI spec named by [openapi], or
+#   OAS:#/components/schemas/<Name>  a schema in it.
+#   LEGACY:<name>            a page of the older HTML site, listed as a [[legacy]] entry; it is
+#                            compared by the sha256 of its whitespace-normalised <article> text.
+#
+# Every page is served as Markdown: a page at https://docs.dhanhq.co/<path> is available at
+# https://docs.dhanhq.co/markdown/<path>.md. sha256, bytes and lines identify the exact bytes
+# fetched from url at accessed.
+#
+# tests/references.rs checks, offline and without hashing anything, that every citation in
+# the repository resolves against this manifest. scripts/verify-dhan-sources.sh re-fetches
+# every source (or reads a local mirror with --offline) and reports drift for human review.
+
+manifest_version = 1
+
+[snapshot]
+name = "docs-export.md"
+url = "https://docs.dhanhq.co/docs-export.md"
+generated = "2026-07-16T11:23:04.589Z"
+lines = 10263
+bytes = 394000
+sha256 = "0db746de1bf558a3703e250090ccd8a1c9910e0bde18517780f692bf63401b18"
+
+[openapi]
+url = "https://docs.dhanhq.co/openapi/dhan-api-v2.yaml"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "04755cc425b64290278f211e07b0d1f3c5cfde777f9fae82c7c5d98b9758b42d"
+bytes = 113906
+lines = 4051
+
+[[page]]
+name = "api/v2/funds/calculate-margin"
+url = "https://docs.dhanhq.co/markdown/api/v2/funds/calculate-margin.md"
+rendered = "https://docs.dhanhq.co/api/v2/funds/calculate-margin"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "b7db1e17d13dacc73b27b3879e26bc110fb3983a5930807213d39b343a3f798a"
+bytes = 2104
+lines = 60
+export_lines = ["10-72"]
+
+[[page]]
+name = "api/v2/funds/calculate-multi-margin"
+url = "https://docs.dhanhq.co/markdown/api/v2/funds/calculate-multi-margin.md"
+rendered = "https://docs.dhanhq.co/api/v2/funds/calculate-multi-margin"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "ff9eb5f1828d6acbaa75004b7ce7d5269db57d1a7c3aeb501d3b6ea0e4d9ef0c"
+bytes = 2387
+lines = 55
+export_lines = ["73-130"]
+
+[[page]]
+name = "api/v2/orders/cancel-order"
+url = "https://docs.dhanhq.co/markdown/api/v2/orders/cancel-order.md"
+rendered = "https://docs.dhanhq.co/api/v2/orders/cancel-order"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "ac6d1083d9c3cab3cadc3478d47c3ab41254095bbffd617ef08195a9aba69682"
+bytes = 979
+lines = 37
+export_lines = ["131-170"]
+
+[[page]]
+name = "api/v2/super-orders/cancel-super-order-leg"
+url = "https://docs.dhanhq.co/markdown/api/v2/super-orders/cancel-super-order-leg.md"
+rendered = "https://docs.dhanhq.co/api/v2/super-orders/cancel-super-order-leg"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "9e42d0fa3994f53944190b74a8841ef9b8a154bae66ad14bd6e33bc5a9a55db3"
+bytes = 1473
+lines = 40
+export_lines = ["171-213"]
+
+[[page]]
+name = "api/v2/conditional-triggers"
+url = "https://docs.dhanhq.co/markdown/api/v2/conditional-triggers.md"
+rendered = "https://docs.dhanhq.co/api/v2/conditional-triggers"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "d1f4e7959efa009b67b8b04c56a3b494378edd7bacc01d3b8aaacc692a0b52d4"
+bytes = 837
+lines = 17
+export_lines = ["214-233"]
+
+[[page]]
+name = "api/v2/traders-control/configure-pnl-exit"
+url = "https://docs.dhanhq.co/markdown/api/v2/traders-control/configure-pnl-exit.md"
+rendered = "https://docs.dhanhq.co/api/v2/traders-control/configure-pnl-exit"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "c7d30d5585dee986bde3e203f7c53a65aa94b92fdf12387a2ff1bcfe06c2c446"
+bytes = 1507
+lines = 44
+export_lines = ["234-280"]
+
+[[page]]
+name = "api/v2/portfolio/convert-position"
+url = "https://docs.dhanhq.co/markdown/api/v2/portfolio/convert-position.md"
+rendered = "https://docs.dhanhq.co/api/v2/portfolio/convert-position"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "fa2f17726a035173952981613f12441f63591e37fadd5e056ebc526764772ecb"
+bytes = 1531
+lines = 42
+export_lines = ["281-325"]
+
+[[page]]
+name = "api/v2/data-apis"
+url = "https://docs.dhanhq.co/markdown/api/v2/data-apis.md"
+rendered = "https://docs.dhanhq.co/api/v2/data-apis"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "ac6ea16f4d4e54842dd01c910791173c8d0fba34169683056a6b4b813a910de6"
+bytes = 1604
+lines = 40
+export_lines = ["326-368"]
+
+[[page]]
+name = "api/v2/conditional-triggers/delete-conditional-trigger"
+url = "https://docs.dhanhq.co/markdown/api/v2/conditional-triggers/delete-conditional-trigger.md"
+rendered = "https://docs.dhanhq.co/api/v2/conditional-triggers/delete-conditional-trigger"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "4da3b48d86d6ef228649590f616d50c3ff00aa9d02ed3f3475ee0eead2c2dca5"
+bytes = 1095
+lines = 38
+export_lines = ["369-409"]
+
+[[page]]
+name = "api/v2"
+url = "https://docs.dhanhq.co/markdown/api/v2.md"
+rendered = "https://docs.dhanhq.co/api/v2"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "80ef1439b96354377aa79d6c0ff795539f5239217dba99bbbbc989f3fc959ffb"
+bytes = 2317
+lines = 76
+export_lines = ["410-488"]
+
+[[page]]
+name = "api/v2/edis/edis-inquiry"
+url = "https://docs.dhanhq.co/markdown/api/v2/edis/edis-inquiry.md"
+rendered = "https://docs.dhanhq.co/api/v2/edis/edis-inquiry"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "20865c078a22f8772f72c041e3cc302b59a17283a658beffb4aed3606fb31afd"
+bytes = 1552
+lines = 44
+export_lines = ["489-535"]
+
+[[page]]
+name = "api/v2/edis"
+url = "https://docs.dhanhq.co/markdown/api/v2/edis.md"
+rendered = "https://docs.dhanhq.co/api/v2/edis"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "a1b0c74b287505eef3f90652fe506c97ef23f0c23be6fe02122c5f46119a5940"
+bytes = 275
+lines = 9
+export_lines = ["536-547"]
+
+[[page]]
+name = "api/v2/portfolio/exit-all-positions"
+url = "https://docs.dhanhq.co/markdown/api/v2/portfolio/exit-all-positions.md"
+rendered = "https://docs.dhanhq.co/api/v2/portfolio/exit-all-positions"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "48c10e3d6c8f6da2c1d11279b7f8997a0c49e5f1c379f36b7c68fbf00e16e1a2"
+bytes = 680
+lines = 28
+export_lines = ["548-578"]
+
+[[page]]
+name = "api/v2/expired-options-data"
+url = "https://docs.dhanhq.co/markdown/api/v2/expired-options-data.md"
+rendered = "https://docs.dhanhq.co/api/v2/expired-options-data"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "2e95cdb0fc3a695eddf778d2ab92fea93218d120e19ffff8a53f508b09b9cd79"
+bytes = 552
+lines = 9
+export_lines = ["579-590"]
+
+[[page]]
+name = "api/v2/funds"
+url = "https://docs.dhanhq.co/markdown/api/v2/funds.md"
+rendered = "https://docs.dhanhq.co/api/v2/funds"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "19ea39addb81eefc9589419b4ea7d1260a2d08531eeac77993fded0d3e79bda9"
+bytes = 286
+lines = 9
+export_lines = ["591-602"]
+
+[[page]]
+name = "api/v2/edis/generate-edis-form"
+url = "https://docs.dhanhq.co/markdown/api/v2/edis/generate-edis-form.md"
+rendered = "https://docs.dhanhq.co/api/v2/edis/generate-edis-form"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "0467d6ad73ca6cc5cc7a2e2e2200c9b215624cf322ce80cba560e39255bccc01"
+bytes = 1312
+lines = 42
+export_lines = ["603-647"]
+
+[[page]]
+name = "api/v2/edis/generate-tpin"
+url = "https://docs.dhanhq.co/markdown/api/v2/edis/generate-tpin.md"
+rendered = "https://docs.dhanhq.co/api/v2/edis/generate-tpin"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "d80fa2cc21b01908f3491f6c3b43b42ede843994363fda56f456786df220347c"
+bytes = 799
+lines = 32
+export_lines = ["648-682"]
+
+[[page]]
+name = "api/v2/conditional-triggers/get-all-conditional-triggers"
+url = "https://docs.dhanhq.co/markdown/api/v2/conditional-triggers/get-all-conditional-triggers.md"
+rendered = "https://docs.dhanhq.co/api/v2/conditional-triggers/get-all-conditional-triggers"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "f770825ba6154fe1ed44548f4bcaf6b21db2e651739d2f14ca9ec7b0867264b7"
+bytes = 529
+lines = 23
+export_lines = ["683-708"]
+
+[[page]]
+name = "api/v2/conditional-triggers/get-conditional-trigger-by-id"
+url = "https://docs.dhanhq.co/markdown/api/v2/conditional-triggers/get-conditional-trigger-by-id.md"
+rendered = "https://docs.dhanhq.co/api/v2/conditional-triggers/get-conditional-trigger-by-id"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "ae621278c20d4a33f9e5c19a55f51faaf0f0909b0269c590139a5c03fdc46987"
+bytes = 723
+lines = 30
+export_lines = ["709-741"]
+
+[[page]]
+name = "api/v2/historical-data/get-daily-historical"
+url = "https://docs.dhanhq.co/markdown/api/v2/historical-data/get-daily-historical.md"
+rendered = "https://docs.dhanhq.co/api/v2/historical-data/get-daily-historical"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "32d4eef7b3888015d86bb99f12cb03091550b10c2700f9f48f77b787f5315cd7"
+bytes = 1690
+lines = 49
+export_lines = ["742-793"]
+
+[[page]]
+name = "api/v2/expired-options-data/get-expired-options-data"
+url = "https://docs.dhanhq.co/markdown/api/v2/expired-options-data/get-expired-options-data.md"
+rendered = "https://docs.dhanhq.co/api/v2/expired-options-data/get-expired-options-data"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "c0a7c285228b910015174240a68338e6e50366ba193a62ce1cd2186394730a21"
+bytes = 2837
+lines = 60
+export_lines = ["794-856"]
+
+[[page]]
+name = "api/v2/option-chain/get-expiry-list"
+url = "https://docs.dhanhq.co/markdown/api/v2/option-chain/get-expiry-list.md"
+rendered = "https://docs.dhanhq.co/api/v2/option-chain/get-expiry-list"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "db0fefe6409d004ecf0a335a9cd96c3c193e41d41ab2ace7c74d9ecc6801ef43"
+bytes = 994
+lines = 39
+export_lines = ["857-898"]
+
+[[page]]
+name = "api/v2/funds/get-fund-limits"
+url = "https://docs.dhanhq.co/markdown/api/v2/funds/get-fund-limits.md"
+rendered = "https://docs.dhanhq.co/api/v2/funds/get-fund-limits"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "8d229ebd7383dc7c4e5ba78a7ce972cf90d201cdf577029871d7f0f83d37c8c9"
+bytes = 1092
+lines = 36
+export_lines = ["899-937"]
+
+[[page]]
+name = "api/v2/portfolio/get-holdings"
+url = "https://docs.dhanhq.co/markdown/api/v2/portfolio/get-holdings.md"
+rendered = "https://docs.dhanhq.co/api/v2/portfolio/get-holdings"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "582acbb6d2272b8ed19c5fc23caee29eba2bb4cc1f85438991ccfacb8e9b3d64"
+bytes = 1274
+lines = 41
+export_lines = ["938-981"]
+
+[[page]]
+name = "api/v2/historical-data/get-intraday-historical"
+url = "https://docs.dhanhq.co/markdown/api/v2/historical-data/get-intraday-historical.md"
+rendered = "https://docs.dhanhq.co/api/v2/historical-data/get-intraday-historical"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "b23d6fa9ef28825db969ccd75da66eed8f158fac7c6a6dcb73d99ec5a7866288"
+bytes = 1768
+lines = 49
+export_lines = ["982-1033"]
+
+[[page]]
+name = "api/v2/traders-control/get-kill-switch-status"
+url = "https://docs.dhanhq.co/markdown/api/v2/traders-control/get-kill-switch-status.md"
+rendered = "https://docs.dhanhq.co/api/v2/traders-control/get-kill-switch-status"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "67e6c63c2a4fa9545725879d2bba67d761957a3808f998f3a44ddd4210ff7ba8"
+bytes = 776
+lines = 31
+export_lines = ["1034-1067"]
+
+[[page]]
+name = "api/v2/statements/get-ledger-report"
+url = "https://docs.dhanhq.co/markdown/api/v2/statements/get-ledger-report.md"
+rendered = "https://docs.dhanhq.co/api/v2/statements/get-ledger-report"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "b5a56d6d59a9e429f8d1a82f1aa832ef289f17627d71bc5bf868b1f0ae79cb4f"
+bytes = 1271
+lines = 46
+export_lines = ["1068-1116"]
+
+[[page]]
+name = "api/v2/market-quote/get-ltp"
+url = "https://docs.dhanhq.co/markdown/api/v2/market-quote/get-ltp.md"
+rendered = "https://docs.dhanhq.co/api/v2/market-quote/get-ltp"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "3a0de60beb45c6e71a411c8eb28a215bae6db8ba3c27519c18f79cadf0d41642"
+bytes = 1039
+lines = 39
+export_lines = ["1117-1158"]
+
+[[page]]
+name = "api/v2/market-quote/get-ohlc"
+url = "https://docs.dhanhq.co/markdown/api/v2/market-quote/get-ohlc.md"
+rendered = "https://docs.dhanhq.co/api/v2/market-quote/get-ohlc"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "0d02b975193c139890197f3644f667d05de1ed39b156bf3b8854f52ca4e45b7d"
+bytes = 1054
+lines = 38
+export_lines = ["1159-1199"]
+
+[[page]]
+name = "api/v2/option-chain/get-option-chain"
+url = "https://docs.dhanhq.co/markdown/api/v2/option-chain/get-option-chain.md"
+rendered = "https://docs.dhanhq.co/api/v2/option-chain/get-option-chain"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "1e39d9a8c90a7aab150b944b5041c021c5ddfc66e442bead2a776f77cab63167"
+bytes = 1137
+lines = 33
+export_lines = ["1200-1235"]
+
+[[page]]
+name = "api/v2/orders/get-order-by-correlation-id"
+url = "https://docs.dhanhq.co/markdown/api/v2/orders/get-order-by-correlation-id.md"
+rendered = "https://docs.dhanhq.co/api/v2/orders/get-order-by-correlation-id"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "b5f5e1b4667fa325b048088ce801fd10108e47088f610f137baf3d240eb91652"
+bytes = 3417
+lines = 66
+export_lines = ["1236-1304"]
+
+[[page]]
+name = "api/v2/orders/get-order-by-id"
+url = "https://docs.dhanhq.co/markdown/api/v2/orders/get-order-by-id.md"
+rendered = "https://docs.dhanhq.co/api/v2/orders/get-order-by-id"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "2ed527a0e12b83c1b344a120b6e1cc37a400c3bc47452bfb69a94b2299c58135"
+bytes = 3380
+lines = 67
+export_lines = ["1305-1374"]
+
+[[page]]
+name = "api/v2/orders/get-orders"
+url = "https://docs.dhanhq.co/markdown/api/v2/orders/get-orders.md"
+rendered = "https://docs.dhanhq.co/api/v2/orders/get-orders"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "762db46830b3953b029b423ca18d7770793321a188f5e9335554ffb58ebacd9c"
+bytes = 3170
+lines = 60
+export_lines = ["1375-1437"]
+
+[[page]]
+name = "api/v2/traders-control/get-pnl-exit"
+url = "https://docs.dhanhq.co/markdown/api/v2/traders-control/get-pnl-exit.md"
+rendered = "https://docs.dhanhq.co/api/v2/traders-control/get-pnl-exit"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "cf793a114617abb0632354a3929e3f8befee74d2ab1bd8d2faf3e75d756c2eda"
+bytes = 839
+lines = 29
+export_lines = ["1438-1469"]
+
+[[page]]
+name = "api/v2/portfolio/get-positions"
+url = "https://docs.dhanhq.co/markdown/api/v2/portfolio/get-positions.md"
+rendered = "https://docs.dhanhq.co/api/v2/portfolio/get-positions"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "854ebe3f233c46bfd178c8043c066db8d0cd096522b40c6a097c0f137571a447"
+bytes = 2489
+lines = 56
+export_lines = ["1470-1528"]
+
+[[page]]
+name = "api/v2/market-quote/get-quote"
+url = "https://docs.dhanhq.co/markdown/api/v2/market-quote/get-quote.md"
+rendered = "https://docs.dhanhq.co/api/v2/market-quote/get-quote"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "206dcc2791cc5c681af3262715ee8f3ff6f043f656c83aa588de01249d46d37d"
+bytes = 1104
+lines = 38
+export_lines = ["1529-1569"]
+
+[[page]]
+name = "api/v2/super-orders/get-super-orders"
+url = "https://docs.dhanhq.co/markdown/api/v2/super-orders/get-super-orders.md"
+rendered = "https://docs.dhanhq.co/api/v2/super-orders/get-super-orders"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "d83dcdb7399a46fbbe2cb23a567916fd5a01caad891177f446da330ec6571872"
+bytes = 2934
+lines = 55
+export_lines = ["1570-1627"]
+
+[[page]]
+name = "api/v2/statements/get-trade-history"
+url = "https://docs.dhanhq.co/markdown/api/v2/statements/get-trade-history.md"
+rendered = "https://docs.dhanhq.co/api/v2/statements/get-trade-history"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "2bf1ed3a51dac766f3b277c0654f625138a14d9a97a8fe972909c4a54a908d58"
+bytes = 2876
+lines = 64
+export_lines = ["1628-1694"]
+
+[[page]]
+name = "api/v2/orders/get-trades-by-order-id"
+url = "https://docs.dhanhq.co/markdown/api/v2/orders/get-trades-by-order-id.md"
+rendered = "https://docs.dhanhq.co/api/v2/orders/get-trades-by-order-id"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "d9c10aaac890bef9151c677fb53dab977be1ca3c5c3dd7e8bba38f4b6d7398f7"
+bytes = 2337
+lines = 53
+export_lines = ["1695-1750"]
+
+[[page]]
+name = "api/v2/orders/get-trades"
+url = "https://docs.dhanhq.co/markdown/api/v2/orders/get-trades.md"
+rendered = "https://docs.dhanhq.co/api/v2/orders/get-trades"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "c18877980c1a88c7b3c7db32e2fa886658070b5716df29f744e59e5952ee4547"
+bytes = 1914
+lines = 47
+export_lines = ["1751-1800"]
+
+[[page]]
+name = "api/v2/global-stocks"
+url = "https://docs.dhanhq.co/markdown/api/v2/global-stocks.md"
+rendered = "https://docs.dhanhq.co/api/v2/global-stocks"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "b3013520c657e9e84a0331db298fd862be115a7e69bb7391126dab1a29124f15"
+bytes = 2120
+lines = 19
+export_lines = ["1801-1822"]
+
+[[page]]
+name = "api/v2/global-stocks/data-apis/broadcast-websocket"
+url = "https://docs.dhanhq.co/markdown/api/v2/global-stocks/data-apis/broadcast-websocket.md"
+rendered = "https://docs.dhanhq.co/api/v2/global-stocks/data-apis/broadcast-websocket"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "ae3e0fd67b566d76ff348ccf0c52713b844c01b8268836aaac6540b7eb66fb0e"
+bytes = 13120
+lines = 301
+export_lines = ["1823-2126"]
+
+[[page]]
+name = "api/v2/global-stocks/cancel-order"
+url = "https://docs.dhanhq.co/markdown/api/v2/global-stocks/cancel-order.md"
+rendered = "https://docs.dhanhq.co/api/v2/global-stocks/cancel-order"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "f23b1abd3a0282733be733f0cc5ca01f3540ad71108f070379c2fa4d35ebf574"
+bytes = 957
+lines = 37
+export_lines = ["2127-2166"]
+
+[[page]]
+name = "api/v2/global-stocks/data-apis"
+url = "https://docs.dhanhq.co/markdown/api/v2/global-stocks/data-apis.md"
+rendered = "https://docs.dhanhq.co/api/v2/global-stocks/data-apis"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "83bd1fee51c60862b394ced1980d40b0ee084bb098917e301b12bfa7af2e9dc0"
+bytes = 335
+lines = 9
+export_lines = ["2167-2178"]
+
+[[page]]
+name = "api/v2/global-stocks/funds"
+url = "https://docs.dhanhq.co/markdown/api/v2/global-stocks/funds.md"
+rendered = "https://docs.dhanhq.co/api/v2/global-stocks/funds"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "65da4c99477813b83b42b2d25cb4e6e95ffbbe81f741207a0244b19d5114897b"
+bytes = 470
+lines = 9
+export_lines = ["2179-2190"]
+
+[[page]]
+name = "api/v2/global-stocks/get-fund-limit"
+url = "https://docs.dhanhq.co/markdown/api/v2/global-stocks/get-fund-limit.md"
+rendered = "https://docs.dhanhq.co/api/v2/global-stocks/get-fund-limit"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "d3554fb9ce2a88ad8dda5e3b4ea5bc62530db2735a40898ea7fc3ca78cd1bd61"
+bytes = 847
+lines = 35
+export_lines = ["2191-2228"]
+
+[[page]]
+name = "api/v2/global-stocks/get-holdings"
+url = "https://docs.dhanhq.co/markdown/api/v2/global-stocks/get-holdings.md"
+rendered = "https://docs.dhanhq.co/api/v2/global-stocks/get-holdings"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "b8a36df116604af12e6c50674511c99869df54c75a269a2a4a2e06fd56c951f8"
+bytes = 1210
+lines = 42
+export_lines = ["2229-2273"]
+
+[[page]]
+name = "api/v2/global-stocks/get-market-status"
+url = "https://docs.dhanhq.co/markdown/api/v2/global-stocks/get-market-status.md"
+rendered = "https://docs.dhanhq.co/api/v2/global-stocks/get-market-status"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "40b72bbbd3a2d5595316cb9bffda0e2e41054828c404d5475a137eb649894d00"
+bytes = 702
+lines = 32
+export_lines = ["2274-2308"]
+
+[[page]]
+name = "api/v2/global-stocks/get-order-book"
+url = "https://docs.dhanhq.co/markdown/api/v2/global-stocks/get-order-book.md"
+rendered = "https://docs.dhanhq.co/api/v2/global-stocks/get-order-book"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "a9123f4f48887e9f15c74413ffeaf03589397eeaf9069d7e58faf46dd8843123"
+bytes = 2646
+lines = 58
+export_lines = ["2309-2369"]
+
+[[page]]
+name = "api/v2/global-stocks/get-order-by-id"
+url = "https://docs.dhanhq.co/markdown/api/v2/global-stocks/get-order-by-id.md"
+rendered = "https://docs.dhanhq.co/api/v2/global-stocks/get-order-by-id"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "0059c042aa0f925848270e5fdd3ff01fa7ec469ff511d2439de3af224aef2698"
+bytes = 2873
+lines = 65
+export_lines = ["2370-2437"]
+
+[[page]]
+name = "api/v2/global-stocks/get-past-trades-by-scrip"
+url = "https://docs.dhanhq.co/markdown/api/v2/global-stocks/get-past-trades-by-scrip.md"
+rendered = "https://docs.dhanhq.co/api/v2/global-stocks/get-past-trades-by-scrip"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "5f56eb09ee905cf6b3beefe5b908e24bb8e879bc51a1ac93417ffc082153470e"
+bytes = 1901
+lines = 53
+export_lines = ["2438-2493"]
+
+[[page]]
+name = "api/v2/global-stocks/get-past-trades"
+url = "https://docs.dhanhq.co/markdown/api/v2/global-stocks/get-past-trades.md"
+rendered = "https://docs.dhanhq.co/api/v2/global-stocks/get-past-trades"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "ba005791e53ca245a16558f3a96bf9f2eb4ada8d7d123340a92fae7341dc5199"
+bytes = 1661
+lines = 46
+export_lines = ["2494-2542"]
+
+[[page]]
+name = "api/v2/global-stocks/margin-calculator"
+url = "https://docs.dhanhq.co/markdown/api/v2/global-stocks/margin-calculator.md"
+rendered = "https://docs.dhanhq.co/api/v2/global-stocks/margin-calculator"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "aa5e93f3c658d77afd6615b75e5ee3174038d101c8c80900c37fe9675cbf82ee"
+bytes = 1327
+lines = 50
+export_lines = ["2543-2595"]
+
+[[page]]
+name = "api/v2/global-stocks/modify-order"
+url = "https://docs.dhanhq.co/markdown/api/v2/global-stocks/modify-order.md"
+rendered = "https://docs.dhanhq.co/api/v2/global-stocks/modify-order"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "632bed3334b5876f6e092ca995ac565e2d3b3edb0b261757dce8df90c80be3c9"
+bytes = 1924
+lines = 58
+export_lines = ["2596-2656"]
+
+[[page]]
+name = "api/v2/global-stocks/order-estimator"
+url = "https://docs.dhanhq.co/markdown/api/v2/global-stocks/order-estimator.md"
+rendered = "https://docs.dhanhq.co/api/v2/global-stocks/order-estimator"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "9c1c893ee608322be0a9365fcfc3e768348ec14177e0e1fb9d561b2fa5a0db4b"
+bytes = 1379
+lines = 51
+export_lines = ["2657-2710"]
+
+[[page]]
+name = "api/v2/global-stocks/orders"
+url = "https://docs.dhanhq.co/markdown/api/v2/global-stocks/orders.md"
+rendered = "https://docs.dhanhq.co/api/v2/global-stocks/orders"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "51b42fe7ffc484b3a04ad814f0c17f11375c5d553bf4d0f510739a75abf25f1e"
+bytes = 890
+lines = 13
+export_lines = ["2711-2726"]
+
+[[page]]
+name = "api/v2/global-stocks/place-order"
+url = "https://docs.dhanhq.co/markdown/api/v2/global-stocks/place-order.md"
+rendered = "https://docs.dhanhq.co/api/v2/global-stocks/place-order"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "a2f1db7c7e73a18842feb76d78b4f1ba7b5508e3a12a90b0e198ccd6a8dff6f6"
+bytes = 2021
+lines = 56
+export_lines = ["2727-2785"]
+
+[[page]]
+name = "api/v2/global-stocks/portfolio"
+url = "https://docs.dhanhq.co/markdown/api/v2/global-stocks/portfolio.md"
+rendered = "https://docs.dhanhq.co/api/v2/global-stocks/portfolio"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "47d232c00fb86d92ae54093e2fc94371fa2dd1e725b79428c99b1fb7f08a34e5"
+bytes = 332
+lines = 9
+export_lines = ["2786-2797"]
+
+[[page]]
+name = "api/v2/global-stocks/statements"
+url = "https://docs.dhanhq.co/markdown/api/v2/global-stocks/statements.md"
+rendered = "https://docs.dhanhq.co/api/v2/global-stocks/statements"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "290de54979d16d9ca30c9e82cdb84a7ece85f71e7019c47ebd921b4671cc592d"
+bytes = 381
+lines = 8
+export_lines = ["2798-2808"]
+
+[[page]]
+name = "api/v2/global-stocks/traders-control"
+url = "https://docs.dhanhq.co/markdown/api/v2/global-stocks/traders-control.md"
+rendered = "https://docs.dhanhq.co/api/v2/global-stocks/traders-control"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "f9acfae0bbb8824c7de51f6b90b78dd92b477ac140da225406605e8d85be17f2"
+bytes = 245
+lines = 7
+export_lines = ["2809-2818"]
+
+[[page]]
+name = "api/v2/historical-data"
+url = "https://docs.dhanhq.co/markdown/api/v2/historical-data.md"
+rendered = "https://docs.dhanhq.co/api/v2/historical-data"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "8254d423a45e7195f026b7bbd73d750f562e9810035668ac5e16dbd82c6776f7"
+bytes = 431
+lines = 10
+export_lines = ["2819-2831"]
+
+[[page]]
+name = "api/v2/traders-control/manage-kill-switch"
+url = "https://docs.dhanhq.co/markdown/api/v2/traders-control/manage-kill-switch.md"
+rendered = "https://docs.dhanhq.co/api/v2/traders-control/manage-kill-switch"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "36875c3ae162abeaffe32d52489de8c243033d47d37f334916cafbd95e230fe0"
+bytes = 1329
+lines = 43
+export_lines = ["2832-2877"]
+
+[[page]]
+name = "api/v2/market-quote"
+url = "https://docs.dhanhq.co/markdown/api/v2/market-quote.md"
+rendered = "https://docs.dhanhq.co/api/v2/market-quote"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "b428d784e56274ae756be5fab6a401e5ae987c606f026bc548556d4f8464361f"
+bytes = 589
+lines = 13
+export_lines = ["2878-2893"]
+
+[[page]]
+name = "api/v2/conditional-triggers/modify-conditional-trigger"
+url = "https://docs.dhanhq.co/markdown/api/v2/conditional-triggers/modify-conditional-trigger.md"
+rendered = "https://docs.dhanhq.co/api/v2/conditional-triggers/modify-conditional-trigger"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "31fcc8710830e25b12c43a246f2e3dddc6458871d9643b22affdc23730f3460d"
+bytes = 17427
+lines = 212
+export_lines = ["2894-3108"]
+
+[[page]]
+name = "api/v2/orders/modify-order"
+url = "https://docs.dhanhq.co/markdown/api/v2/orders/modify-order.md"
+rendered = "https://docs.dhanhq.co/api/v2/orders/modify-order"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "510631e8102919f1566d2d83a302dc70807f4f5bb4e5cefb47a0431d2ec960ee"
+bytes = 2206
+lines = 55
+export_lines = ["3109-3166"]
+
+[[page]]
+name = "api/v2/super-orders/modify-super-order"
+url = "https://docs.dhanhq.co/markdown/api/v2/super-orders/modify-super-order.md"
+rendered = "https://docs.dhanhq.co/api/v2/super-orders/modify-super-order"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "9b7d14640e2b0c90bb9be06162facdcb770605a98fb1ad01a7530473533d73e2"
+bytes = 2567
+lines = 57
+export_lines = ["3167-3226"]
+
+[[page]]
+name = "api/v2/option-chain"
+url = "https://docs.dhanhq.co/markdown/api/v2/option-chain.md"
+rendered = "https://docs.dhanhq.co/api/v2/option-chain"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "f334d0dc86383038884aeaf75b3c750d16363c044275a6edb0112ab6aa2e24c9"
+bytes = 493
+lines = 10
+export_lines = ["3227-3239"]
+
+[[page]]
+name = "api/v2/orders"
+url = "https://docs.dhanhq.co/markdown/api/v2/orders.md"
+rendered = "https://docs.dhanhq.co/api/v2/orders"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "d1f1a4b2d2c88004e38f5c7fd5fd7e19090f73a32d2933812b8991453b5a9c3f"
+bytes = 1007
+lines = 19
+export_lines = ["3240-3261"]
+
+[[page]]
+name = "api/v2/conditional-triggers/place-conditional-trigger"
+url = "https://docs.dhanhq.co/markdown/api/v2/conditional-triggers/place-conditional-trigger.md"
+rendered = "https://docs.dhanhq.co/api/v2/conditional-triggers/place-conditional-trigger"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "73ca2b6160232d183f5cf09a2f75346936b2224d0681a24977341a67cb6436aa"
+bytes = 17172
+lines = 199
+export_lines = ["3262-3463"]
+
+[[page]]
+name = "api/v2/conditional-triggers/place-multi-order"
+url = "https://docs.dhanhq.co/markdown/api/v2/conditional-triggers/place-multi-order.md"
+rendered = "https://docs.dhanhq.co/api/v2/conditional-triggers/place-multi-order"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "292df5b0c1fc2afd1db299e2794dc906a54fcc0d0b23aa5a59eb6b6a0204178a"
+bytes = 22541
+lines = 245
+export_lines = ["3464-3711"]
+
+[[page]]
+name = "api/v2/orders/place-order"
+url = "https://docs.dhanhq.co/markdown/api/v2/orders/place-order.md"
+rendered = "https://docs.dhanhq.co/api/v2/orders/place-order"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "57e65314d382d79d0a613747cad53696ab132181d2778fe45ad78e494c90bce7"
+bytes = 2468
+lines = 56
+export_lines = ["3712-3770"]
+
+[[page]]
+name = "api/v2/super-orders/place-super-order"
+url = "https://docs.dhanhq.co/markdown/api/v2/super-orders/place-super-order.md"
+rendered = "https://docs.dhanhq.co/api/v2/super-orders/place-super-order"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "0b7e9640f237883d1ada1283f39e8641d5509eebc40100bb37a4d51e76da2e3d"
+bytes = 2471
+lines = 53
+export_lines = ["3771-3826"]
+
+[[page]]
+name = "api/v2/portfolio"
+url = "https://docs.dhanhq.co/markdown/api/v2/portfolio.md"
+rendered = "https://docs.dhanhq.co/api/v2/portfolio"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "da6fabc40e79e4fb1cc3c54c11bc635bef3f9cb47099752b3c63974706c0a08d"
+bytes = 355
+lines = 10
+export_lines = ["3827-3839"]
+
+[[page]]
+name = "api/v2/sandbox"
+url = "https://docs.dhanhq.co/markdown/api/v2/sandbox.md"
+rendered = "https://docs.dhanhq.co/api/v2/sandbox"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "5525f1f2a08855bd57fe15fd7bbccec1480f8e1cfd183bc4fa367deca3ff257e"
+bytes = 3346
+lines = 55
+export_lines = ["3840-3897"]
+
+[[page]]
+name = "api/v2/orders/slice-order"
+url = "https://docs.dhanhq.co/markdown/api/v2/orders/slice-order.md"
+rendered = "https://docs.dhanhq.co/api/v2/orders/slice-order"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "95c3a0db7007a5682a2abb082fde7a223a48f79e5fbb455711ee784024d35a32"
+bytes = 2550
+lines = 54
+export_lines = ["3898-3954"]
+
+[[page]]
+name = "api/v2/statements"
+url = "https://docs.dhanhq.co/markdown/api/v2/statements.md"
+rendered = "https://docs.dhanhq.co/api/v2/statements"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "539caa1f03b03c58ac02434554a486768bbe9383aa634cf3ffcbf0a43852183d"
+bytes = 331
+lines = 10
+export_lines = ["3955-3967"]
+
+[[page]]
+name = "api/v2/traders-control/stop-pnl-exit"
+url = "https://docs.dhanhq.co/markdown/api/v2/traders-control/stop-pnl-exit.md"
+rendered = "https://docs.dhanhq.co/api/v2/traders-control/stop-pnl-exit"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "9862b4fe0e99c3dd7006987823b40507dbb9f257e2e2bc73d47859416f77bac3"
+bytes = 721
+lines = 29
+export_lines = ["3968-3999"]
+
+[[page]]
+name = "api/v2/super-orders"
+url = "https://docs.dhanhq.co/markdown/api/v2/super-orders.md"
+rendered = "https://docs.dhanhq.co/api/v2/super-orders"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "bb8a87f606d12f0cba0e15f7d159ddeb0974a8be33e94631ccc562392a3b7cf1"
+bytes = 521
+lines = 12
+export_lines = ["4000-4014"]
+
+[[page]]
+name = "api/v2/traders-control"
+url = "https://docs.dhanhq.co/markdown/api/v2/traders-control.md"
+rendered = "https://docs.dhanhq.co/api/v2/traders-control"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "3fc715dca06081131cbd8d8afc5364755162f03551868f314802b7d2e650a3c1"
+bytes = 563
+lines = 13
+export_lines = ["4015-4030"]
+
+[[page]]
+name = "api/v2/trading-apis"
+url = "https://docs.dhanhq.co/markdown/api/v2/trading-apis.md"
+rendered = "https://docs.dhanhq.co/api/v2/trading-apis"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "cbd4bc9f769aceaf0e90d5784a1bcaac279f6c588d96f48dfc06a2b2b17199bd"
+bytes = 4248
+lines = 74
+export_lines = ["4031-4107"]
+
+[[page]]
+name = "api/v2/guides/annexure"
+url = "https://docs.dhanhq.co/markdown/api/v2/guides/annexure.md"
+rendered = "https://docs.dhanhq.co/api/v2/guides/annexure"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "40a17f84d5985cc01b79f0d36dd5c20f4c1c01d7767b50abc120e3aabacf7934"
+bytes = 6577
+lines = 210
+export_lines = ["4108-4320"]
+
+[[page]]
+name = "api/v2/authentication/api-key-consume-consent"
+url = "https://docs.dhanhq.co/markdown/api/v2/authentication/api-key-consume-consent.md"
+rendered = "https://docs.dhanhq.co/api/v2/authentication/api-key-consume-consent"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "89e5cf3c26261e882a81d6a27c6d57ef5971bbd78c68f8532c38c9e47c91a33a"
+bytes = 1473
+lines = 43
+export_lines = ["4321-4366"]
+
+[[page]]
+name = "api/v2/authentication/api-key-generate-consent"
+url = "https://docs.dhanhq.co/markdown/api/v2/authentication/api-key-generate-consent.md"
+rendered = "https://docs.dhanhq.co/api/v2/authentication/api-key-generate-consent"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "da36c9a2b2a805eb34ec2488bb4cbe74b558f29c191e7d523cc0e77f282a1d45"
+bytes = 1329
+lines = 43
+export_lines = ["4367-4412"]
+
+[[page]]
+name = "api/v2/authentication/generate-token"
+url = "https://docs.dhanhq.co/markdown/api/v2/authentication/generate-token.md"
+rendered = "https://docs.dhanhq.co/api/v2/authentication/generate-token"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "ea919aef9f8a7d16a17e6f7fe2adae20aca8276011c6a66ccafc7114a809ae3a"
+bytes = 1239
+lines = 36
+export_lines = ["4413-4451"]
+
+[[page]]
+name = "api/v2/authentication/get-ip"
+url = "https://docs.dhanhq.co/markdown/api/v2/authentication/get-ip.md"
+rendered = "https://docs.dhanhq.co/api/v2/authentication/get-ip"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "e47774b4b7ea2c7b90c461b131bc61b60727dbe50de0f67c0064f68e7cde58a1"
+bytes = 824
+lines = 26
+export_lines = ["4452-4480"]
+
+[[page]]
+name = "api/v2/authentication/modify-ip"
+url = "https://docs.dhanhq.co/markdown/api/v2/authentication/modify-ip.md"
+rendered = "https://docs.dhanhq.co/api/v2/authentication/modify-ip"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "5261f4e975121fccb83256c2972a1744c3aa564d20979d12ce969aa83d8a0b13"
+bytes = 1167
+lines = 39
+export_lines = ["4481-4522"]
+
+[[page]]
+name = "api/v2/authentication/partner-consume-consent"
+url = "https://docs.dhanhq.co/markdown/api/v2/authentication/partner-consume-consent.md"
+rendered = "https://docs.dhanhq.co/api/v2/authentication/partner-consume-consent"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "458ec3c2e75b1f53aec37fa07831cf4f53e9e95147d9355cdf72d24d8e21b46a"
+bytes = 1482
+lines = 43
+export_lines = ["4523-4568"]
+
+[[page]]
+name = "api/v2/authentication/partner-generate-consent"
+url = "https://docs.dhanhq.co/markdown/api/v2/authentication/partner-generate-consent.md"
+rendered = "https://docs.dhanhq.co/api/v2/authentication/partner-generate-consent"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "2f7ee1d7f2f7c44bb4c05ae30a10312fe916595e0f10e5c6b60d6feed2693d97"
+bytes = 939
+lines = 32
+export_lines = ["4569-4603"]
+
+[[page]]
+name = "api/v2/authentication/renew-token"
+url = "https://docs.dhanhq.co/markdown/api/v2/authentication/renew-token.md"
+rendered = "https://docs.dhanhq.co/api/v2/authentication/renew-token"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "108be79058722fd9d235a1b665c8f5d0326252d9ec9ef7fa0ec69ab1fc08a163"
+bytes = 1165
+lines = 37
+export_lines = ["4604-4643"]
+
+[[page]]
+name = "api/v2/authentication/set-ip"
+url = "https://docs.dhanhq.co/markdown/api/v2/authentication/set-ip.md"
+rendered = "https://docs.dhanhq.co/api/v2/authentication/set-ip"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "16637a77654f555588016b8cc6f8aa7dfc8f88ca15b349fbc580f5db59334a35"
+bytes = 1117
+lines = 39
+export_lines = ["4644-4685"]
+
+[[page]]
+name = "api/v2/guides/authentication"
+url = "https://docs.dhanhq.co/markdown/api/v2/guides/authentication.md"
+rendered = "https://docs.dhanhq.co/api/v2/guides/authentication"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "1e659a6a787a1d9d79e0de54a20fe785f98b65e66394e309b1d78a4847bd82c5"
+bytes = 7403
+lines = 192
+export_lines = ["4686-4880"]
+
+[[page]]
+name = "api/v2/guides/conditional-trigger"
+url = "https://docs.dhanhq.co/markdown/api/v2/guides/conditional-trigger.md"
+rendered = "https://docs.dhanhq.co/api/v2/guides/conditional-trigger"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "0a5b6bcf5e919a9427811d575ab9bed1fd41379081505addfdda075e4e221494"
+bytes = 7486
+lines = 230
+export_lines = ["4881-5113"]
+
+[[page]]
+name = "api/v2/guides/edis"
+url = "https://docs.dhanhq.co/markdown/api/v2/guides/edis.md"
+rendered = "https://docs.dhanhq.co/api/v2/guides/edis"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "b531501bf04379552569630c1fe5dc3093fb444f2d2af77005d3511906d9e7f2"
+bytes = 3379
+lines = 129
+export_lines = ["5114-5245"]
+
+[[page]]
+name = "api/v2/guides/errors"
+url = "https://docs.dhanhq.co/markdown/api/v2/guides/errors.md"
+rendered = "https://docs.dhanhq.co/api/v2/guides/errors"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "630250bb983f596df843481e9c06f1c9891008dc5365aa230f6f42e937966355"
+bytes = 1863
+lines = 83
+export_lines = ["5246-5331"]
+
+[[page]]
+name = "api/v2/guides/expired-options-data"
+url = "https://docs.dhanhq.co/markdown/api/v2/guides/expired-options-data.md"
+rendered = "https://docs.dhanhq.co/api/v2/guides/expired-options-data"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "4a334aa416e223c695949173c7bbfbcd52421b21a439c213268289223312af76"
+bytes = 3490
+lines = 101
+export_lines = ["5332-5435"]
+
+[[page]]
+name = "api/v2/guides/full-market-depth"
+url = "https://docs.dhanhq.co/markdown/api/v2/guides/full-market-depth.md"
+rendered = "https://docs.dhanhq.co/api/v2/guides/full-market-depth"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "b59cac3060a0b4dbc009b4fad064e1299fec2f24fb08b420c2c19c2bebcc9356"
+bytes = 8823
+lines = 200
+export_lines = ["5436-5638"]
+
+[[page]]
+name = "api/v2/guides/getting-started"
+url = "https://docs.dhanhq.co/markdown/api/v2/guides/getting-started.md"
+rendered = "https://docs.dhanhq.co/api/v2/guides/getting-started"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "ec8a9086cded93a2d2278a9f23e9fcb62c99612ba3533ae6cbd17b65e65df815"
+bytes = 2274
+lines = 76
+export_lines = ["5639-5717"]
+
+[[page]]
+name = "api/v2/guides/instruments"
+url = "https://docs.dhanhq.co/markdown/api/v2/guides/instruments.md"
+rendered = "https://docs.dhanhq.co/api/v2/guides/instruments"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "2db672cc09b6483e8418904039ce361cf7ca0f7022bb5b63d4c67f899b7e6c47"
+bytes = 4923
+lines = 114
+export_lines = ["5718-5834"]
+
+[[page]]
+name = "api/v2/guides/live-market-feed"
+url = "https://docs.dhanhq.co/markdown/api/v2/guides/live-market-feed.md"
+rendered = "https://docs.dhanhq.co/api/v2/guides/live-market-feed"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "1d875fb1f213262dfd7bb127730d62b64e130d0dc83cc306236194fb6ec8572a"
+bytes = 10023
+lines = 217
+export_lines = ["5835-6054"]
+
+[[page]]
+name = "api/v2/guides/order-update"
+url = "https://docs.dhanhq.co/markdown/api/v2/guides/order-update.md"
+rendered = "https://docs.dhanhq.co/api/v2/guides/order-update"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "2b5a4f21dbabfb4b412006d53fed043a0209ef0e4c26b63a60cb3e04de85a894"
+bytes = 6765
+lines = 193
+export_lines = ["6055-6250"]
+
+[[page]]
+name = "api/v2/guides/postback"
+url = "https://docs.dhanhq.co/markdown/api/v2/guides/postback.md"
+rendered = "https://docs.dhanhq.co/api/v2/guides/postback"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "2136430101fb57de0158f3b94d9fd9fdc90f80600c8f8802b10c0bb9754ba54e"
+bytes = 4162
+lines = 97
+export_lines = ["6251-6350"]
+
+[[page]]
+name = "api/v2/guides/rate-limits"
+url = "https://docs.dhanhq.co/markdown/api/v2/guides/rate-limits.md"
+rendered = "https://docs.dhanhq.co/api/v2/guides/rate-limits"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "27b875f1802478717ebac5cc0cc0403bd74eb624652170776bc1b7627b55e35c"
+bytes = 1822
+lines = 68
+export_lines = ["6351-6421"]
+
+[[page]]
+name = "api/v2/guides/releases"
+url = "https://docs.dhanhq.co/markdown/api/v2/guides/releases.md"
+rendered = "https://docs.dhanhq.co/api/v2/guides/releases"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "556235bf7573ae3a824b8ec7ef122bb7714afa7ab2af71cbb2bcbbfd5b732ba9"
+bytes = 5460
+lines = 142
+export_lines = ["6422-6566"]
+
+[[page]]
+name = "api/v2/guides/sdks/python"
+url = "https://docs.dhanhq.co/markdown/api/v2/guides/sdks/python.md"
+rendered = "https://docs.dhanhq.co/api/v2/guides/sdks/python"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "9a6e1f97cff7466262c5cab1fc322ef07124786aa1b3466523fab31b2d786253"
+bytes = 5294
+lines = 311
+export_lines = ["6567-6880"]
+
+[[page]]
+name = "api/v2/guides/statements"
+url = "https://docs.dhanhq.co/markdown/api/v2/guides/statements.md"
+rendered = "https://docs.dhanhq.co/api/v2/guides/statements"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "c6e71a406fa51fe7f219024b961bc02395602d4312c2260b1de7b73b63e6b941"
+bytes = 5349
+lines = 155
+export_lines = ["6881-7038"]
+
+[[page]]
+name = "api/v2/guides/traders-control"
+url = "https://docs.dhanhq.co/markdown/api/v2/guides/traders-control.md"
+rendered = "https://docs.dhanhq.co/api/v2/guides/traders-control"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "2fa9d74dae7e7dff05a0af9f1502059ba015946c1225261c4e417f6205ec040f"
+bytes = 4648
+lines = 184
+export_lines = ["7039-7225"]
+
+[[page]]
+name = "skills/categories/backtesting"
+url = "https://docs.dhanhq.co/markdown/skills/categories/backtesting.md"
+rendered = "https://docs.dhanhq.co/skills/categories/backtesting"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "da10cb40ede84d9e4ce4f5a6e3f18390c44357cf8fa346789f57f7f6f464dd1a"
+bytes = 1835
+lines = 43
+export_lines = ["7226-7271"]
+
+[[page]]
+name = "skills/categories/common-workflows"
+url = "https://docs.dhanhq.co/markdown/skills/categories/common-workflows.md"
+rendered = "https://docs.dhanhq.co/skills/categories/common-workflows"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "58efcff682838eba3e9239758366b6bf1ecd2a127cda194eacc37bfe65a9a7df"
+bytes = 1756
+lines = 48
+export_lines = ["7272-7322"]
+
+[[page]]
+name = "skills/categories/error-codes"
+url = "https://docs.dhanhq.co/markdown/skills/categories/error-codes.md"
+rendered = "https://docs.dhanhq.co/skills/categories/error-codes"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "24b98234d561db86efaf5a984b951c78466c8ecb15050863e7c8f90b119a57bf"
+bytes = 1541
+lines = 37
+export_lines = ["7323-7362"]
+
+[[page]]
+name = "skills/categories/funds"
+url = "https://docs.dhanhq.co/markdown/skills/categories/funds.md"
+rendered = "https://docs.dhanhq.co/skills/categories/funds"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "fe3e701ad33872b53a9a08777b52dd457aa33d4da39e68d6dfaeed5a5e593e4c"
+bytes = 1313
+lines = 31
+export_lines = ["7363-7396"]
+
+[[page]]
+name = "skills/categories/instruments"
+url = "https://docs.dhanhq.co/markdown/skills/categories/instruments.md"
+rendered = "https://docs.dhanhq.co/skills/categories/instruments"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "d8954d9c6681545fbe9a802c318218268f7e546708e6c5e2cb69093ebb80971f"
+bytes = 1581
+lines = 39
+export_lines = ["7397-7438"]
+
+[[page]]
+name = "skills/categories/live-feed"
+url = "https://docs.dhanhq.co/markdown/skills/categories/live-feed.md"
+rendered = "https://docs.dhanhq.co/skills/categories/live-feed"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "f03e66adb76207c2f50199198f94c0d09009bfb14f69d1f5ecae41e5b0a90b97"
+bytes = 1607
+lines = 40
+export_lines = ["7439-7481"]
+
+[[page]]
+name = "skills/categories/market-data"
+url = "https://docs.dhanhq.co/markdown/skills/categories/market-data.md"
+rendered = "https://docs.dhanhq.co/skills/categories/market-data"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "7c590c79a617ee635812d74101673f5d1768b15488c0b93906ceba68591af8e9"
+bytes = 1367
+lines = 38
+export_lines = ["7482-7522"]
+
+[[page]]
+name = "skills/categories/option-chain"
+url = "https://docs.dhanhq.co/markdown/skills/categories/option-chain.md"
+rendered = "https://docs.dhanhq.co/skills/categories/option-chain"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "0dabb7e5787b2fbc19677f01272f7cfecd47ff8d284ff9795a8d322d8107fdbf"
+bytes = 1383
+lines = 32
+export_lines = ["7523-7557"]
+
+[[page]]
+name = "skills/categories/options-analysis"
+url = "https://docs.dhanhq.co/markdown/skills/categories/options-analysis.md"
+rendered = "https://docs.dhanhq.co/skills/categories/options-analysis"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "5399932a2681583da71376bfc65964d1e24fa37b6b99a6b9ce6f934bcabe82ff"
+bytes = 1617
+lines = 38
+export_lines = ["7558-7598"]
+
+[[page]]
+name = "skills/categories/orders"
+url = "https://docs.dhanhq.co/markdown/skills/categories/orders.md"
+rendered = "https://docs.dhanhq.co/skills/categories/orders"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "0378a4cc41b65278d5183eec2ee0709a590e4533fa3399ed538c6a81a7710d7f"
+bytes = 1705
+lines = 34
+export_lines = ["7599-7635"]
+
+[[page]]
+name = "skills/categories/portfolio"
+url = "https://docs.dhanhq.co/markdown/skills/categories/portfolio.md"
+rendered = "https://docs.dhanhq.co/skills/categories/portfolio"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "d03cd809d4026aa2c13ed5d880b94d3a010ea91246c11a152bcf5719afef4bdb"
+bytes = 1294
+lines = 32
+export_lines = ["7636-7670"]
+
+[[page]]
+name = "skills/categories/scanx"
+url = "https://docs.dhanhq.co/markdown/skills/categories/scanx.md"
+rendered = "https://docs.dhanhq.co/skills/categories/scanx"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "70c0a7bce6070cff0195bd31496e97f44cbdf3ce52db599687476fb02af146c1"
+bytes = 1179
+lines = 27
+export_lines = ["7671-7700"]
+
+[[page]]
+name = "skills/getting-started/configuration"
+url = "https://docs.dhanhq.co/markdown/skills/getting-started/configuration.md"
+rendered = "https://docs.dhanhq.co/skills/getting-started/configuration"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "c3c626c345af9266f2c49f3a8690b921cbc2f9ebc04af812d3361084d5148c83"
+bytes = 3909
+lines = 86
+export_lines = ["7701-7789"]
+
+[[page]]
+name = "skills/getting-started/installation"
+url = "https://docs.dhanhq.co/markdown/skills/getting-started/installation.md"
+rendered = "https://docs.dhanhq.co/skills/getting-started/installation"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "427bec2c4fd7976348f123443f949ca44e16a0b00693b1ada4732ec00fa23149"
+bytes = 1778
+lines = 60
+export_lines = ["7790-7852"]
+
+[[page]]
+name = "skills/getting-started/safety-guardrails"
+url = "https://docs.dhanhq.co/markdown/skills/getting-started/safety-guardrails.md"
+rendered = "https://docs.dhanhq.co/skills/getting-started/safety-guardrails"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "9eb8b85c5e697b46f97ce556d5accd9047390eed40a96dc9eb5f35be2d4b1610"
+bytes = 6934
+lines = 149
+export_lines = ["7853-8004"]
+
+[[page]]
+name = "skills"
+url = "https://docs.dhanhq.co/markdown/skills.md"
+rendered = "https://docs.dhanhq.co/skills"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "25652a43483ffc6d1948d307bdbf70968503b0b50398d6774c8ee62eb376c1ba"
+bytes = 10611
+lines = 233
+export_lines = ["8005-8240"]
+
+[[page]]
+name = "skills/overview/compatibility"
+url = "https://docs.dhanhq.co/markdown/skills/overview/compatibility.md"
+rendered = "https://docs.dhanhq.co/skills/overview/compatibility"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "c8f7968bfa00319e9b1c03921610464b672b296e370b8b8985ea6df545b1ccc1"
+bytes = 3090
+lines = 65
+export_lines = ["8241-8308"]
+
+[[page]]
+name = "skills/overview/skill-standard"
+url = "https://docs.dhanhq.co/markdown/skills/overview/skill-standard.md"
+rendered = "https://docs.dhanhq.co/skills/overview/skill-standard"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "335f5abe9f8be0950e969c0964c5e0cb051860eab571cf0257c429647b736e3d"
+bytes = 3868
+lines = 66
+export_lines = ["8309-8377"]
+
+[[page]]
+name = "skills/overview/what-are-skills"
+url = "https://docs.dhanhq.co/markdown/skills/overview/what-are-skills.md"
+rendered = "https://docs.dhanhq.co/skills/overview/what-are-skills"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "a77921a01411255cefe644f37527bbfb1091983139d5bcb062a72e18f01714d2"
+bytes = 2247
+lines = 43
+export_lines = ["8378-8423"]
+
+[[page]]
+name = "cloud/core-concepts/compute-tiers"
+url = "https://docs.dhanhq.co/markdown/cloud/core-concepts/compute-tiers.md"
+rendered = "https://docs.dhanhq.co/cloud/core-concepts/compute-tiers"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "5c2473df66192a54d9df022dbfc88ff89f84ab6060147d67ce121a448e4bc425"
+bytes = 702
+lines = 20
+export_lines = ["8424-8446"]
+
+[[page]]
+name = "cloud/core-concepts/credits"
+url = "https://docs.dhanhq.co/markdown/cloud/core-concepts/credits.md"
+rendered = "https://docs.dhanhq.co/cloud/core-concepts/credits"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "59c1097dbec9bfea38732b54f2bc1f443c155ecc2e79e10bf4aa6ef9c473e80f"
+bytes = 1314
+lines = 29
+export_lines = ["8447-8478"]
+
+[[page]]
+name = "cloud/core-concepts/dependencies"
+url = "https://docs.dhanhq.co/markdown/cloud/core-concepts/dependencies.md"
+rendered = "https://docs.dhanhq.co/cloud/core-concepts/dependencies"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "4a274e023e2f75107bab4d77780d7cbf986659afe9e248e7e5d14ac859ea0528"
+bytes = 1127
+lines = 22
+export_lines = ["8479-8503"]
+
+[[page]]
+name = "cloud/core-concepts/execution-environment"
+url = "https://docs.dhanhq.co/markdown/cloud/core-concepts/execution-environment.md"
+rendered = "https://docs.dhanhq.co/cloud/core-concepts/execution-environment"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "0a3d8d59efc5a22529ab2d557d6358e0355951d261f9c3b83762d9373429c6c8"
+bytes = 2066
+lines = 46
+export_lines = ["8504-8552"]
+
+[[page]]
+name = "cloud/core-concepts/variables"
+url = "https://docs.dhanhq.co/markdown/cloud/core-concepts/variables.md"
+rendered = "https://docs.dhanhq.co/cloud/core-concepts/variables"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "8bb20c8c33fac3ffa1b5d1414022a1dc15229be54652853429a9782d83f1dea3"
+bytes = 1563
+lines = 39
+export_lines = ["8553-8594"]
+
+[[page]]
+name = "cloud/core-concepts/versions"
+url = "https://docs.dhanhq.co/markdown/cloud/core-concepts/versions.md"
+rendered = "https://docs.dhanhq.co/cloud/core-concepts/versions"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "9480dc2a0a28c1b11cee75afeebed281d4476c77f7629c0bc368ef1fb1230c17"
+bytes = 1065
+lines = 20
+export_lines = ["8595-8617"]
+
+[[page]]
+name = "cloud/getting-started"
+url = "https://docs.dhanhq.co/markdown/cloud/getting-started.md"
+rendered = "https://docs.dhanhq.co/cloud/getting-started"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "16c173d877df9104d15e348b17ac38cafc40a6017d6b0dfc3222eb882f0bb440"
+bytes = 4055
+lines = 106
+export_lines = ["8618-8726"]
+
+[[page]]
+name = "cloud"
+url = "https://docs.dhanhq.co/markdown/cloud.md"
+rendered = "https://docs.dhanhq.co/cloud"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "e2b8ce2a80f76dc979969514fb58bf61928606d8b3c8d38c50cf8d931c1fefd2"
+bytes = 1667
+lines = 39
+export_lines = ["8727-8768"]
+
+[[page]]
+name = "cloud/reference/errors"
+url = "https://docs.dhanhq.co/markdown/cloud/reference/errors.md"
+rendered = "https://docs.dhanhq.co/cloud/reference/errors"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "e951352417e6d2a60379fe0f102fa7140ccdd7f05a668e83d35b17026f356f82"
+bytes = 9665
+lines = 334
+export_lines = ["8769-9105"]
+
+[[page]]
+name = "cloud/security/allowed-operations"
+url = "https://docs.dhanhq.co/markdown/cloud/security/allowed-operations.md"
+rendered = "https://docs.dhanhq.co/cloud/security/allowed-operations"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "0bffbda90175b1e268e9b2c34dba2ce1e82decb5ac046d56588beaa8c902e273"
+bytes = 1497
+lines = 36
+export_lines = ["9106-9144"]
+
+[[page]]
+name = "cloud/security/code-scanner"
+url = "https://docs.dhanhq.co/markdown/cloud/security/code-scanner.md"
+rendered = "https://docs.dhanhq.co/cloud/security/code-scanner"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "6ba631afeeaa6dbad52ac660d8d12b8a0effd253082b221035e7a6c327e897ec"
+bytes = 3610
+lines = 110
+export_lines = ["9145-9257"]
+
+[[page]]
+name = "cloud/writing-strategies/dhanhq-sdk"
+url = "https://docs.dhanhq.co/markdown/cloud/writing-strategies/dhanhq-sdk.md"
+rendered = "https://docs.dhanhq.co/cloud/writing-strategies/dhanhq-sdk"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "74bb29a1c8659f470bfe05daa5882b7159cf08091b21d4646da5103701b15aa1"
+bytes = 2377
+lines = 92
+export_lines = ["9258-9352"]
+
+[[page]]
+name = "cloud/writing-strategies"
+url = "https://docs.dhanhq.co/markdown/cloud/writing-strategies.md"
+rendered = "https://docs.dhanhq.co/cloud/writing-strategies"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "8bda565aa682013a15cd5c49cf560c71d45e90c7119dd56bf7ec9e7a54f0b5c9"
+bytes = 1750
+lines = 52
+export_lines = ["9353-9407"]
+
+[[page]]
+name = "cloud/writing-strategies/pine-to-python"
+url = "https://docs.dhanhq.co/markdown/cloud/writing-strategies/pine-to-python.md"
+rendered = "https://docs.dhanhq.co/cloud/writing-strategies/pine-to-python"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "95bd55141066ff89630d2aacbc68f3d31f31b4cb892605f694355c427bab11e2"
+bytes = 3541
+lines = 90
+export_lines = ["9408-9500"]
+
+[[page]]
+name = "mcp/getting-started/first-query"
+url = "https://docs.dhanhq.co/markdown/mcp/getting-started/first-query.md"
+rendered = "https://docs.dhanhq.co/mcp/getting-started/first-query"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "ae9c3b3110135e19834ad0ef555d6d0393291ff6eca02881e0328a24e0c39094"
+bytes = 650
+lines = 27
+export_lines = ["9501-9530"]
+
+[[page]]
+name = "mcp/getting-started/installation"
+url = "https://docs.dhanhq.co/markdown/mcp/getting-started/installation.md"
+rendered = "https://docs.dhanhq.co/mcp/getting-started/installation"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "ced594ab15d7de02e56d8e426519294d2b04e00c4aff7e0ed303874f9a4708d3"
+bytes = 5302
+lines = 167
+export_lines = ["9531-9700"]
+
+[[page]]
+name = "mcp/getting-started/requirements"
+url = "https://docs.dhanhq.co/markdown/mcp/getting-started/requirements.md"
+rendered = "https://docs.dhanhq.co/mcp/getting-started/requirements"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "940523473d5627d7e0c4af4951189c45416717de34921b51d9db219e1bd0d3f2"
+bytes = 678
+lines = 32
+export_lines = ["9701-9735"]
+
+[[page]]
+name = "mcp"
+url = "https://docs.dhanhq.co/markdown/mcp.md"
+rendered = "https://docs.dhanhq.co/mcp"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "ad40e9daa2f727bce375143cef68b10aaff9b712876b6504f8a15777eb805687"
+bytes = 7236
+lines = 205
+export_lines = ["9736-9943"]
+
+[[page]]
+name = "mcp/overview/architecture"
+url = "https://docs.dhanhq.co/markdown/mcp/overview/architecture.md"
+rendered = "https://docs.dhanhq.co/mcp/overview/architecture"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "2dc43b0092bb6f919320091d890ff172371b44bb76e002d967de7f7dac3b56b9"
+bytes = 1904
+lines = 79
+export_lines = ["9944-10025"]
+
+[[page]]
+name = "mcp/overview/what-is-mcp"
+url = "https://docs.dhanhq.co/markdown/mcp/overview/what-is-mcp.md"
+rendered = "https://docs.dhanhq.co/mcp/overview/what-is-mcp"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "39f3151b13c059b6159dcec24cdbeffa9fd65f7933c6c103c237eaf59516644a"
+bytes = 2802
+lines = 59
+export_lines = ["10026-10087"]
+
+[[page]]
+name = "mcp/tools/alerts"
+url = "https://docs.dhanhq.co/markdown/mcp/tools/alerts.md"
+rendered = "https://docs.dhanhq.co/mcp/tools/alerts"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "6900ab6f336330187da540972eafa8534ab6b309aef6210f4716ec41c373fe7a"
+bytes = 827
+lines = 27
+export_lines = ["10088-10117"]
+
+[[page]]
+name = "mcp/tools/margin"
+url = "https://docs.dhanhq.co/markdown/mcp/tools/margin.md"
+rendered = "https://docs.dhanhq.co/mcp/tools/margin"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "a04df470e4d3d6b25bf8b66339296f209a91ef69a9acc3f09b07fe122da5eb64"
+bytes = 366
+lines = 14
+export_lines = ["10118-10134"]
+
+[[page]]
+name = "mcp/tools/market-data"
+url = "https://docs.dhanhq.co/markdown/mcp/tools/market-data.md"
+rendered = "https://docs.dhanhq.co/mcp/tools/market-data"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "87bb346d3ef3aeab2b32fa4fe3fcab73fe2ef55604e452b16f40ff20489d9ebe"
+bytes = 1059
+lines = 36
+export_lines = ["10135-10173"]
+
+[[page]]
+name = "mcp/tools/orders"
+url = "https://docs.dhanhq.co/markdown/mcp/tools/orders.md"
+rendered = "https://docs.dhanhq.co/mcp/tools/orders"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "6094bdb4451a64f32356aa68f7d4cc924c2091069e39ad041d13e353efa590f2"
+bytes = 1390
+lines = 48
+export_lines = ["10174-10224"]
+
+[[page]]
+name = "mcp/tools/portfolio"
+url = "https://docs.dhanhq.co/markdown/mcp/tools/portfolio.md"
+rendered = "https://docs.dhanhq.co/mcp/tools/portfolio"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "e2f0b121eeed7f51ea7c9b6360b4f14fb7ac6d38f7dc8c53089984e7fd47c1dc"
+bytes = 439
+lines = 16
+export_lines = ["10225-10243"]
+
+[[page]]
+name = "mcp/tools/search"
+url = "https://docs.dhanhq.co/markdown/mcp/tools/search.md"
+rendered = "https://docs.dhanhq.co/mcp/tools/search"
+accessed = "2026-09-26T17:02:37Z"
+sha256 = "d15b56b4ac022f0e3eea88ec1b15a3c2c65dfe06920349ddf34d0556fa0ee34e"
+bytes = 477
+lines = 20
+export_lines = ["10244-10263"]
+
+[[legacy]]
+name = "forever"
+url = "https://dhanhq.co/docs/v2/forever/"
+accessed = "2026-09-26T17:02:37Z"
+text_sha256 = "9a5edfacf17def4b4c8e9b738740f98857b7124f0a08ccb8320e0cdf19694c73"  # sha256 of normalised <article> text
+
+[[legacy]]
+name = "market-quote"
+url = "https://dhanhq.co/docs/v2/market-quote/"
+accessed = "2026-09-26T17:06:42Z"
+text_sha256 = "2445394023380ddebf1686b431d52f28b9dae7def898889f54d9c921d70d90e4"
+
+[[legacy]]
+name = "live-market-feed"
+url = "https://dhanhq.co/docs/v2/live-market-feed/"
+accessed = "2026-09-26T17:06:42Z"
+text_sha256 = "a5b1204847d3a4409799967e7f05a60761caecb8128ab717111c24b34df7ecda"
+
+[[legacy]]
+name = "full-market-depth"
+url = "https://dhanhq.co/docs/v2/full-market-depth/"
+accessed = "2026-09-26T17:06:42Z"
+text_sha256 = "934637a6c5872bf72666be21c2a9ce8d9fe0950667c12d602a5fda5d43de0ca5"
