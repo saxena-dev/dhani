@@ -2,6 +2,8 @@
 
 use url::Url;
 
+use crate::error::ConfigError;
+
 /// The DhanHQ environment a client talks to.
 #[non_exhaustive]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
@@ -96,6 +98,48 @@ impl Urls {
             global_scrip_master: fixed(GLOBAL_SCRIP_MASTER),
         }
     }
+
+    /// Checks that every REST and CSV URL uses `https` and every feed URL uses `wss`, each with a
+    /// host. The client builder calls this, so a bad base URL fails at `build()`, not on the
+    /// first request.
+    pub fn validate(&self) -> Result<(), ConfigError> {
+        let https = [
+            ("urls.rest", &self.rest),
+            ("urls.auth", &self.auth),
+            ("urls.scrip_master_compact", &self.scrip_master_compact),
+            ("urls.scrip_master_detailed", &self.scrip_master_detailed),
+            ("urls.global_scrip_master", &self.global_scrip_master),
+        ];
+        let wss = [
+            ("urls.market_feed", &self.market_feed),
+            ("urls.order_update", &self.order_update),
+            ("urls.depth_20", &self.depth_20),
+            ("urls.depth_200", &self.depth_200),
+            ("urls.global_feed", &self.global_feed),
+        ];
+        for (field, url) in https {
+            check_url(field, url, "https", "must use https")?;
+        }
+        for (field, url) in wss {
+            check_url(field, url, "wss", "must use wss")?;
+        }
+        Ok(())
+    }
+}
+
+fn check_url(
+    field: &'static str,
+    url: &Url,
+    scheme: &str,
+    reason: &'static str,
+) -> Result<(), ConfigError> {
+    if url.scheme() != scheme {
+        return Err(ConfigError::new(field, reason));
+    }
+    if url.host_str().is_none_or(str::is_empty) {
+        return Err(ConfigError::new(field, "must have a host"));
+    }
+    Ok(())
 }
 
 #[cfg(test)]
@@ -154,6 +198,33 @@ mod tests {
             u.scrip_master_detailed.as_str(),
             u.global_scrip_master.as_str(),
         ]
+    }
+
+    #[test]
+    fn documented_urls_validate() {
+        assert_eq!(Urls::for_env(Environment::Live).validate(), Ok(()));
+        assert_eq!(Urls::for_env(Environment::Sandbox).validate(), Ok(()));
+    }
+
+    #[test]
+    fn validate_rejects_wrong_schemes() {
+        let mut urls = Urls::for_env(Environment::Live);
+        urls.rest = Url::parse("http://api.dhan.co/v2").unwrap();
+        let err = urls.validate().unwrap_err();
+        assert_eq!((err.field, err.reason), ("urls.rest", "must use https"));
+
+        let mut urls = Urls::for_env(Environment::Live);
+        urls.market_feed = Url::parse("https://api-feed.dhan.co").unwrap();
+        let err = urls.validate().unwrap_err();
+        assert_eq!(
+            (err.field, err.reason),
+            ("urls.market_feed", "must use wss")
+        );
+
+        // `url` refuses https/wss URLs without a host, so a non-special scheme stands in for one.
+        let mut urls = Urls::for_env(Environment::Live);
+        urls.auth = Url::parse("data:text/plain,x").unwrap();
+        assert_eq!(urls.validate().unwrap_err().field, "urls.auth");
     }
 
     #[test]
