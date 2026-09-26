@@ -3,7 +3,7 @@
 //! `types::ids` and `Inbound`; with the `feed` feature also `MarketFeed`, `Instrument`, `Mode`
 //! and `OrderUpdateFeed`.
 //!
-//! The client, error and feed entries join as those parts of the crate land.
+//! The client and feed entries join as those parts of the crate land.
 //!
 //! ```
 //! use dhani::prelude::*;
@@ -24,6 +24,7 @@
 
 pub use crate::config::Environment;
 pub use crate::credentials::{AccessToken, ClientId, Credentials};
+pub use crate::error::{Error, ErrorKind, Result};
 pub use crate::types::{
     AlertId, AmoTime, CorrelationId, ExchangeSegment, ExpiryCode, ExpiryFlag, Inbound,
     InstrumentKind, Isin, LegName, OptionType, OrderId, OrderStatus, OrderType, PositionType,
