@@ -1,0 +1,3 @@
+[submodule "DhanHQ-py"]
+	path = DhanHQ-py
+	url = https://github.com/saxena-dev/DhanHQ-py.git
