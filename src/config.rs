@@ -100,8 +100,8 @@ impl Urls {
     }
 
     /// Checks that every REST and CSV URL uses `https` and every feed URL uses `wss`, each with a
-    /// host. The client builder calls this, so a bad base URL fails at `build()`, not on the
-    /// first request.
+    /// host. Plain `http`/`ws` is accepted only for a loopback host (a local test server). The
+    /// client builder calls this, so a bad base URL fails at `build()`, not on the first request.
     pub fn validate(&self) -> Result<(), ConfigError> {
         let https = [
             ("urls.rest", &self.rest),
@@ -133,7 +133,12 @@ fn check_url(
     scheme: &str,
     reason: &'static str,
 ) -> Result<(), ConfigError> {
-    if url.scheme() != scheme {
+    // Plain http/ws is accepted only for loopback hosts (local test servers).
+    let plain = if scheme == "https" { "http" } else { "ws" };
+    let loopback = matches!(url.host(), Some(url::Host::Ipv4(ip)) if ip.is_loopback())
+        || matches!(url.host(), Some(url::Host::Ipv6(ip)) if ip.is_loopback())
+        || url.host_str() == Some("localhost");
+    if url.scheme() != scheme && !(url.scheme() == plain && loopback) {
         return Err(ConfigError::new(field, reason));
     }
     if url.host_str().is_none_or(str::is_empty) {
@@ -212,6 +217,15 @@ mod tests {
         urls.rest = Url::parse("http://api.dhan.co/v2").unwrap();
         let err = urls.validate().unwrap_err();
         assert_eq!((err.field, err.reason), ("urls.rest", "must use https"));
+
+        // Loopback test servers may use plain http and ws.
+        let mut urls = Urls::for_env(Environment::Live);
+        urls.rest = Url::parse("http://127.0.0.1:8080/v2").unwrap();
+        urls.auth = Url::parse("http://localhost:8080").unwrap();
+        urls.market_feed = Url::parse("ws://[::1]:9000").unwrap();
+        assert_eq!(urls.validate(), Ok(()));
+        urls.rest = Url::parse("http://10.0.0.1/v2").unwrap();
+        assert_eq!(urls.validate().unwrap_err().field, "urls.rest");
 
         let mut urls = Urls::for_env(Environment::Live);
         urls.market_feed = Url::parse("https://api-feed.dhan.co").unwrap();

@@ -41,4 +41,13 @@ fn construction_ignores_the_environment() {
     assert_eq!(sandbox.rest.as_str(), "https://sandbox.dhan.co/v2");
     assert_eq!(non_rest(&sandbox), non_rest(&live));
     assert!(!non_rest(&live).iter().any(|u| u.contains("sentinel")));
+
+    #[cfg(feature = "rest")]
+    {
+        let client = dhani::DhanClient::builder()
+            .build()
+            .expect("default client builds");
+        assert!(client.credentials().is_none());
+        assert_eq!(client.environment(), Environment::Live);
+    }
 }

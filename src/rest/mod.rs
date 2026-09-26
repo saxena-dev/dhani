@@ -14,3 +14,5 @@ mod transport;
     reason = "glob re-export scheme is fixed before the items exist; each glob imports nothing until its module gains public items"
 )]
 pub use self::{api::*, models::*};
+pub use client::{BodyLimits, DhanClient, DhanClientBuilder, RetryPolicy, Timeouts};
+pub use ratelimit::RateLimiter;

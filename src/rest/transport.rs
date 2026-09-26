@@ -680,6 +680,30 @@ impl Transport {
     }
 }
 
+impl Transport {
+    /// Runs any endpoint and returns its body as raw JSON: a CSV body as a JSON string, an
+    /// empty body as `None`. Backs the client's test hook.
+    pub(crate) async fn execute_raw<'a>(
+        &self,
+        credentials: Option<&Credentials>,
+        ep: &'static Endpoint,
+        prepare: impl FnOnce() -> Result<Call<'a>, ValidationError>,
+    ) -> Result<Option<crate::types::RawJson>, Error> {
+        let done = self.run(credentials, ep, prepare).await?;
+        let (attempts, status) = (done.attempts, done.status);
+        let finish = move |e: Error| e.with_attempts(attempts).with_status(status);
+        match done.success {
+            Success::Json(bytes) | Success::JsonOrEmpty(Some(bytes)) => {
+                decode_json(ep, &bytes, &done.redactor)
+                    .map(Some)
+                    .map_err(finish)
+            }
+            Success::Empty | Success::JsonOrEmpty(None) => Ok(None),
+            Success::Csv(text) => Ok(Some(crate::types::RawJson(serde_json::Value::String(text)))),
+        }
+    }
+}
+
 /// A facade called the wrong `execute*` variant for its endpoint; nothing about the response is
 /// reported.
 fn shape_mismatch(ep: &Endpoint, _got: &Success) -> Error {

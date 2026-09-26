@@ -41,6 +41,8 @@ pub mod rest;
 pub use config::Environment;
 pub use credentials::{AccessToken, ClientId, Credentials};
 pub use error::{Error, ErrorKind, Result};
+#[cfg(feature = "rest")]
+pub use rest::{DhanClient, DhanClientBuilder};
 
 #[cfg(doctest)]
 #[doc = include_str!("../README.md")]
