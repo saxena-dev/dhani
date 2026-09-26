@@ -4,3 +4,5 @@ mod events;
 mod metrics;
 mod redact;
 mod spans;
+
+pub use redact::{Redactor, sanitize};
