@@ -33,13 +33,6 @@ pub struct UnknownValue {
 impl UnknownValue {
     const MAX_BYTES: usize = 64;
 
-    #[cfg_attr(
-        not(test),
-        allow(
-            dead_code,
-            reason = "first used by the shared enums in types::common (M1.2); remove this allowance then"
-        )
-    )]
     pub(crate) fn new(raw: &str) -> Self {
         if raw.len() <= Self::MAX_BYTES {
             return Self {
@@ -75,17 +68,9 @@ impl UnknownValue {
 /// back into a `T` for an outbound request:
 ///
 /// ```compile_fail,E0277
-/// use dhani::types::{Inbound, WireEnum};
+/// use dhani::types::{Inbound, OrderStatus};
 ///
-/// #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-/// enum Side { Buy }
-/// impl WireEnum for Side {
-///     const ALL: &'static [Self] = &[Side::Buy];
-///     fn as_wire(self) -> &'static str { "BUY" }
-///     fn from_wire(s: &str) -> Option<Self> { (s == "BUY").then_some(Side::Buy) }
-/// }
-///
-/// let s: Side = Inbound::<Side>::Known(Side::Buy).into();
+/// let s: OrderStatus = Inbound::<OrderStatus>::Known(OrderStatus::Traded).into();
 /// ```
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum Inbound<T> {
@@ -97,13 +82,6 @@ pub enum Inbound<T> {
 
 impl<T: WireEnum> Inbound<T> {
     /// Classifies a wire string: an exact match is `Known`, anything else `Unknown`.
-    #[cfg_attr(
-        not(test),
-        allow(
-            dead_code,
-            reason = "first used by the shared enums in types::common (M1.2); remove this allowance then"
-        )
-    )]
     pub(crate) fn from_wire(s: &str) -> Self {
         match T::from_wire(s) {
             Some(v) => Self::Known(v),
@@ -131,13 +109,6 @@ impl<T: WireEnum> Inbound<T> {
 /// Deserialises an `Inbound<T>` under the inbound policy: a JSON string is classified by
 /// [`Inbound::from_wire`]; a number or bool becomes `Unknown` holding its JSON text; an array,
 /// object or null is an error (null is handled by an enclosing `Option`).
-#[cfg_attr(
-    not(test),
-    allow(
-        dead_code,
-        reason = "first used by the shared enums in types::common (M1.2); remove this allowance then"
-    )
-)]
 pub(crate) fn deserialize_inbound<'de, T: WireEnum, D: Deserializer<'de>>(
     d: D,
 ) -> Result<Inbound<T>, D::Error> {
@@ -185,13 +156,6 @@ pub(crate) fn deserialize_inbound<'de, T: WireEnum, D: Deserializer<'de>>(
 
 /// Deserialises a `T` strictly: only an exact wire string is accepted. The offending text is
 /// not echoed into the error.
-#[cfg_attr(
-    not(test),
-    allow(
-        dead_code,
-        reason = "first used by the shared enums in types::common (M1.2); remove this allowance then"
-    )
-)]
 pub(crate) fn deserialize_strict<'de, T: WireEnum, D: Deserializer<'de>>(
     d: D,
     name: &'static str,
@@ -253,13 +217,6 @@ pub(crate) fn deserialize_strict<'de, T: WireEnum, D: Deserializer<'de>>(
 ///     }
 /// }
 /// ```
-#[cfg_attr(
-    not(test),
-    allow(
-        unused_macros,
-        reason = "first used by the shared enums in types::common (M1.2); remove this allowance then"
-    )
-)]
 macro_rules! wire_enum {
     (
         $(#[$meta:meta])*
@@ -325,10 +282,6 @@ macro_rules! wire_enum {
         }
     };
 }
-#[allow(
-    unused_imports,
-    reason = "the shared enums in types::common are the first users"
-)]
 pub(crate) use wire_enum;
 
 #[cfg(test)]
