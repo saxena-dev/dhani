@@ -235,6 +235,14 @@ crate::types::wire_enum! {
 
 /// Which expiry of a contract series (DOC:4166-4172). Sent as a JSON integer.
 ///
+/// **Unverified encoding (OQ-30).** The documentation's annexure and the rolling-options page
+/// (DOC:814) use 1 = near, 2 = next, 3 = far, which is what this type sends. The OpenAPI spec
+/// describes 0 = current, 1 = next, 2 = far (`OAS:#/components/schemas/ExpiredOptionsRequest`),
+/// and the Python SDK accepts 0 to 3 for daily data (PY:src/dhanhq/_historical_data.py:57) and
+/// documents 0 to 3 for rolling options (PY:src/dhanhq/_historical_data.py:86). If the OpenAPI
+/// reading is the live behaviour, `Near` selects the next expiry. The encoding stays as
+/// documented until it is checked against the live API.
+///
 /// Its wire text is the decimal code (`"1"`, `"2"`, `"3"`). When received as
 /// `Inbound<ExpiryCode>`, a JSON string such as `"1"` is known, while a JSON number is kept as
 /// `Unknown` holding its text, like every numeric enum value (see [`Inbound`]).
