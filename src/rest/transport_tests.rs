@@ -633,9 +633,9 @@ async fn an_oversized_response_body_is_refused() {
         .unwrap_err();
     assert_eq!(
         (err.kind(), err.stage(), err.http_status()),
-        (ErrorKind::Transport, Stage::ResponseReceived, Some(200))
+        (ErrorKind::Decode, Stage::ResponseReceived, Some(200))
     );
-    assert_eq!(err.detail(), Some("response body exceeds 4 bytes"));
+    assert_eq!(err.detail(), Some("response body exceeds its bound"));
 }
 
 #[tokio::test]
@@ -654,4 +654,46 @@ async fn decode_failures_report_attempts_and_status() {
         (err.kind(), err.attempts(), err.http_status()),
         (ErrorKind::Decode, 1, Some(200))
     );
+}
+
+/// Sends the response head and part of the body, then holds the connection open.
+async fn stalling_body_server() -> url::Url {
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let addr = listener.local_addr().unwrap();
+    tokio::spawn(async move {
+        let (mut socket, _) = listener.accept().await.unwrap();
+        let mut buf = vec![0u8; 16 * 1024];
+        // The request head fits one read; its content is irrelevant here.
+        let _ = socket.read(&mut buf).await.unwrap();
+        socket
+            .write_all(b"HTTP/1.1 200 OK\r\ncontent-type: application/json\r\ncontent-length: 10\r\n\r\n[1,")
+            .await
+            .unwrap();
+        // Hold the connection until the test ends.
+        std::future::pending::<()>().await;
+    });
+    url::Url::parse(&format!("http://{addr}/v2")).unwrap()
+}
+
+// real-time: a paused clock auto-advances while the client waits on the socket, so the timeout
+// could fire before the response head is read. A 1 s attempt bound leaves a wide margin.
+#[tokio::test]
+async fn a_body_that_stalls_after_the_status_is_not_retried() {
+    let base = stalling_body_server().await;
+    let mut t = loopback(base);
+    t.settings.attempt_timeout = std::time::Duration::from_secs(1);
+    let err = t
+        .execute::<serde_json::Value>(Some(&credentials()), by_id(EndpointId::OrdersList), || {
+            Ok(Call::empty())
+        })
+        .await
+        .unwrap_err();
+    assert_eq!(
+        (err.kind(), err.stage(), err.http_status()),
+        (ErrorKind::Timeout, Stage::ResponseReceived, Some(200))
+    );
+    assert!(err.is_timeout());
+    assert_eq!(err.attempts(), 1);
+    assert_eq!(err.detail(), None);
 }

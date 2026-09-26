@@ -539,7 +539,6 @@ impl Transport {
                 None,
             ));
         }
-        let budget = self.settings.attempt_timeout.min(deadline - now);
         let request = self.build(p).map_err(|e| {
             (
                 Error::new(ErrorKind::Transport, Stage::NotSent)
@@ -557,7 +556,9 @@ impl Transport {
                 Some(Cause::Timeout),
             )
         };
-        let exchange = async {
+        // One deadline bounds the send and the body read together, never past the operation.
+        let attempt_deadline = (Instant::now() + self.settings.attempt_timeout).min(deadline);
+        let send = async {
             let response = self.http.execute(request).await.map_err(|e| {
                 // Only a connect failure proves the request never left the process.
                 let stage = if e.is_connect() {
@@ -580,17 +581,32 @@ impl Transport {
                     Some(cause),
                 )
             })?;
-            let status = response.status().as_u16();
-            let retry_after = response
-                .headers()
-                .get(RETRY_AFTER)
-                .and_then(|v| retry::parse_retry_after(v, std::time::SystemTime::now()));
-            let bytes = read_bounded(ep, response, self.max_body(ep)).await?;
-            Ok((status, retry_after, bytes))
+            Ok(response)
         };
-        let (status, retry_after, bytes) = tokio::time::timeout(budget, exchange)
+        let response = tokio::time::timeout_at(attempt_deadline, send)
             .await
             .map_err(|_| timed_out())??;
+        let status = response.status().as_u16();
+        let retry_after = response
+            .headers()
+            .get(RETRY_AFTER)
+            .and_then(|v| retry::parse_retry_after(v, std::time::SystemTime::now()));
+        // A response has arrived: a body that stalls past the attempt deadline is reported with
+        // its status and is not retried.
+        let bytes = tokio::time::timeout_at(
+            attempt_deadline,
+            read_bounded(ep, response, self.max_body(ep)),
+        )
+        .await
+        .map_err(|_| {
+            (
+                Error::new(ErrorKind::Timeout, Stage::ResponseReceived)
+                    .with_endpoint(ep.id)
+                    .with_status(status)
+                    .timed_out(),
+                None,
+            )
+        })??;
         classify(ep, status, bytes, redactor)
             .map(|s| (s, status))
             .map_err(|error| {
@@ -725,13 +741,10 @@ async fn read_bounded(
     let status = response.status().as_u16();
     let too_large = || {
         (
-            Error::new(ErrorKind::Transport, Stage::ResponseReceived)
+            Error::new(ErrorKind::Decode, Stage::ResponseReceived)
                 .with_endpoint(ep.id)
                 .with_status(status)
-                .with_detail(
-                    &Redactor::new(),
-                    &format!("response body exceeds {max} bytes"),
-                ),
+                .with_detail(&Redactor::new(), "response body exceeds its bound"),
             None,
         )
     };
