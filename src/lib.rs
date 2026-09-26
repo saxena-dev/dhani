@@ -22,7 +22,7 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![warn(missing_docs)]
 
-pub mod backoff;
+mod backoff;
 pub mod config;
 pub mod credentials;
 pub mod error;
@@ -37,6 +37,9 @@ pub mod decoder;
 pub mod feed;
 #[cfg(feature = "rest")]
 pub mod rest;
+
+pub use config::Environment;
+pub use credentials::{AccessToken, ClientId, Credentials};
 
 #[cfg(doctest)]
 #[doc = include_str!("../README.md")]

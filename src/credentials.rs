@@ -13,7 +13,7 @@
 //!
 //! ```compile_fail,E0277
 //! fn needs<T: serde::Serialize>() {}
-//! needs::<dhani::credentials::Credentials>();
+//! needs::<dhani::Credentials>();
 //! ```
 
 use std::fmt;
