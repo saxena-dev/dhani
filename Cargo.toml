@@ -1,0 +1,10 @@
+[package]
+name = "dhani"
+version = "0.0.0"
+edition = "2024"
+authors = ["Paresh Saxena <pareshsaxena@gmail.com>"]
+description = "Asynchronous client library for DhanHQ trading API"
+license = "MIT"
+repository = "https://github.com/saxena-dev/dhani"
+keywords = ["dhanhq", "trading", "broker", "websocket"]
+categories = ["api-bindings", "finance", "asynchronous"]
