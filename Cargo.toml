@@ -218,4 +218,6 @@ required-features = ["live-tests"]
 [[bench]]
 name = "overhead"
 harness = false
+# Also built (and its smoke mode run) by plain `cargo test`, not only `cargo test --benches`.
+test = true
 required-features = ["rest"]
