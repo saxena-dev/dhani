@@ -79,3 +79,143 @@ metrics-util = "0.20.4"
 sha2 = "0.10.9"
 hex = "0.4.3"
 toml = "1"
+
+# Every integration test target declares the features it needs, so each feature row can run
+# `cargo test` over exactly the targets it supports.
+
+[[test]]
+name = "rest_orders"
+required-features = ["rest"]
+
+[[test]]
+name = "rest_super_orders"
+required-features = ["rest"]
+
+[[test]]
+name = "rest_forever_orders"
+required-features = ["rest"]
+
+[[test]]
+name = "rest_conditional"
+required-features = ["rest"]
+
+[[test]]
+name = "rest_portfolio"
+required-features = ["rest"]
+
+[[test]]
+name = "rest_funds"
+required-features = ["rest"]
+
+[[test]]
+name = "rest_statements"
+required-features = ["rest"]
+
+[[test]]
+name = "rest_trader_control"
+required-features = ["rest"]
+
+[[test]]
+name = "rest_edis"
+required-features = ["rest"]
+
+[[test]]
+name = "rest_market_quote"
+required-features = ["rest"]
+
+[[test]]
+name = "rest_historical"
+required-features = ["rest"]
+
+[[test]]
+name = "rest_option_chain"
+required-features = ["rest"]
+
+[[test]]
+name = "rest_instruments"
+required-features = ["rest", "instruments"]
+
+[[test]]
+name = "rest_account"
+required-features = ["rest"]
+
+[[test]]
+name = "rest_auth"
+required-features = ["rest"]
+
+[[test]]
+name = "rest_global"
+required-features = ["rest"]
+
+[[test]]
+name = "rest_transport"
+required-features = ["rest"]
+
+[[test]]
+name = "rest_errors"
+required-features = ["rest"]
+
+[[test]]
+name = "rate_limit"
+required-features = ["rest"]
+
+[[test]]
+name = "decoder_market"
+required-features = ["decoder"]
+
+[[test]]
+name = "decoder_depth"
+required-features = ["decoder"]
+
+[[test]]
+name = "decoder_global"
+required-features = ["decoder"]
+
+[[test]]
+name = "decoder_order_update"
+required-features = ["decoder"]
+
+[[test]]
+name = "decoder_props"
+required-features = ["decoder"]
+
+[[test]]
+name = "feed_lifecycle"
+required-features = ["feed"]
+
+[[test]]
+name = "feed_subscriptions"
+required-features = ["feed"]
+
+[[test]]
+name = "feed_backpressure"
+required-features = ["feed"]
+
+[[test]]
+name = "feed_order_update"
+required-features = ["feed"]
+
+[[test]]
+name = "observability"
+required-features = ["rest"]
+
+[[test]]
+name = "fixture_manifest"
+
+[[test]]
+name = "references"
+
+[[test]]
+name = "public_surface"
+
+[[test]]
+name = "no_environment"
+
+[[test]]
+name = "live"
+required-features = ["live-tests"]
+
+[[bench]]
+name = "overhead"
+harness = false
+required-features = ["rest"]

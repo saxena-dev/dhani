@@ -1,0 +1,3 @@
+# Fixture manifest: one [[fixture]] entry per file used by any test (upstream, synthesized,
+# derived or captured), with its path, class, origin, sha256, byte length and endpoint row ids.
+# tests/fixture_manifest.rs verifies every entry against the files on disk.
