@@ -1,0 +1,8 @@
+{
+    "clientId": "1000000401",
+    "isin": "INE00IN01015",
+    "totalQty": 10,
+    "aprvdQty": 4,
+    "status": "SUCCESS",
+    "remarks": "eDIS transaction done successfully"
+}

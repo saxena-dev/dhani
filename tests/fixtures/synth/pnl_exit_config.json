@@ -1,0 +1,7 @@
+{
+    "pnlExitStatus": "ACTIVE",
+    "profit": "1500.00",
+    "loss": "500.00",
+    "productType": ["INTRADAY", "DELIVERY"],
+    "enable_kill_switch": true
+}

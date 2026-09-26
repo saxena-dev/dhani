@@ -1,3 +1,421 @@
 # Fixture manifest: one [[fixture]] entry per file used by any test (upstream, synthesized,
 # derived or captured), with its path, class, origin, sha256, byte length and endpoint row ids.
 # tests/fixture_manifest.rs verifies every entry against the files on disk.
+
+[[fixture]]
+path = "DhanHQ-py/tests/data/place_order.json"
+class = "upstream"
+origin = "DhanHQ-py@63b9030d700f0fd331c124fd948ba0b79a6e7fd8"
+sha256 = "aade2b9ba90c32a7b60d9a7c31404148a173f1670d012be440c8a24280ca9b53"
+bytes = 120
+endpoint = "O1"
+
+[[fixture]]
+path = "DhanHQ-py/tests/data/place_slice_order.json"
+class = "upstream"
+origin = "DhanHQ-py@63b9030d700f0fd331c124fd948ba0b79a6e7fd8"
+sha256 = "8f943bc92c2fa9026e89b024a1757ac1a68fd9e45bab77cf7a6c9d374e934145"
+bytes = 138
+endpoint = "O2"
+
+[[fixture]]
+path = "DhanHQ-py/tests/data/modify_pending_order.json"
+class = "upstream"
+origin = "DhanHQ-py@63b9030d700f0fd331c124fd948ba0b79a6e7fd8"
+sha256 = "aade2b9ba90c32a7b60d9a7c31404148a173f1670d012be440c8a24280ca9b53"
+bytes = 120
+endpoint = "O3"
+
+[[fixture]]
+path = "DhanHQ-py/tests/data/cancel_given_order.json"
+class = "upstream"
+origin = "DhanHQ-py@63b9030d700f0fd331c124fd948ba0b79a6e7fd8"
+sha256 = "aade2b9ba90c32a7b60d9a7c31404148a173f1670d012be440c8a24280ca9b53"
+bytes = 120
+endpoint = "O4"
+
+[[fixture]]
+path = "DhanHQ-py/tests/data/get-current-orders-list.json"
+class = "upstream"
+origin = "DhanHQ-py@63b9030d700f0fd331c124fd948ba0b79a6e7fd8"
+sha256 = "cbf218e1875829578219831917ea619234730b087b5a6ec24dfae87751e325d0"
+bytes = 1052
+endpoint = "O5"
+
+[[fixture]]
+path = "DhanHQ-py/tests/data/get-order-by-id.json"
+class = "upstream"
+origin = "DhanHQ-py@63b9030d700f0fd331c124fd948ba0b79a6e7fd8"
+sha256 = "d31c8c9401a1dbe2a45599943ade6d8d757966f44df15399cfd4711eba1799b2"
+bytes = 1140
+endpoint = "O6"
+
+[[fixture]]
+path = "DhanHQ-py/tests/data/get-order-by-correlation-id.json"
+class = "upstream"
+origin = "DhanHQ-py@63b9030d700f0fd331c124fd948ba0b79a6e7fd8"
+sha256 = "d31c8c9401a1dbe2a45599943ade6d8d757966f44df15399cfd4711eba1799b2"
+bytes = 1140
+endpoint = "O7"
+
+[[fixture]]
+path = "DhanHQ-py/tests/data/get_all_trades.json"
+class = "upstream"
+origin = "DhanHQ-py@63b9030d700f0fd331c124fd948ba0b79a6e7fd8"
+sha256 = "05b45a5734dae88845d24ddc0f8337edb242a066770b59b6522788edb6ca5cf8"
+bytes = 677
+endpoint = "O8"
+
+[[fixture]]
+path = "DhanHQ-py/tests/data/get_trade_book_by_orderid.json"
+class = "upstream"
+origin = "DhanHQ-py@63b9030d700f0fd331c124fd948ba0b79a6e7fd8"
+sha256 = "05b45a5734dae88845d24ddc0f8337edb242a066770b59b6522788edb6ca5cf8"
+bytes = 677
+endpoint = "O9"
+
+[[fixture]]
+path = "DhanHQ-py/tests/data/get-forever-orders-list.json"
+class = "upstream"
+origin = "DhanHQ-py@63b9030d700f0fd331c124fd948ba0b79a6e7fd8"
+sha256 = "2e5b3e2f3765dd5d94926e0b4d6b893052f725e9156196a528351c2cbcc0ed15"
+bytes = 652
+endpoint = "F4"
+
+[[fixture]]
+path = "DhanHQ-py/tests/data/get-current-holdings.json"
+class = "upstream"
+origin = "DhanHQ-py@63b9030d700f0fd331c124fd948ba0b79a6e7fd8"
+sha256 = "08eec0b6d9fa071ca82e322f511b0e4e7e60177c689db99dfd05908b76784d1e"
+bytes = 361
+endpoint = "P1"
+
+[[fixture]]
+path = "DhanHQ-py/tests/data/get_positions.json"
+class = "upstream"
+origin = "DhanHQ-py@63b9030d700f0fd331c124fd948ba0b79a6e7fd8"
+sha256 = "7e6140640dec8e0bbe5465d3b01c3d392e0c2d805e5e5735854f9787210e53b4"
+bytes = 864
+endpoint = "P2"
+
+[[fixture]]
+path = "DhanHQ-py/tests/data/convert_position.json"
+class = "upstream"
+origin = "DhanHQ-py@63b9030d700f0fd331c124fd948ba0b79a6e7fd8"
+sha256 = "12fc9eb6893293f56fbc8b91c8fc6a959c293d96d599ae40db8c26cb411f0503"
+bytes = 60
+endpoint = "P3"
+
+[[fixture]]
+path = "DhanHQ-py/tests/data/get_fund_limits.json"
+class = "upstream"
+origin = "DhanHQ-py@63b9030d700f0fd331c124fd948ba0b79a6e7fd8"
+sha256 = "645a8346bf66aa3e97f829063f309554904ff244b2b4d3551adac7adcdf3ba0b"
+bytes = 434
+endpoint = "M1"
+
+[[fixture]]
+path = "DhanHQ-py/tests/data/margin_calculator.json"
+class = "upstream"
+origin = "DhanHQ-py@63b9030d700f0fd331c124fd948ba0b79a6e7fd8"
+sha256 = "4d0f163e27e2e5cb149d672a528741b82c5d09e3fdf4f90f59dbba2453372e3c"
+bytes = 414
+endpoint = "M2"
+
+[[fixture]]
+path = "DhanHQ-py/tests/data/get_ledger_report.json"
+class = "upstream"
+origin = "DhanHQ-py@63b9030d700f0fd331c124fd948ba0b79a6e7fd8"
+sha256 = "3521cfb4a56d3e8678981dbb4494b242f01a41f7883d4fb79790c8cf406aa3ad"
+bytes = 315
+endpoint = "T1"
+
+[[fixture]]
+path = "DhanHQ-py/tests/data/get_trade_history.json"
+class = "upstream"
+origin = "DhanHQ-py@63b9030d700f0fd331c124fd948ba0b79a6e7fd8"
+sha256 = "28394c37cdeafeeac81e75ed57b6100d2ba211a214b612b3535ac062fbd76a45"
+bytes = 854
+endpoint = "T2"
+
+[[fixture]]
+path = "DhanHQ-py/tests/data/historical_daily_data.json"
+class = "upstream"
+origin = "DhanHQ-py@63b9030d700f0fd331c124fd948ba0b79a6e7fd8"
+sha256 = "3ad19773a4759848fd2ace31deb2b45b27512faec4d2eb324ad258c0595d8d23"
+bytes = 62
+endpoint = "H1"
+
+[[fixture]]
+path = "DhanHQ-py/tests/data/intraday_minute_data.json"
+class = "upstream"
+origin = "DhanHQ-py@63b9030d700f0fd331c124fd948ba0b79a6e7fd8"
+sha256 = "501bd7f739bb4da812addd57c114e88f530f2bca7bd15d18ee985ff8207e8423"
+bytes = 63
+endpoint = "H2"
+
+[[fixture]]
+path = "DhanHQ-py/tests/data/expired_options_data.json"
+class = "upstream"
+origin = "DhanHQ-py@63b9030d700f0fd331c124fd948ba0b79a6e7fd8"
+sha256 = "3ad19773a4759848fd2ace31deb2b45b27512faec4d2eb324ad258c0595d8d23"
+bytes = 62
+endpoint = "H3"
+
+[[fixture]]
+path = "DhanHQ-py/tests/data/option_chain.json"
+class = "upstream"
+origin = "DhanHQ-py@63b9030d700f0fd331c124fd948ba0b79a6e7fd8"
+sha256 = "49da139d661ebd5efce2dae23b42e2bd1691234b61414d14bf279a2e3efa1867"
+bytes = 180
+endpoint = "X1"
+
+[[fixture]]
+path = "DhanHQ-py/tests/data/security_list.json"
+class = "upstream"
+origin = "DhanHQ-py@63b9030d700f0fd331c124fd948ba0b79a6e7fd8"
+sha256 = "505c7849e8acd4d71bb0789ef004c1c1cdcc835a9d6652a5ed5d6655b1ae806c"
+bytes = 309
+endpoint = "I1"
+
+[[fixture]]
+path = "tests/fixtures/synth/auth_consent.json"
+class = "synthesized"
+origin = "DOC:4367-4411"
+method = "field-table"
+sha256 = "c1d87072244b6374dfafe3026806500caf6746f50575f23500ead4e707a25acf"
+bytes = 72
+endpoint = "A1"
+note = "status value from PY:src/dhanhq/auth.py:40"
+
+[[fixture]]
+path = "tests/fixtures/synth/auth_partner_consent.json"
+class = "synthesized"
+origin = "DOC:4569-4602"
+method = "field-table"
+sha256 = "4dbadb81c83d5871cc7a812d70083c7019f272981201aa2f1490a93343b57628"
+bytes = 47
+endpoint = "A3"
+
+[[fixture]]
+path = "tests/fixtures/synth/auth_issued_token.json"
+class = "synthesized"
+origin = "DOC:4413-4450"
+method = "field-table"
+sha256 = "a733e4ca6eafe2da871f8d8edd875cdd750d52fd81d423a21488f90f6fe968c1"
+bytes = 232
+endpoint = "A2,A4,A5,A6"
+note = "accessToken is a JWT-shaped sentinel"
+
+[[fixture]]
+path = "tests/fixtures/synth/profile.json"
+class = "synthesized"
+origin = "DOC:4870-4879"
+method = "field-table"
+sha256 = "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+bytes = 2
+endpoint = "A7"
+note = "no response fields documented"
+
+[[fixture]]
+path = "tests/fixtures/synth/ip_ack.json"
+class = "synthesized"
+origin = "DOC:4644-4684"
+method = "field-table"
+sha256 = "ea9fe30c2835003ddcd8b51fa33691c8ad8fdf3f7dbc451aaa875a212cb2691b"
+bytes = 38
+endpoint = "A8,A9"
+
+[[fixture]]
+path = "tests/fixtures/synth/ip_info.json"
+class = "synthesized"
+origin = "DOC:4452-4479"
+method = "field-table"
+sha256 = "6ff0087150630b2acdebfae17ac8329ad3d14a30cba6f6e099458a69c7f0478d"
+bytes = 131
+endpoint = "A10"
+
+[[fixture]]
+path = "tests/fixtures/synth/order_ack.json"
+class = "synthesized"
+origin = "DOC:3743-3749"
+method = "field-table"
+sha256 = "77cb0e12f7cd0ff77868f0be9cfb7047f5c34966b672e17aab7ed2a4fca63c17"
+bytes = 44
+endpoint = "S1,S2,S3"
+
+[[fixture]]
+path = "tests/fixtures/synth/empty"
+class = "synthesized"
+origin = "DOC:293,DOC:560,DOC:177,DOC:5141"
+method = "empty-body"
+sha256 = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+bytes = 0
+endpoint = "S3,P3,P4,E1"
+note = "zero-byte body served with status 202"
+
+[[fixture]]
+path = "tests/fixtures/synth/alert_ack.json"
+class = "synthesized"
+origin = "DOC:4979-4984"
+method = "verbatim"
+sha256 = "19b26248fd264b7fed22404ee4fc00fa53d7ee89843e2dd4c1fbcd0186b0f749"
+bytes = 52
+endpoint = "C1,C2"
+
+[[fixture]]
+path = "tests/fixtures/synth/alert_ack_cancelled.json"
+class = "synthesized"
+origin = "DOC:5027-5032"
+method = "verbatim"
+sha256 = "86a866eefbc73a0837afa054f38e7176ee27a47e63597a282d77d1aae9821df8"
+bytes = 55
+endpoint = "C3"
+
+[[fixture]]
+path = "tests/fixtures/synth/conditional_order.json"
+class = "synthesized"
+origin = "DOC:5049-5083"
+method = "verbatim"
+sha256 = "7395860c15717e3fb90da040274674b9c7275b6f53c66436f87a13cd3f54c77f"
+bytes = 787
+endpoint = "C4"
+
+[[fixture]]
+path = "tests/fixtures/synth/conditional_order_list.json"
+class = "derived"
+origin = "DOC:5097-5111"
+method = "derived"
+sha256 = "f25445b6c89c7c65b4d3fc7f52e7ae2b840e7ece8276dc2e05c1ada059e23136"
+bytes = 791
+endpoint = "C5"
+note = "an array holding conditional_order.json"
+
+[[fixture]]
+path = "tests/fixtures/synth/multi_margin.json"
+class = "synthesized"
+origin = "DOC:102-111"
+method = "field-table"
+sha256 = "1cf150169aa9990ece82c3904f98b7436e82c9022a05f734b107c06e909773a9"
+bytes = 136
+endpoint = "M3"
+
+[[fixture]]
+path = "tests/fixtures/synth/holding_mtf.json"
+class = "synthesized"
+origin = "DOC:950-963"
+method = "field-table"
+sha256 = "d28a1c3b94e4ad890ed121ec8bb5ac2c06812d33313c0355699d6e0cd88b307c"
+bytes = 219
+endpoint = "P1"
+note = "MTF holding for the portfolio holdings tests; the upstream holdings fixture lacks MTF fields"
+
+[[fixture]]
+path = "tests/fixtures/synth/killswitch_ack.json"
+class = "synthesized"
+origin = "DOC:7073-7078"
+method = "verbatim"
+sha256 = "2a24d359ac17f304cc207bee875449dd48857af8a1a35702de3dd92446f02428"
+bytes = 108
+endpoint = "K1"
+
+[[fixture]]
+path = "tests/fixtures/synth/killswitch_state.json"
+class = "synthesized"
+origin = "DOC:7096-7101"
+method = "verbatim"
+sha256 = "80b5a8c898604fb1f5a38277837a4e07e87af42c994eb4ccc3131217e0fd3c5f"
+bytes = 73
+endpoint = "K2"
+
+[[fixture]]
+path = "tests/fixtures/synth/pnl_exit_ack.json"
+class = "synthesized"
+origin = "DOC:7142-7147"
+method = "verbatim"
+sha256 = "e7ec61fe959ffe71488b81c03e431ff0d7178652a4d80ba3aae9952472cda147"
+bytes = 91
+endpoint = "K3"
+
+[[fixture]]
+path = "tests/fixtures/synth/pnl_exit_config.json"
+class = "synthesized"
+origin = "DOC:7188-7196"
+method = "verbatim"
+sha256 = "61f8556c5e1a70015ce0280e191b4348bf1a30f25bb4bc8641cfc35979aa4f84"
+bytes = 158
+endpoint = "K4"
+
+[[fixture]]
+path = "tests/fixtures/synth/pnl_exit_stopped.json"
+class = "synthesized"
+origin = "DOC:7166-7171"
+method = "verbatim"
+sha256 = "68fdac3f4d3e7827b09a3c7bb372f69d279c99cb8a59ae1cdc78ce80f3c114e7"
+bytes = 90
+endpoint = "K5"
+
+[[fixture]]
+path = "tests/fixtures/synth/tpin_ack.json"
+class = "synthesized"
+origin = "DOC:659-663"
+method = "field-table"
+sha256 = "231f88b3c559dfc8ae31aa7144c0c9fd1e06d2750198373fc5bd14385e6da075"
+bytes = 67
+endpoint = "E1"
+
+[[fixture]]
+path = "tests/fixtures/synth/edis_form.json"
+class = "synthesized"
+origin = "DOC:5172-5177"
+method = "verbatim"
+sha256 = "1d4ae34e28b5fbce1d810223643298ad8882d1987960448079f2912e9a7b39f6"
+bytes = 93
+endpoint = "E2,E3"
+
+[[fixture]]
+path = "tests/fixtures/synth/edis_status.json"
+class = "synthesized"
+origin = "DOC:5199-5208"
+method = "verbatim"
+sha256 = "caddf0cc69332985a9140517b46bb4857d105f6b9b5b14289ccc833e2bb0563b"
+bytes = 178
+endpoint = "E4"
+
+[[fixture]]
+path = "tests/fixtures/synth/candles.json"
+class = "synthesized"
+origin = "DOC:768-774"
+method = "field-table"
+sha256 = "3c56e352ce861e737b5eba3c071cffed59d029776923f477271f087a6a18adec"
+bytes = 148
+endpoint = "H1,H2"
+note = "columnar shape of DOC:5383-5399 [OQ-5]"
+
+[[fixture]]
+path = "tests/fixtures/synth/rolling_option.json"
+class = "synthesized"
+origin = "DOC:5382-5400"
+method = "verbatim"
+sha256 = "ccc0784e433e0504ca891d68ed0c00a3366c2e2dfb602646f51991cf4795cb95"
+bytes = 346
+endpoint = "H3"
+
+[[fixture]]
+path = "tests/fixtures/synth/expiry_list.json"
+class = "synthesized"
+origin = "DOC:878"
+method = "field-table"
+sha256 = "08d73e5f119cf76691bb4e61cb0009f1ac9a2303166853e4c9f9015400173bdb"
+bytes = 36
+endpoint = "X2"
+
+[[fixture]]
+path = "tests/fixtures/synth/order_update.json"
+class = "synthesized"
+origin = "DOC:6119-6170"
+method = "verbatim"
+sha256 = "8d6b1a4756e99260877447281b8da903814d53dc4121c3f0ad3a5a2097d715fa"
+bytes = 1407
+endpoint = "W2"
+note = "keeps the duplicate Remarks key"
