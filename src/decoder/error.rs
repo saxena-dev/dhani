@@ -1,0 +1,1 @@
+//! `DecodeError` and `DecodeErrorKind`.

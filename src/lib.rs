@@ -31,6 +31,13 @@ pub mod obs;
 pub mod prelude;
 pub mod types;
 
+#[cfg(feature = "decoder")]
+pub mod decoder;
+#[cfg(feature = "feed")]
+pub mod feed;
+#[cfg(feature = "rest")]
+pub mod rest;
+
 #[cfg(doctest)]
 #[doc = include_str!("../README.md")]
 pub struct ReadmeDoctests;
