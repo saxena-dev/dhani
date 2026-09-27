@@ -13,6 +13,8 @@ use support::mock::{ACCESS_TOKEN, CLIENT_ID, client_for, expect_headers, urls_fo
 use wiremock::matchers::{header, method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
+/// The token the mock issues, distinct from the sentinel the other tests authenticate with.
+const ROTATED: &str = "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJST1RBVEVEIn0.Uk9UQVRFRC1TSUc";
 const ISSUED: &str = "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJTRU5USU5FTC1KV1QifQ.U0VOVElORUwtU0lHTkFUVVJF";
 
 fn json_reply(body: Vec<u8>) -> ResponseTemplate {
@@ -91,7 +93,7 @@ async fn a_generated_token_rotates_into_the_client_and_renews() {
     Mock::given(method("POST"))
         .and(path("/app/generateAccessToken"))
         .respond_with(json_reply(
-            serde_json::to_vec(&json!({"dhanClientId": CLIENT_ID, "accessToken": ACCESS_TOKEN}))
+            serde_json::to_vec(&json!({"dhanClientId": CLIENT_ID, "accessToken": ROTATED}))
                 .unwrap(),
         ))
         .expect(1)
@@ -99,7 +101,8 @@ async fn a_generated_token_rotates_into_the_client_and_renews() {
         .await;
     Mock::given(method("GET"))
         .and(path("/v2/RenewToken"))
-        .and(expect_headers())
+        // The renewal carries the rotated token, not the sentinel.
+        .and(header("access-token", ROTATED))
         .and(header("dhanClientId", CLIENT_ID))
         .respond_with(json_reply(synth("auth_issued_token.json")))
         .expect(1)
@@ -125,5 +128,56 @@ async fn a_generated_token_rotates_into_the_client_and_renews() {
     assert!(rotated.rate_limiter().ptr_eq(anonymous.rate_limiter()));
     let renewed = rotated.account().renew_token().await.unwrap();
     assert_eq!(renewed.access_token.expose_secret(), ISSUED);
+    assert_eq!(server.received_requests().await.unwrap().len(), 2);
+}
+
+/// Runs `call` on the paused clock, advancing 100 ms whenever it is waiting (retry backoff).
+async fn drive<T: Send + 'static>(
+    call: impl std::future::Future<Output = T> + Send + 'static,
+) -> T {
+    let task = tokio::spawn(call);
+    for _ in 0..20_000 {
+        for _ in 0..64 {
+            if task.is_finished() {
+                return task.await.unwrap();
+            }
+            tokio::task::yield_now().await;
+        }
+        tokio::time::advance(std::time::Duration::from_millis(100)).await;
+    }
+    panic!("the call did not finish");
+}
+
+async fn unavailable_then_ok(route: &str) -> MockServer {
+    let server = MockServer::start().await;
+    Mock::given(method("GET"))
+        .and(path(route))
+        .respond_with(ResponseTemplate::new(503))
+        .up_to_n_times(1)
+        .mount(&server)
+        .await;
+    Mock::given(method("GET"))
+        .and(path(route))
+        .respond_with(json_reply(synth("auth_issued_token.json")))
+        .mount(&server)
+        .await;
+    server
+}
+
+#[tokio::test(start_paused = true)]
+async fn renew_is_never_retried_but_profile_is() {
+    let server = unavailable_then_ok("/v2/RenewToken").await;
+    let client = client_for(&server);
+    let err = drive(async move { client.account().renew_token().await })
+        .await
+        .unwrap_err();
+    assert_eq!((err.http_status(), err.attempts()), (Some(503), 1));
+    assert_eq!(server.received_requests().await.unwrap().len(), 1);
+
+    let server = unavailable_then_ok("/v2/profile").await;
+    let client = client_for(&server);
+    drive(async move { client.account().profile().await })
+        .await
+        .unwrap();
     assert_eq!(server.received_requests().await.unwrap().len(), 2);
 }
