@@ -6,7 +6,6 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use futures_util::FutureExt;
-use secrecy::SecretString;
 use tokio::sync::mpsc;
 use tracing::Instrument;
 
@@ -57,7 +56,8 @@ impl<P: FeedProtocol> FeedBuilder<P> {
         }
     }
 
-    /// Connects to `url` instead of the documented endpoint (`ws://` is allowed, for tests).
+    /// Connects to `url` instead of the documented endpoint (`ws://` is allowed, for tests). Feeds
+    /// that authenticate in the query string add their credentials to it.
     pub fn url(mut self, url: url::Url) -> Self {
         self.url = Some(url);
         self
@@ -94,7 +94,7 @@ impl<P: FeedProtocol> FeedBuilder<P> {
         self.limits.validate().map_err(FeedSpawnError::Config)?;
         let url = match &self.url {
             Some(url) if matches!(url.scheme(), "ws" | "wss") && url.host().is_some() => {
-                SecretString::from(url.as_str())
+                self.protocol.url_for(url)
             }
             Some(_) => return Err(FeedSpawnError::InvalidUrl),
             None if self.endpoint_available => self.protocol.url().clone(),

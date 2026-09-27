@@ -63,6 +63,11 @@ pub(crate) trait FeedProtocol: sealed::Sealed + Send + 'static {
     fn disconnect_message(&self) -> Option<String>;
     /// How often the client pings the server, for feeds whose server does not ping.
     fn client_ping_interval(&self) -> Option<Duration>;
+    /// The URL to connect to when the caller overrides the endpoint with `base`; by default the
+    /// override is used as given. Feeds that authenticate in the query append it here.
+    fn url_for(&self, base: &url::Url) -> SecretString {
+        SecretString::from(base.as_str())
+    }
     /// The key under which subscriptions count as the same instrument (entries with equal keys
     /// are one subscription in different modes); the identity by default.
     fn key(sub: &Self::Sub) -> Self::Sub {
