@@ -151,8 +151,8 @@ fn failed(endpoint: &'static str, error: &Error, api_error_code: Option<&str>, d
     }
 }
 
-/// Marks a request span `outcome = "cancelled"` (with its duration) if the call is dropped
-/// before it finishes.
+/// Marks a request span `outcome = "cancelled"` (or `"panicked"` while unwinding), with its
+/// duration, if the call is dropped before it finishes.
 pub(crate) struct Pending<'a> {
     span: &'a Span,
     started: tokio::time::Instant,
@@ -177,7 +177,12 @@ impl<'a> Pending<'a> {
 impl Drop for Pending<'_> {
     fn drop(&mut self) {
         if !self.finished {
-            self.span.record("outcome", "cancelled");
+            let outcome = if std::thread::panicking() {
+                "panicked"
+            } else {
+                "cancelled"
+            };
+            self.span.record("outcome", outcome);
             self.span
                 .record("duration_ms", millis(self.started.elapsed()));
         }
