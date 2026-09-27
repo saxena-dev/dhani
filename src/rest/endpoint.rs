@@ -264,9 +264,9 @@ endpoints! {
     // H3
     HISTORICAL_ROLLING_OPTIONS = HistoricalRollingOptions, Post, Rest, "/charts/rollingoption", Query, Data, AccessToken, JsonWithClientId, Json, [], doc: "DOC:794-856";
     // X1
-    OPTION_CHAIN_CHAIN = OptionChainChain, Post, Rest, "/optionchain", Query, Data, AccessToken, JsonWithClientId, Json, [Keyed], doc: "DOC:1200-1235";
+    OPTION_CHAIN_CHAIN = OptionChainChain, Post, Rest, "/optionchain", Query, Data, AccessToken, JsonWithClientId, Json, [Keyed], doc: "DOC:1200-1234";
     // X2
-    OPTION_CHAIN_EXPIRIES = OptionChainExpiries, Post, Rest, "/optionchain/expirylist", Query, Data, AccessToken, JsonWithClientId, Json, [], doc: "DOC:857-898";
+    OPTION_CHAIN_EXPIRIES = OptionChainExpiries, Post, Rest, "/optionchain/expirylist", Query, Data, AccessToken, JsonWithClientId, Json, [], doc: "DOC:857-897";
     // I1
     INSTRUMENTS_SCRIP_MASTER_COMPACT = InstrumentsScripMasterCompact, Get, ScripMaster, "", Read, Unmetered, None, None, Csv, [], doc: "DOC:5729";
     // I2
