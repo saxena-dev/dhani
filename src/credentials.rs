@@ -96,6 +96,12 @@ macro_rules! secret_type {
             pub fn expose_secret(&self) -> &str {
                 self.0.expose_secret()
             }
+
+            /// The wrapped secret, for registering it with a call's redactor.
+            #[allow(dead_code, reason = "not every secret type is a per-call secret")]
+            pub(crate) fn as_secret(&self) -> &SecretString {
+                &self.0
+            }
         }
 
         impl fmt::Debug for $name {
