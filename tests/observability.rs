@@ -91,7 +91,7 @@ async fn settle<T>(task: &JoinHandle<T>, rounds: usize) -> bool {
 async fn run<T: Send + 'static>(fut: impl Future<Output = T> + Send + 'static) -> T {
     let task = tokio::spawn(fut);
     for _ in 0..20_000 {
-        if settle(&task, 500).await {
+        if settle(&task, 2_000).await {
             return task.await.unwrap();
         }
         tokio::time::advance(Duration::from_millis(100)).await;
@@ -334,6 +334,7 @@ async fn retry_after_three_seconds_is_honoured() {
     run(read(&client)).await.unwrap();
     assert_catalogued(&capture);
     let remote = capture.events_named(events::RATELIMIT_REMOTE.name);
+    assert_eq!(remote.len(), 1);
     assert_eq!(
         (
             remote[0].field("will_retry"),
@@ -342,6 +343,7 @@ async fn retry_after_three_seconds_is_honoured() {
         (Some("true"), Some("3000"))
     );
     let retry = capture.events_named(events::HTTP_RETRY_SCHEDULED.name);
+    assert_eq!(retry.len(), 1);
     assert_eq!(
         (retry[0].field("cause"), retry[0].field("delay_ms")),
         (Some("rate_limited"), Some("3000"))
