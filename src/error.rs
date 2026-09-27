@@ -300,6 +300,15 @@ impl Error {
     }
 }
 
+/// Invalid credential text: `ErrorKind::Credential`, nothing sent. The detail names the field
+/// and the rule; the value is never included.
+impl From<crate::credentials::CredentialError> for Error {
+    fn from(error: crate::credentials::CredentialError) -> Self {
+        let detail = format!("{}: {}", error.field, error.reason);
+        Self::new(ErrorKind::Credential, Stage::NotSent).with_detail(&Redactor::new(), &detail)
+    }
+}
+
 impl fmt::Display for Error {
     /// A diagnostic summary (see `render`); not a stable contract.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
