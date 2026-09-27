@@ -154,6 +154,12 @@ impl ReconnectBudget {
         Some(self.backoff.delay(self.attempts).min(left))
     }
 
+    /// How long the current outage has lasted at `now`, if one is in progress.
+    pub(crate) fn outage_elapsed(&self, now: Instant) -> Option<Duration> {
+        self.outage_started
+            .map(|at| now.saturating_duration_since(at))
+    }
+
     /// Reconnect attempts spent in the current outage.
     pub(crate) fn attempts(&self) -> u32 {
         self.attempts

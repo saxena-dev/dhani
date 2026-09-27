@@ -63,4 +63,9 @@ pub(crate) trait FeedProtocol: sealed::Sealed + Send + 'static {
     fn disconnect_message(&self) -> Option<String>;
     /// How often the client pings the server, for feeds whose server does not ping.
     fn client_ping_interval(&self) -> Option<Duration>;
+    /// The key under which subscriptions count as the same instrument (entries with equal keys
+    /// are one subscription in different modes); the identity by default.
+    fn key(sub: &Self::Sub) -> Self::Sub {
+        sub.clone()
+    }
 }

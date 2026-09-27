@@ -121,6 +121,14 @@ pub(crate) struct DeliverySender<T> {
     shared: Arc<Shared<T>>,
 }
 
+impl<T> Clone for DeliverySender<T> {
+    fn clone(&self) -> Self {
+        DeliverySender {
+            shared: Arc::clone(&self.shared),
+        }
+    }
+}
+
 /// A feed's event stream: data, lifecycle events and decode errors in production order.
 ///
 /// It yields `None` only after a clean shutdown; otherwise it yields exactly one
