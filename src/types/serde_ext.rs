@@ -77,6 +77,10 @@ fn int_from_str(s: &str) -> Option<i64> {
 /// One array element read like [`int_or_string`] (an integer, an integral float or integer
 /// text), decoded with a visitor so large arrays never go through `serde_json::Value`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[cfg_attr(
+    not(feature = "rest"),
+    allow(dead_code, reason = "used by the REST response models")
+)]
 pub(crate) struct LenientInt(pub(crate) i64);
 
 impl<'de> Deserialize<'de> for LenientInt {
@@ -233,8 +237,55 @@ where
     }
 }
 
+/// An `Inbound<T>` for an enum whose documented wire form is a JSON integer, such as
+/// `ExpiryCode` (DOC:758, DOC:5370): a number whose decimal text is a wire value is `Known`, as
+/// is the same text as a string; other numbers and strings are kept as `Unknown`, booleans as
+/// unknown text, and arrays or objects are errors. An integral float such as `1.0` counts as
+/// its integer. The plain `Inbound` policy (§7.0.1) keeps every number `Unknown`; apply this
+/// helper to such fields instead (decision recorded on DHQ-M1.14), with `#[serde(default)]` so
+/// that an absent field is `None`.
+#[cfg_attr(
+    not(test),
+    allow(
+        dead_code,
+        reason = "applied by the expired-options response model (L9.1)"
+    )
+)]
+pub(crate) fn inbound_num<'de, D, T>(d: D) -> Result<Option<Inbound<T>>, D::Error>
+where
+    D: Deserializer<'de>,
+    T: WireEnum,
+{
+    let by_text = |text: &str| {
+        Ok(Some(match T::from_wire(text) {
+            Some(v) => Inbound::Known(v),
+            None => Inbound::Unknown(UnknownValue::new(text)),
+        }))
+    };
+    match Value::deserialize(d)? {
+        Value::Null => Ok(None),
+        Value::Number(n) => match n.as_f64().and_then(integral) {
+            Some(i) if n.is_f64() => by_text(&i.to_string()),
+            _ => by_text(&n.to_string()),
+        },
+        Value::String(s) => by_text(&s),
+        Value::Bool(b) => Ok(Some(Inbound::Unknown(UnknownValue::new(if b {
+            "true"
+        } else {
+            "false"
+        })))),
+        _ => Err(D::Error::custom(
+            "expected a number, string or boolean enum value",
+        )),
+    }
+}
+
 /// A collection (or any `Default` value) where JSON `null` counts as empty (§7.0: an absent or
 /// `null` collection decodes as empty; `#[serde(default)]` alone covers only absence).
+#[cfg_attr(
+    not(feature = "rest"),
+    allow(dead_code, reason = "used by the REST response models")
+)]
 pub(crate) fn null_as_empty<'de, D, T>(d: D) -> Result<T, D::Error>
 where
     D: Deserializer<'de>,
@@ -435,5 +486,47 @@ mod tests {
         ] {
             assert!(read(bad.clone()).is_err(), "{bad}");
         }
+    }
+
+    #[test]
+    fn inbound_num_maps_documented_integers_to_known() {
+        use crate::types::ExpiryCode;
+
+        #[derive(Debug, serde::Deserialize)]
+        struct Code(#[serde(deserialize_with = "inbound_num")] Option<Inbound<ExpiryCode>>);
+        #[derive(Debug, serde::Deserialize)]
+        struct Row {
+            #[serde(default, deserialize_with = "inbound_num")]
+            code: Option<Inbound<ExpiryCode>>,
+        }
+        let read = |v: serde_json::Value| serde_json::from_value::<Code>(v).map(|c| c.0);
+        assert_eq!(
+            read(serde_json::json!(1)).unwrap(),
+            Some(Inbound::Known(ExpiryCode::Near))
+        );
+        assert_eq!(
+            read(serde_json::json!(2.0)).unwrap(),
+            Some(Inbound::Known(ExpiryCode::Next))
+        );
+        let absent: Row = serde_json::from_value(serde_json::json!({})).unwrap();
+        assert_eq!(absent.code, None);
+        assert_eq!(
+            read(serde_json::json!("3")).unwrap(),
+            Some(Inbound::Known(ExpiryCode::Far))
+        );
+        assert_eq!(read(serde_json::json!(null)).unwrap(), None);
+        for (value, text) in [
+            (serde_json::json!(0), "0"),
+            (serde_json::json!(7), "7"),
+            (serde_json::json!(1.5), "1.5"),
+            (serde_json::json!("NEAR"), "NEAR"),
+            (serde_json::json!(true), "true"),
+        ] {
+            let got = read(value).unwrap().unwrap();
+            assert_eq!(got.known(), None, "{text}");
+            assert_eq!(got.as_wire(), text);
+        }
+        assert!(read(serde_json::json!([1])).is_err());
+        assert!(read(serde_json::json!({"code": 1})).is_err());
     }
 }

@@ -245,7 +245,9 @@ crate::types::wire_enum! {
 ///
 /// Its wire text is the decimal code (`"1"`, `"2"`, `"3"`). When received as
 /// `Inbound<ExpiryCode>`, a JSON string such as `"1"` is known, while a JSON number is kept as
-/// `Unknown` holding its text, like every numeric enum value (see [`Inbound`]).
+/// `Unknown` holding its text, like every numeric enum value (see [`Inbound`]); response models
+/// whose documented wire form is the integer read it with a crate-private helper that makes
+/// `1`, `2` and `3` known.
 #[non_exhaustive]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum ExpiryCode {
