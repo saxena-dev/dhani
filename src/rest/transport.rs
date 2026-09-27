@@ -681,6 +681,31 @@ impl Transport {
         .await
     }
 
+    /// Runs a `Csv` endpoint and parses its text inside the traced call, so a parse failure is
+    /// recorded as the call's outcome and carries its status and attempts. `parse` returns a
+    /// detail for the `Decode` error; it must not quote the body.
+    pub(crate) async fn execute_csv<'a, T>(
+        &self,
+        credentials: Option<&Credentials>,
+        ep: &'static Endpoint,
+        prepare: impl FnOnce() -> Result<Call<'a>, ValidationError>,
+        parse: impl FnOnce(&str) -> Result<T, String>,
+    ) -> Result<T, Error> {
+        self.traced(ep, async {
+            let mut done = self.run(credentials, ep, prepare).await?;
+            let value = match std::mem::replace(&mut done.success, Success::Empty) {
+                Success::Csv(text) => parse(&text).map_err(|detail| {
+                    Error::new(ErrorKind::Decode, Stage::ResponseReceived)
+                        .with_endpoint(ep.id)
+                        .with_detail(&done.redactor, &detail)
+                }),
+                other => Err(shape_mismatch(ep, &other)),
+            };
+            done.finish(value)
+        })
+        .await
+    }
+
     /// Runs any endpoint and returns its body as raw JSON: a CSV body as a JSON string, an
     /// empty body as `None`. Backs the client's test hook.
     pub(crate) async fn execute_raw<'a>(

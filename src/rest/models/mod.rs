@@ -8,6 +8,7 @@ mod forever_orders;
 mod funds;
 mod global;
 mod historical;
+#[cfg(feature = "instruments")]
 mod instruments;
 mod market_quote;
 mod option_chain;
@@ -23,6 +24,9 @@ mod trader_control;
 )]
 pub use self::{
     account::*, auth::*, conditional::*, edis::*, forever_orders::*, funds::*, global::*,
-    historical::*, instruments::*, market_quote::*, option_chain::*, orders::*, portfolio::*,
-    statements::*, super_orders::*, trader_control::*,
+    historical::*, market_quote::*, option_chain::*, orders::*, portfolio::*, statements::*,
+    super_orders::*, trader_control::*,
 };
+
+#[cfg(feature = "instruments")]
+pub use self::instruments::*;
