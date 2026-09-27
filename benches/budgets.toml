@@ -1,0 +1,7 @@
+# Allocation budgets checked by benches/overhead.rs (see its header for how to re-baseline).
+#
+# Allocations on the calling thread for one warm, mocked REST call with no tracing subscriber
+# and no metrics recorder. Measured 69 with `--features rest` and 73 with `--all-features` (the
+# `metrics` macros build their label sets even without a recorder); budget = 73 + 10 %, rounded
+# up.
+rest_call_allocs_max = 81
