@@ -81,6 +81,18 @@ impl<P: FeedProtocol> FeedBuilder<P> {
         self
     }
 
+    /// The protocol (test support).
+    #[cfg(test)]
+    pub(crate) fn into_protocol_for_tests(self) -> P {
+        self.protocol
+    }
+
+    /// The limits (test support).
+    #[cfg(test)]
+    pub(crate) fn limits_for_tests(&self) -> FeedLimits {
+        self.limits
+    }
+
     /// Starts the feed on the current tokio runtime.
     #[allow(
         clippy::type_complexity,
