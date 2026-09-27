@@ -1,6 +1,7 @@
 //! REST facade for orders and trades (§9 rows O1–O9).
 
-use crate::error::{Result, ValidationError, ValidationReason};
+use super::json_body as body;
+use crate::error::{Result, ValidationError};
 use crate::rest::endpoint::{self, Endpoint};
 use crate::rest::models::SlicedAcks;
 use crate::rest::transport::Call;
@@ -10,16 +11,6 @@ use crate::types::{CorrelationId, OrderId};
 /// The Orders facade, borrowed from a [`DhanClient`].
 pub struct Orders<'c> {
     client: &'c DhanClient,
-}
-
-/// A request body as JSON; the request types always serialise.
-fn body(value: impl serde::Serialize) -> std::result::Result<serde_json::Value, ValidationError> {
-    serde_json::to_value(value).map_err(|_| {
-        ValidationError::new(
-            "body",
-            ValidationReason::Inconsistent("the request does not serialise"),
-        )
-    })
 }
 
 impl<'c> Orders<'c> {

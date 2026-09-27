@@ -18,6 +18,21 @@ mod statements;
 mod super_orders;
 mod trader_control;
 
+use crate::error::{ValidationError, ValidationReason};
+
+/// A request body as JSON; the request types always serialise, so the error is unreachable
+/// in practice.
+pub(crate) fn json_body(
+    value: impl serde::Serialize,
+) -> Result<serde_json::Value, ValidationError> {
+    serde_json::to_value(value).map_err(|_| {
+        ValidationError::new(
+            "body",
+            ValidationReason::Inconsistent("the request does not serialise"),
+        )
+    })
+}
+
 #[cfg(feature = "instruments")]
 #[allow(
     unused_imports,
