@@ -1,6 +1,6 @@
 //! Live Market Feed frame splitter and packet decoders.
 //!
-//! A frame may hold several packets back to back; [`split`] walks the whole frame (the Python
+//! A frame may hold several packets back to back; [`split_market`] walks the whole frame (the Python
 //! SDK decodes only the first packet). Documented codes have fixed sizes. An undocumented code
 //! is taken as length-delimited by its header's length field and delivered as
 //! [`MarketPacket::Other`]; after one, the next packet must start with a documented code, or the
@@ -303,7 +303,7 @@ fn depth_level(b: &[u8], i: usize) -> DepthLevel5 {
 
 /// Decodes one packet with a documented fixed-size `code` from `b`, which starts at the packet's
 /// header (whose code byte must equal `code`). Offsets in errors are relative to `b`.
-pub fn decode_packet(code: u8, b: &[u8]) -> Result<MarketPacket, DecodeError> {
+pub fn decode_market_packet(code: u8, b: &[u8]) -> Result<MarketPacket, DecodeError> {
     let unknown = || error(DecodeErrorKind::UnknownCode, 0, Some(code));
     let size = market_size(code).ok_or_else(unknown)?;
     if b.len() < size {
@@ -383,8 +383,8 @@ pub struct LenMismatch {
 }
 
 /// Splits a market-feed frame into packets. Stops after the first error.
-pub fn split(frame: &[u8]) -> Split<'_> {
-    Split {
+pub fn split_market(frame: &[u8]) -> MarketSplit<'_> {
+    MarketSplit {
         frame,
         offset: 0,
         after_other: false,
@@ -393,9 +393,9 @@ pub fn split(frame: &[u8]) -> Split<'_> {
     }
 }
 
-/// The iterator returned by [`split`].
+/// The iterator returned by [`split_market`].
 #[derive(Debug)]
-pub struct Split<'a> {
+pub struct MarketSplit<'a> {
     frame: &'a [u8],
     offset: usize,
     /// The previous packet was length-delimited, so the next must have a documented code.
@@ -404,7 +404,7 @@ pub struct Split<'a> {
     len_mismatch: Option<LenMismatch>,
 }
 
-impl Split<'_> {
+impl MarketSplit<'_> {
     /// The first header length that disagreed with its packet's documented size, if any.
     pub fn len_mismatch(&self) -> Option<LenMismatch> {
         self.len_mismatch
@@ -420,7 +420,7 @@ impl Split<'_> {
     }
 }
 
-impl Iterator for Split<'_> {
+impl Iterator for MarketSplit<'_> {
     type Item = Result<MarketPacket, DecodeError>;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -465,7 +465,7 @@ impl Iterator for Split<'_> {
             });
         }
         self.offset = o + size;
-        Some(decode_packet(code, packet))
+        Some(decode_market_packet(code, packet))
     }
 }
 

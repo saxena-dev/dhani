@@ -4,7 +4,7 @@ mod common;
 mod enums;
 mod ids;
 mod raw;
-mod serde_ext;
+pub(crate) mod serde_ext;
 mod text;
 mod time;
 

@@ -67,7 +67,7 @@ fn full_bytes() -> Vec<u8> {
 }
 
 fn only(frame: &[u8]) -> MarketPacket {
-    let mut packets: Vec<_> = split(frame).collect();
+    let mut packets: Vec<_> = split_market(frame).collect();
     assert_eq!(packets.len(), 1, "{packets:?}");
     packets.remove(0).unwrap()
 }
@@ -218,7 +218,7 @@ fn a_disconnect_decodes() {
 #[test]
 fn a_short_ticker_is_truncated() {
     let b = &ticker_bytes()[..15];
-    let got: Vec<_> = split(b).collect();
+    let got: Vec<_> = split_market(b).collect();
     assert_eq!(
         got,
         [Err(DecodeError {
@@ -279,7 +279,7 @@ fn an_index_packet_is_other_with_a_legacy_reading() {
 fn an_unknown_code_after_other_abandons_the_frame() {
     let mut frame = index_bytes();
     frame.extend(header(99, 8));
-    let got: Vec<_> = split(&frame).collect();
+    let got: Vec<_> = split_market(&frame).collect();
     assert_eq!(got.len(), 2);
     assert!(matches!(got[0], Ok(MarketPacket::Other(_))));
     assert_eq!(
@@ -296,7 +296,7 @@ fn an_unknown_code_after_other_abandons_the_frame() {
 fn an_unknown_code_without_a_usable_length_is_unknown() {
     let mut frame = header(9, 0);
     frame.extend_from_slice(&[0; 8]);
-    let got: Vec<_> = split(&frame).collect();
+    let got: Vec<_> = split_market(&frame).collect();
     assert_eq!(
         got,
         [Err(DecodeError {
@@ -312,7 +312,7 @@ fn a_frame_of_three_packets_yields_three() {
     let mut frame = ticker_bytes();
     frame.extend(quote_bytes());
     frame.extend(full_bytes());
-    let got: Vec<_> = split(&frame).map(Result::unwrap).collect();
+    let got: Vec<_> = split_market(&frame).map(Result::unwrap).collect();
     assert!(matches!(
         got.as_slice(),
         [
@@ -328,7 +328,7 @@ fn a_known_packet_after_other_is_fine_and_a_short_tail_is_truncated() {
     let mut frame = index_bytes();
     frame.extend(ticker_bytes());
     frame.extend_from_slice(&[2, 16, 0]);
-    let got: Vec<_> = split(&frame).collect();
+    let got: Vec<_> = split_market(&frame).collect();
     assert_eq!(got.len(), 3);
     assert!(matches!(got[1], Ok(MarketPacket::Ticker(_))));
     assert_eq!(
@@ -346,13 +346,13 @@ fn header_length_mismatches_are_reported_not_fatal() {
     for len in [16u16, 8] {
         let mut b = ticker_bytes();
         b[1..3].copy_from_slice(&len.to_le_bytes());
-        let mut s = split(&b);
+        let mut s = split_market(&b);
         assert!(s.next().unwrap().is_ok());
         assert_eq!(s.len_mismatch(), None, "{len}");
     }
     let mut b = ticker_bytes();
     b[1..3].copy_from_slice(&99u16.to_le_bytes());
-    let mut s = split(&b);
+    let mut s = split_market(&b);
     assert!(s.next().unwrap().is_ok());
     assert_eq!(
         s.len_mismatch(),
@@ -368,7 +368,7 @@ fn header_length_mismatches_are_reported_not_fatal() {
 #[test]
 fn decode_packet_checks_code_and_length() {
     assert_eq!(
-        decode_packet(3, &[0; 20]),
+        decode_market_packet(3, &[0; 20]),
         Err(DecodeError {
             kind: DecodeErrorKind::UnknownCode,
             offset: 0,
@@ -376,14 +376,14 @@ fn decode_packet_checks_code_and_length() {
         })
     );
     assert_eq!(
-        decode_packet(8, &[0; 161]),
+        decode_market_packet(8, &[0; 161]),
         Err(DecodeError {
             kind: DecodeErrorKind::Truncated,
             offset: 0,
             packet_code: Some(8)
         })
     );
-    assert!(split(&[]).next().is_none());
+    assert!(split_market(&[]).next().is_none());
 }
 
 #[test]
@@ -422,7 +422,7 @@ fn prev_close_and_disconnect_carry_their_headers() {
 fn a_short_unknown_tail_after_other_is_trailing_bytes() {
     let mut frame = index_bytes();
     frame.extend_from_slice(&[99, 1, 2]);
-    let got: Vec<_> = split(&frame).collect();
+    let got: Vec<_> = split_market(&frame).collect();
     assert_eq!(got.len(), 2);
     assert!(matches!(got[0], Ok(MarketPacket::Other(_))));
     assert_eq!(
@@ -438,7 +438,7 @@ fn a_short_unknown_tail_after_other_is_trailing_bytes() {
 #[test]
 fn decode_packet_rejects_a_mismatched_code_byte() {
     assert_eq!(
-        decode_packet(2, &full_bytes()),
+        decode_market_packet(2, &full_bytes()),
         Err(DecodeError {
             kind: DecodeErrorKind::UnknownCode,
             offset: 0,
