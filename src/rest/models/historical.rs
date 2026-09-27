@@ -235,7 +235,8 @@ impl IntradayRequest {
 /// Every array defaults to empty, and `null` is empty; a scalar where an array belongs is a
 /// decode error. All non-empty arrays must have the same length, and when there are timestamps
 /// the price and volume arrays must be present; otherwise decoding fails. `open_interest` is
-/// empty unless it was requested.
+/// empty unless it was requested. A body that wraps the columns in `data` is a decode error
+/// rather than an empty result.
 #[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct Candles {
@@ -259,6 +260,9 @@ pub struct Candles {
 /// The wire shape of [`Candles`], before the length checks.
 #[derive(Deserialize)]
 struct WireCandles {
+    /// Present only if the server wrapped the columns; refused rather than read as empty.
+    #[serde(default)]
+    data: Option<serde::de::IgnoredAny>,
     #[serde(default, deserialize_with = "null_as_empty")]
     open: Vec<f64>,
     #[serde(default, deserialize_with = "null_as_empty")]
@@ -278,6 +282,11 @@ struct WireCandles {
 impl<'de> Deserialize<'de> for Candles {
     fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
         let w = WireCandles::deserialize(d)?;
+        if w.data.is_some() {
+            return Err(serde::de::Error::custom(
+                "candles are wrapped in a data object",
+            ));
+        }
         let ints = |v: Vec<LenientInt>| v.into_iter().map(|i| i.0).collect::<Vec<_>>();
         let candles = Candles {
             open: w.open,

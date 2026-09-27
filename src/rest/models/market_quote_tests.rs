@@ -177,3 +177,23 @@ fn the_published_full_quote_extras_decode() {
     assert_eq!((q.oi_day_high, q.oi_day_low), (Some(12), Some(3)));
     assert_eq!(q.ohlc.and_then(|o| o.close), Some(368.15));
 }
+
+#[test]
+fn a_null_segment_is_empty_and_global_stocks_is_refused() {
+    let data: QuoteData<LtpQuote> = serde_json::from_value(json!({
+        "data": {"NSE_EQ": null, "NSE_FNO": {"49081": {"last_price": 1.0}}}
+    }))
+    .unwrap();
+    assert!(data.data["NSE_EQ"].is_empty());
+    assert_eq!(
+        data.get(ExchangeSegment::NseFno, &id("49081"))
+            .and_then(|q| q.last_price),
+        Some(1.0)
+    );
+    let mut req = QuoteRequest::new();
+    req.add(ExchangeSegment::InxEq, id("1234"));
+    assert_eq!(
+        req.validate(),
+        invalid("exchange_segment", ValidationReason::UnknownEnumValue)
+    );
+}

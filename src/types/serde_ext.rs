@@ -280,6 +280,27 @@ where
     }
 }
 
+/// A string-keyed map where the map itself or any value may be JSON `null`; either counts as
+/// empty (a `null` value becomes `V::default()`), so one null entry does not fail the response.
+#[cfg_attr(
+    not(feature = "rest"),
+    allow(dead_code, reason = "used by the REST response models")
+)]
+pub(crate) fn null_values_default<'de, D, V>(
+    d: D,
+) -> Result<std::collections::BTreeMap<String, V>, D::Error>
+where
+    D: Deserializer<'de>,
+    V: Deserialize<'de> + Default,
+{
+    let map: Option<std::collections::BTreeMap<String, Option<V>>> = Option::deserialize(d)?;
+    Ok(map
+        .unwrap_or_default()
+        .into_iter()
+        .map(|(k, v)| (k, v.unwrap_or_default()))
+        .collect())
+}
+
 /// A collection (or any `Default` value) where JSON `null` counts as empty (§7.0: an absent or
 /// `null` collection decodes as empty; `#[serde(default)]` alone covers only absence).
 #[cfg_attr(

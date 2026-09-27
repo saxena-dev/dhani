@@ -123,3 +123,16 @@ fn the_expiry_list_decodes_dates_and_refuses_anything_else() {
     assert!(none.data.is_empty());
     assert!(serde_json::from_value::<ExpiryList>(json!({"data": ["x"]})).is_err());
 }
+
+#[test]
+fn a_null_strike_row_is_empty_and_global_stocks_is_refused() {
+    let chain: OptionChainData = serde_json::from_value(json!({"oc": {"25000": null}})).unwrap();
+    assert_eq!(chain.oc["25000"], StrikeRow::default());
+    assert_eq!(
+        UnderlyingRef::new(1234, ExchangeSegment::InxEq).validate(),
+        Err(ValidationError {
+            field: "segment",
+            reason: ValidationReason::UnknownEnumValue
+        })
+    );
+}

@@ -9,7 +9,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use serde::Deserialize;
 
 use crate::error::{ValidationError, ValidationReason};
-use crate::types::serde_ext::null_as_empty;
+use crate::types::serde_ext::{null_as_empty, null_values_default};
 use crate::types::{ExchangeSegment, SecurityId, WireEnum, WireTime};
 
 /// The most instruments one quote request may carry (DOC:2890). Larger sets are refused, never
@@ -20,7 +20,7 @@ pub(crate) const MAX_QUOTE_INSTRUMENTS: usize = 1000;
 ///
 /// On the wire each segment maps to an array of numeric security IDs, for example
 /// `{"NSE_EQ": [11536], "NSE_FNO": [49081, 49082]}`, so every ID must be digits without leading
-/// zeros; Global Stocks tickers cannot be quoted here. Adding the same instrument twice keeps
+/// zeros; the Global Stocks segment (`InxEq`) cannot be quoted here. Adding the same instrument twice keeps
 /// one. A request holds 1..=1000 instruments in total and is never split into several
 /// requests.
 #[non_exhaustive]
@@ -66,6 +66,13 @@ impl QuoteRequest {
                 ValidationReason::TooMany {
                     max: MAX_QUOTE_INSTRUMENTS,
                 },
+            ));
+        }
+        if self.instruments.contains_key(&ExchangeSegment::InxEq) {
+            // Global Stocks is quoted through its own API, not /marketfeed.
+            return Err(ValidationError::new(
+                "exchange_segment",
+                ValidationReason::UnknownEnumValue,
             ));
         }
         for id in self.instruments.values().flatten() {
@@ -124,8 +131,8 @@ pub struct QuoteData<T> {
     /// The response status, such as `success`.
     #[serde(default)]
     pub status: Option<String>,
-    /// Quotes by segment wire name, then by security ID; `null` is empty.
-    #[serde(default, deserialize_with = "null_as_empty")]
+    /// Quotes by segment wire name, then by security ID; `null`, at either level, is empty.
+    #[serde(default, deserialize_with = "null_values_default")]
     pub data: BTreeMap<String, BTreeMap<String, T>>,
 }
 
@@ -218,7 +225,7 @@ pub struct FullQuote {
     /// The day's lowest open interest (in the published example, not the OpenAPI schema).
     #[serde(default)]
     pub oi_day_low: Option<i64>,
-    /// The day's open, high, low and close (in the published example and DOC:1533, not the
+    /// The day's open, high, low and close (in the published example and DOC:1535, not the
     /// OpenAPI schema).
     #[serde(default)]
     pub ohlc: Option<Ohlc>,

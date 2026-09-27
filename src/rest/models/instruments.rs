@@ -123,7 +123,7 @@ fn column(header: &str) -> Column {
 }
 
 /// A row that could not be read; `row` counts data rows from 1 (the header is not counted), and
-/// 0 means the header row itself.
+/// 0 means the header row itself, including a header with no known column.
 #[derive(Debug, PartialEq, Eq)]
 pub(crate) struct MalformedRow {
     pub(crate) row: usize,
@@ -213,6 +213,10 @@ pub(crate) fn parse_scrip_master(text: &str) -> Result<Vec<InstrumentRecord>, Ma
             (column(h), h.to_owned())
         })
         .collect();
+    // A body with no known column (an error page, say) is not a scrip master.
+    if !headers.iter().any(|(c, _)| !matches!(c, Column::Extra)) {
+        return Err(MalformedRow { row: 0 });
+    }
     let mut records = Vec::new();
     let mut row = csv::StringRecord::new();
     for index in 1.. {

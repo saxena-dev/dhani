@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::error::{ValidationError, ValidationReason};
 use crate::types::ExchangeSegment;
-use crate::types::serde_ext::null_as_empty;
+use crate::types::serde_ext::{null_as_empty, null_values_default};
 
 /// The underlying of an option chain: its security ID and segment (DOC:868-871).
 ///
@@ -33,8 +33,14 @@ impl UnderlyingRef {
         Self { scrip, segment }
     }
 
-    /// The security ID must be positive.
+    /// The security ID must be positive, and the segment is not Global Stocks (`InxEq`).
     pub fn validate(&self) -> Result<(), ValidationError> {
+        if self.segment == ExchangeSegment::InxEq {
+            return Err(ValidationError::new(
+                "segment",
+                ValidationReason::UnknownEnumValue,
+            ));
+        }
         if self.scrip == 0 {
             return Err(ValidationError::new("scrip", ValidationReason::NotPositive));
         }
@@ -80,8 +86,9 @@ pub struct OptionChainData {
     /// The underlying's last traded price.
     #[serde(default)]
     pub last_price: Option<f64>,
-    /// Rows by strike, keyed by the strike exactly as sent (its format is not specified).
-    #[serde(default, deserialize_with = "null_as_empty")]
+    /// Rows by strike, keyed by the strike exactly as sent (its format is not specified); a
+    /// `null` row is empty.
+    #[serde(default, deserialize_with = "null_values_default")]
     pub oc: BTreeMap<String, StrikeRow>,
 }
 
@@ -107,7 +114,7 @@ impl OptionChainData {
 
 /// The call and put at one strike.
 #[non_exhaustive]
-#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Default, Deserialize)]
 pub struct StrikeRow {
     /// The call.
     #[serde(default)]

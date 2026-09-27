@@ -67,12 +67,12 @@ NSE,D,52175,NA,OPTIDX,13,NIFTY,NIFTY-Oct2024-25000-CE,NIFTY 31 OCT 25000 CALL,OP
 
 #[test]
 fn a_malformed_row_reports_only_its_index() {
-    let wrong_count = "A,B\n1,2\n3\n";
+    let wrong_count = "SEM_EXM_EXCH_ID,SEM_SERIES\n1,2\n3\n";
     assert_eq!(
         parse_scrip_master(wrong_count),
         Err(MalformedRow { row: 2 })
     );
-    let short = "A,B\n1\n";
+    let short = "SEM_EXM_EXCH_ID,SEM_SERIES\n1\n";
     assert_eq!(parse_scrip_master(short), Err(MalformedRow { row: 1 }));
     let bad_number = "SEM_LOT_UNITS\n1\n2\nlots\n";
     assert_eq!(parse_scrip_master(bad_number), Err(MalformedRow { row: 3 }));
@@ -94,6 +94,11 @@ fn headers_are_trimmed_and_a_bom_is_ignored() {
 
 #[test]
 fn an_empty_file_has_no_records() {
-    assert_eq!(parse_scrip_master(""), Ok(Vec::new()));
+    // No known column: an empty body or an HTML error page is not a scrip master.
+    assert_eq!(parse_scrip_master(""), Err(MalformedRow { row: 0 }));
+    assert_eq!(
+        parse_scrip_master("<html>\n<body>Error</body>\n</html>\n"),
+        Err(MalformedRow { row: 0 })
+    );
     assert_eq!(parse_scrip_master("SEM_EXM_EXCH_ID\n"), Ok(Vec::new()));
 }

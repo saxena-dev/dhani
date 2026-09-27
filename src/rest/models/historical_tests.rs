@@ -208,6 +208,8 @@ fn malformed_candles_fail_to_decode() {
         }),
         // A scalar in an integer column.
         json!({"volume": 5}),
+        // Columns wrapped in a data object.
+        json!({"data": {"open": [1.0], "timestamp": [1]}}),
         // A non-integral volume.
         json!({
             "open": [1.0], "high": [1.0], "low": [1.0], "close": [1.0],
