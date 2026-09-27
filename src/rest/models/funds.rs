@@ -1,8 +1,8 @@
 //! Request and response models for fund limits and the margin calculators.
 //!
-//! Responses: [`FundLimits`] (DOC:911-918), [`Margin`] (DOC:35-42) and [`MultiMargin`]
-//! (DOC:102-109). Requests: [`MarginRequest`] (DOC:21-28) and [`MultiMarginRequest`]
-//! (DOC:86-95).
+//! Responses: [`FundLimits`] (DOC:910-919), [`Margin`] (DOC:35-44) and [`MultiMargin`]
+//! (DOC:102-111). Requests: [`MarginRequest`] (DOC:21-30) and [`MultiMarginRequest`]
+//! (DOC:86-97).
 
 use serde::{Deserialize, Serialize};
 
@@ -15,7 +15,7 @@ use crate::types::{ExchangeSegment, ProductType, SecurityId, TransactionType};
 /// is a local sanity bound (SDK policy, OQ-24).
 pub(crate) const MAX_MULTI_MARGIN_LEGS: usize = 50;
 
-/// The account's funds (DOC:911-918).
+/// The account's funds (DOC:910-919).
 ///
 /// Two wire names are misspelled by the server and kept as sent: `availabelBalance` and
 /// `receiveableAmount` (Appendix A D47). Not `PartialEq`, because it carries the client ID,
@@ -50,7 +50,7 @@ pub struct FundLimits {
     pub withdrawable_balance: Option<f64>,
 }
 
-/// One order to price with the margin calculator (DOC:21-28), also one leg of a
+/// One order to price with the margin calculator (DOC:21-30), also one leg of a
 /// [`MultiMarginRequest`].
 ///
 /// `price` is required: the OpenAPI spec and the Python SDK both require it, although the
@@ -116,7 +116,8 @@ impl MarginRequest {
 
     /// Checks the fields against the documented rules, in field order.
     pub fn validate(&self) -> Result<(), ValidationError> {
-        // Index values and Global Stocks are not tradable segments here (DOC:23).
+        // Index values and Global Stocks are not tradable segments (DOC:24 lists the tradable
+        // ones; the currency segments are accepted, as for orders).
         if matches!(
             self.exchange_segment,
             ExchangeSegment::IdxI | ExchangeSegment::InxEq
@@ -147,7 +148,7 @@ impl MarginRequest {
     }
 }
 
-/// The margin needed for one order (DOC:35-42). Values are indicative for the current session.
+/// The margin needed for one order (DOC:35-44). Values are indicative for the current session.
 #[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -178,7 +179,7 @@ pub struct Margin {
     pub leverage: Option<String>,
 }
 
-/// Several orders priced together, with hedge benefits (DOC:86-95).
+/// Several orders priced together, with hedge benefits (DOC:86-97).
 ///
 /// The wire names are `includeOrder` and `scripList`, as in the documentation table and the
 /// Python SDK; the OpenAPI spec's `includeOrders` and `scripts` are not used (Appendix A D63).
@@ -234,7 +235,7 @@ impl MultiMarginRequest {
     }
 }
 
-/// The combined margin for several orders (DOC:102-109).
+/// The combined margin for several orders (DOC:102-111).
 ///
 /// The documentation table uses camelCase floats; the OpenAPI spec uses snake_case strings
 /// (`MultiMarginResponse`). Both are accepted: each amount has its camelCase name, a snake_case

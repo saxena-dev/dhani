@@ -21,10 +21,35 @@ fn invalid(field: &'static str, reason: ValidationReason) -> Result<(), Validati
 fn a_valid_conversion_passes() {
     assert_eq!(convert().validate(), Ok(()));
     assert_eq!(convert().with_trading_symbol("TCS").validate(), Ok(()));
-    for product in [ProductType::Cnc, ProductType::Intraday, ProductType::Margin] {
+    for product in [ProductType::Cnc, ProductType::Margin] {
         let mut req = convert();
         req.to_product_type = product;
         assert_eq!(req.validate(), Ok(()));
+    }
+}
+
+#[test]
+fn a_conversion_to_the_same_product_is_inconsistent() {
+    let mut req = convert();
+    req.to_product_type = ProductType::Intraday;
+    assert_eq!(
+        req.validate(),
+        invalid(
+            "to_product_type",
+            ValidationReason::Inconsistent("must differ from from_product_type")
+        )
+    );
+}
+
+#[test]
+fn index_and_global_segments_cannot_convert() {
+    for segment in [ExchangeSegment::IdxI, ExchangeSegment::InxEq] {
+        let mut req = convert();
+        req.exchange_segment = segment;
+        assert_eq!(
+            req.validate(),
+            invalid("exchange_segment", ValidationReason::UnknownEnumValue)
+        );
     }
 }
 
@@ -58,10 +83,12 @@ fn only_cnc_intraday_and_margin_convert() {
 
 #[test]
 fn an_empty_trading_symbol_or_invalid_security_is_refused() {
-    assert_eq!(
-        convert().with_trading_symbol("").validate(),
-        invalid("trading_symbol", ValidationReason::Empty)
-    );
+    for blank in ["", "  "] {
+        assert_eq!(
+            convert().with_trading_symbol(blank).validate(),
+            invalid("trading_symbol", ValidationReason::Empty)
+        );
+    }
     let mut req = convert();
     req.security_id = serde_json::from_value(json!("a b")).unwrap();
     assert_eq!(

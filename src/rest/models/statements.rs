@@ -1,6 +1,6 @@
 //! Response models for the ledger and the trade history.
 //!
-//! [`LedgerEntry`] (DOC:1087-1095) and [`HistoricalTrade`] (DOC:1646-1671, guide
+//! [`LedgerEntry`] (DOC:1087-1097) and [`HistoricalTrade`] (DOC:1648-1675, guide
 //! DOC:6951-7036).
 
 use serde::Deserialize;
@@ -12,7 +12,7 @@ use crate::types::{
     TransactionType, WireTime,
 };
 
-/// One ledger entry (DOC:1087-1095).
+/// One ledger entry (DOC:1087-1097).
 ///
 /// The wire keys are all lowercase. Amounts are strings on the wire (DOC:6914-6925); the
 /// `*_f64` methods parse them. Not `PartialEq`, because it carries the client ID, which is
@@ -81,7 +81,7 @@ pub(crate) struct LedgerEntries(
     #[serde(deserialize_with = "one_or_many")] pub(crate) Vec<LedgerEntry>,
 );
 
-/// A trade from the trade history (DOC:1646-1671, guide DOC:6951-7036).
+/// A trade from the trade history (DOC:1648-1675, guide DOC:6951-7036).
 ///
 /// The trade-book fields, plus the ISIN, the instrument kind and six charges. The charges are
 /// floats in one table and strings in the guide, so both are accepted (Appendix A D38). Not

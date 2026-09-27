@@ -163,7 +163,7 @@ pub struct Position {
 pub struct ConvertPositionRequest {
     /// The product converted from: `Cnc`, `Intraday` or `Margin`.
     pub from_product_type: ProductType,
-    /// The segment.
+    /// The segment; `IdxI` and `InxEq` cannot be converted.
     pub exchange_segment: ExchangeSegment,
     /// The position to convert.
     pub position_type: PositionType,
@@ -221,8 +221,22 @@ impl ConvertPositionRequest {
                 ValidationReason::UnknownEnumValue,
             ));
         }
+        // Index values and Global Stocks hold no convertible positions (DOC:302).
+        if matches!(
+            self.exchange_segment,
+            ExchangeSegment::IdxI | ExchangeSegment::InxEq
+        ) {
+            return Err(ValidationError::new(
+                "exchange_segment",
+                ValidationReason::UnknownEnumValue,
+            ));
+        }
         self.security_id.validate()?;
-        if self.trading_symbol.as_deref() == Some("") {
+        if self
+            .trading_symbol
+            .as_deref()
+            .is_some_and(|s| s.trim().is_empty())
+        {
             return Err(ValidationError::new(
                 "trading_symbol",
                 ValidationReason::Empty,
@@ -238,6 +252,12 @@ impl ConvertPositionRequest {
             return Err(ValidationError::new(
                 "to_product_type",
                 ValidationReason::UnknownEnumValue,
+            ));
+        }
+        if self.to_product_type == self.from_product_type {
+            return Err(ValidationError::new(
+                "to_product_type",
+                ValidationReason::Inconsistent("must differ from from_product_type"),
             ));
         }
         Ok(())
