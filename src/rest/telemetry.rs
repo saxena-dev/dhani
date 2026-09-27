@@ -244,14 +244,17 @@ pub(crate) fn retry_scheduled(ep: &Endpoint, attempt: u32, cause: Cause, delay: 
     );
 }
 
-/// The broker rate-limited an attempt.
+/// The broker rate-limited an attempt. The rejection metric counts only a remote rate limit
+/// that ends the call (one that is retried is not a rejection of the request).
 pub(crate) fn remote_rate_limited(
     ep: &Endpoint,
     error: &Error,
     will_retry: bool,
     retry_after: Option<Duration>,
 ) {
-    metrics::record_ratelimit_rejection(ep.rate, RejectionSource::Remote);
+    if !will_retry {
+        metrics::record_ratelimit_rejection(ep.rate, RejectionSource::Remote);
+    }
     let code = api_code(error);
     emit!(
         Level::WARN,

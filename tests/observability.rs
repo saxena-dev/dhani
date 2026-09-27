@@ -743,3 +743,10 @@ async fn no_sentinel_reaches_spans_events_errors_or_credential_debug() {
     assert!(echoed_message.contains("<redacted>"), "{echoed_message}");
     assert_eq!(server.requests().len(), 4);
 }
+
+/// Metrics (architecture §6.7 item 6): a `DebuggingRecorder` installed for the whole test body
+/// with `set_default_local_recorder` on a current-thread runtime. Without the `metrics` feature
+/// these tests are not compiled.
+#[cfg(feature = "metrics")]
+#[path = "observability/metrics.rs"]
+mod metrics_tests;
