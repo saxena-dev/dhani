@@ -1,5 +1,6 @@
 //! Crate-private serde helpers: `num_or_string`, `int_or_string`, `one_or_many`,
-//! `scalar_or_vec`, `na_as_none`, `bool_or_string`, `inbound_ci` and `null_as_empty`.
+//! `scalar_or_vec`, `na_as_none`, `bool_or_string`, `inbound_ci` and `null_as_empty`, plus the
+//! per-element `LenientInt`.
 //!
 //! Each is used with `#[serde(default, deserialize_with = "…")]` on the response fields whose
 //! wire shape the documentation, the OpenAPI spec and the Python SDK disagree about, and only
@@ -42,33 +43,77 @@ pub(crate) fn num_or_string<'de, D: Deserializer<'de>>(d: D) -> Result<Option<f6
 )]
 pub(crate) fn int_or_string<'de, D: Deserializer<'de>>(d: D) -> Result<Option<i64>, D::Error> {
     let invalid = || D::Error::custom("expected an integer or an integer string");
-    let from_f64 = |f: f64| {
-        // Both bounds exclusive: 2^63 does not fit, and -2^63 as a float can only come from an
-        // integer below i64::MIN rounding up (i64::MIN itself is caught by the integer path).
-        let in_range = f > -9_223_372_036_854_775_808.0 && f < 9_223_372_036_854_775_808.0;
-        (f.fract() == 0.0 && in_range).then_some(f as i64)
-    };
     match Value::deserialize(d)? {
         Value::Null => Ok(None),
         Value::Number(n) => n
             .as_i64()
-            .or_else(|| n.as_f64().and_then(from_f64))
+            .or_else(|| n.as_f64().and_then(integral))
             .map(Some)
             .ok_or_else(invalid),
-        Value::String(s) => {
-            let s = s.trim();
-            s.parse::<i64>()
-                .ok()
-                .or_else(|| {
-                    s.parse::<f64>()
-                        .ok()
-                        .filter(|f| f.is_finite())
-                        .and_then(from_f64)
-                })
-                .map(Some)
-                .ok_or_else(invalid)
-        }
+        Value::String(s) => int_from_str(&s).map(Some).ok_or_else(invalid),
         _ => Err(invalid()),
+    }
+}
+
+/// An integral float as `i64`; `None` for a fraction or a value outside `i64`.
+fn integral(f: f64) -> Option<i64> {
+    // Both bounds exclusive: 2^63 does not fit, and -2^63 as a float can only come from an
+    // integer below i64::MIN rounding up (i64::MIN itself is caught by the integer path).
+    let in_range = f > -9_223_372_036_854_775_808.0 && f < 9_223_372_036_854_775_808.0;
+    (f.fract() == 0.0 && in_range).then_some(f as i64)
+}
+
+/// An integer from decimal text, or from an integral float's text.
+fn int_from_str(s: &str) -> Option<i64> {
+    let s = s.trim();
+    s.parse::<i64>().ok().or_else(|| {
+        s.parse::<f64>()
+            .ok()
+            .filter(|f| f.is_finite())
+            .and_then(integral)
+    })
+}
+
+/// One array element read like [`int_or_string`] (an integer, an integral float or integer
+/// text), decoded with a visitor so large arrays never go through `serde_json::Value`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) struct LenientInt(pub(crate) i64);
+
+impl<'de> Deserialize<'de> for LenientInt {
+    fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        struct IntVisitor;
+
+        impl serde::de::Visitor<'_> for IntVisitor {
+            type Value = LenientInt;
+
+            fn expecting(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                f.write_str("an integer or an integer string")
+            }
+
+            fn visit_i64<E: serde::de::Error>(self, v: i64) -> Result<LenientInt, E> {
+                Ok(LenientInt(v))
+            }
+
+            fn visit_u64<E: serde::de::Error>(self, v: u64) -> Result<LenientInt, E> {
+                i64::try_from(v)
+                    .map(LenientInt)
+                    .map_err(|_| E::custom("integer out of range"))
+            }
+
+            fn visit_f64<E: serde::de::Error>(self, v: f64) -> Result<LenientInt, E> {
+                integral(v)
+                    .map(LenientInt)
+                    .ok_or_else(|| E::custom("expected an integral number"))
+            }
+
+            fn visit_str<E: serde::de::Error>(self, v: &str) -> Result<LenientInt, E> {
+                int_from_str(v)
+                    .map(LenientInt)
+                    .ok_or_else(|| E::custom("expected an integer string"))
+            }
+        }
+
+        d.deserialize_any(IntVisitor)
     }
 }
 
@@ -368,5 +413,27 @@ mod tests {
         let row: Row = de("{}").unwrap();
         assert_eq!(row.price, None);
         assert!(row.legs.is_empty());
+    }
+
+    #[test]
+    fn lenient_int_reads_integers_integral_floats_and_integer_text() {
+        let read = |v: serde_json::Value| serde_json::from_value::<Vec<LenientInt>>(v);
+        assert_eq!(
+            read(serde_json::json!([
+                7, -3, 10.0, "42", " 8 ", "5.0", 1.7567e9
+            ]))
+            .unwrap(),
+            [7, -3, 10, 42, 8, 5, 1_756_700_000].map(LenientInt)
+        );
+        for bad in [
+            serde_json::json!([1.5]),
+            serde_json::json!(["x"]),
+            serde_json::json!([true]),
+            serde_json::json!([null]),
+            serde_json::json!([[1]]),
+            serde_json::json!([u64::MAX]),
+        ] {
+            assert!(read(bad.clone()).is_err(), "{bad}");
+        }
     }
 }
