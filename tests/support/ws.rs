@@ -30,7 +30,8 @@ pub enum Step {
     SendBinary(Vec<u8>),
     SendText(String),
     Ping,
-    /// Send a close frame (with this code), then stop.
+    /// Send a close frame (with this code), wait up to a second for the client's close reply
+    /// to be recorded, then stop.
     Close(Option<u16>),
     /// Drop the TCP connection without a close frame.
     Eof,
@@ -38,6 +39,9 @@ pub enum Step {
     /// Wait for the client's next text frame on this connection and record whether it equals
     /// this JSON value.
     ExpectText(serde_json::Value),
+    /// Stop reading client frames, keeping the connection open, so the client's writes stall
+    /// once the socket buffers fill (see [`WsHarness::start_with_recv_buffer`]).
+    StopReading,
 }
 
 /// The script for one connection. If `steps` does not end in `Close` or `Eof`, the harness
@@ -96,6 +100,20 @@ impl WsHarness {
     /// Starts serving `connections`, one per accepted TCP connection, in order.
     pub async fn start(connections: Vec<WsConnection>) -> Self {
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        Self::serve_on(listener, connections)
+    }
+
+    /// Like [`WsHarness::start`], with a receive buffer of about `bytes` on every accepted
+    /// socket, so a [`Step::StopReading`] stalls the client after little data.
+    pub async fn start_with_recv_buffer(connections: Vec<WsConnection>, bytes: u32) -> Self {
+        let socket = tokio::net::TcpSocket::new_v4().unwrap();
+        // Set before listen: accepted sockets inherit it.
+        socket.set_recv_buffer_size(bytes).unwrap();
+        socket.bind("127.0.0.1:0".parse().unwrap()).unwrap();
+        Self::serve_on(socket.listen(16).unwrap(), connections)
+    }
+
+    fn serve_on(listener: TcpListener, connections: Vec<WsConnection>) -> Self {
         let addr = listener.local_addr().unwrap();
         let recorded = Arc::new(Mutex::new(Recorded::default()));
         let shared = Arc::clone(&recorded);
@@ -224,7 +242,7 @@ async fn serve(
     };
     let (mut sink, mut source) = ws.split();
     let arrived = Arc::new(Notify::new());
-    let reader = AbortOnDrop(tokio::spawn({
+    let mut reader = Some(AbortOnDrop(tokio::spawn({
         let recorded = Arc::clone(&recorded);
         let arrived = Arc::clone(&arrived);
         async move {
@@ -233,7 +251,7 @@ async fn serve(
                 arrived.notify_one();
             }
         }
-    }));
+    })));
     let mut texts_seen = 0;
     for step in connection.steps {
         match step {
@@ -258,8 +276,22 @@ async fn serve(
                     reason: "".into(),
                 });
                 let _ = sink.send(Message::Close(frame)).await;
+                let replied = async {
+                    loop {
+                        let woken = arrived.notified();
+                        let closed = recorded.lock().unwrap().frames[index]
+                            .iter()
+                            .any(|f| matches!(f, ClientFrame::Close(_)));
+                        if closed {
+                            return;
+                        }
+                        woken.await;
+                    }
+                };
+                let _ = tokio::time::timeout(Duration::from_secs(1), replied).await;
                 return;
             }
+            Step::StopReading => reader = None,
             Step::Eof => {
                 drop(reader);
                 drop(sink);

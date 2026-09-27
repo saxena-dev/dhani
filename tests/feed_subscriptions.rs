@@ -322,6 +322,15 @@ async fn a_peer_close_reconnects_with_its_close_code() {
             reason: DisconnectReason::RemoteClose { code: Some(1001) }
         }
     )));
+    // The client answered the server's close frame.
+    assert!(
+        harness
+            .frames(0)
+            .iter()
+            .any(|f| matches!(f, support::ws::ClientFrame::Close(_))),
+        "{:?}",
+        harness.frames(0)
+    );
     // The restore wrote nothing new, so it reports no CommandsSent.
     assert!(
         !log.lock()

@@ -679,6 +679,17 @@ impl<P: FeedProtocol> Owner<P> {
                         return Ended::Cause(Cause::Disconnected(DisconnectReason::Eof), None);
                     };
                     let frame = match frame {
+                        Ok(frame @ Message::Close(_)) => {
+                            // Send the close reply the WebSocket layer queued (RFC 6455
+                            // §5.5.1), bounded like our own closing handshake; a stop still wins.
+                            let bound = self.limits.shutdown_timeout;
+                            tokio::select! {
+                                biased;
+                                () = stop.wait() => return self.close(socket).await,
+                                _ = tokio::time::timeout(bound, socket.flush()) => {}
+                            }
+                            frame
+                        }
                         Ok(frame) => frame,
                         // The peer dropped the TCP connection without a close frame.
                         Err(tungstenite::Error::Protocol(

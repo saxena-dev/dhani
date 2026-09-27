@@ -1,6 +1,6 @@
 //! Backpressure scenarios against the loopback WebSocket harness: a stalled consumer under
-//! `OverflowPolicy::Fail` and `OverflowPolicy::DropOldest`, a full lifecycle queue, and a dropped
-//! event stream.
+//! `OverflowPolicy::Fail` and `OverflowPolicy::DropOldest`, a full lifecycle queue, a dropped
+//! event stream, and socket writes stalled by a server that stops reading.
 //!
 //! The consumer stalls simply by not polling `FeedEvents`; progress is observed through
 //! `FeedHandle::status`, which never waits on the queues. As in `feed_lifecycle.rs`, a paused
@@ -333,5 +333,138 @@ async fn dropping_the_event_stream_ends_the_feed() {
     assert_eq!(
         outcome.await.unwrap(),
         dhani::feed::TaskOutcome::Terminal(TerminalReason::ReceiverDropped)
+    );
+}
+
+fn nse(id: u32) -> dhani::feed::Instrument {
+    dhani::feed::Instrument::new(
+        dhani::types::ExchangeSegment::NseEq,
+        dhani::types::SecurityId::new(id.to_string()).unwrap(),
+    )
+    .unwrap()
+}
+
+/// A server that stops reading at once but pings every 5 s for a minute: an idle client would
+/// never hit its liveness timeout, so one can only come from a stalled write.
+fn stalling_connection() -> WsConnection {
+    let mut steps = vec![Step::StopReading];
+    for _ in 0..12 {
+        steps.push(Step::Wait(Duration::from_secs(5)));
+        steps.push(Step::Ping);
+    }
+    WsConnection::accept(steps)
+}
+
+/// A feed stuck in a socket write, with the time the command whose write stalled was issued.
+struct Stalled {
+    harness: WsHarness,
+    handle: FeedHandle<MarketSub>,
+    events: FeedEvents<MarketPacket>,
+    task: dhani::feed::FeedTask,
+    applied_at: tokio::time::Instant,
+}
+
+/// Starts a feed on a harness with a 4 KiB receive buffer, then swaps between two
+/// 5000-instrument sets (about 100 messages per swap) until a command gets no reply within a
+/// second: the owner is then stuck writing the previous swap.
+async fn stalled(second: Vec<WsConnection>) -> Stalled {
+    let mut connections = vec![stalling_connection()];
+    connections.extend(second);
+    let harness = WsHarness::start_with_recv_buffer(connections, 4096).await;
+    let (handle, events, task) = MarketFeed::builder(credentials())
+        .url(harness.url())
+        .limits(limits(256))
+        .spawn()
+        .unwrap();
+    until("active", || handle.status().state == FeedState::Active).await;
+    let set = |from: u32| {
+        (from..from + 5000)
+            .map(|id| (nse(id), dhani::feed::Mode::Full))
+            .collect::<Vec<_>>()
+    };
+    let mut applied_at = tokio::time::Instant::now();
+    for round in 0..20 {
+        // The stuck write, if this round's, starts after this point.
+        let issued_at = tokio::time::Instant::now();
+        let h = handle.clone();
+        let pairs = set(if round % 2 == 0 { 1 } else { 10_001 });
+        let reply = tokio::spawn(async move { h.replace(pairs).await });
+        let give_up = tokio::time::Instant::now() + Duration::from_secs(1);
+        until("reply or stall", || {
+            reply.is_finished() || tokio::time::Instant::now() >= give_up
+        })
+        .await;
+        if !reply.is_finished() {
+            // Virtual seconds pass in microseconds of real time: give a write that is only
+            // briefly blocked real time to finish before calling it stuck.
+            // real-time: 200 ms of spinning without advancing the clock.
+            let real = std::time::Instant::now() + Duration::from_millis(200);
+            while !reply.is_finished() && std::time::Instant::now() < real {
+                tokio::task::yield_now().await;
+            }
+        }
+        if !reply.is_finished() {
+            return Stalled {
+                harness,
+                handle,
+                events,
+                task,
+                applied_at,
+            };
+        }
+        applied_at = issued_at;
+    }
+    panic!("the writes never stalled");
+}
+
+#[tokio::test(flavor = "current_thread", start_paused = true)]
+async fn a_stalled_write_ends_the_connection_as_a_liveness_loss() {
+    let mut feed = stalled(vec![WsConnection::accept(vec![])]).await;
+    until("connection lost", || {
+        !feed.handle.status().last_failures.is_empty()
+    })
+    .await;
+    // The write that stalled started after the last applied command and is bounded by the 30 s
+    // liveness timeout; an idle connection would have lived on the server's pings.
+    let lost_after = tokio::time::Instant::now() - feed.applied_at;
+    assert!(
+        (Duration::from_secs(30)..=Duration::from_secs(33)).contains(&lost_after),
+        "{lost_after:?}"
+    );
+    let lost = feed.handle.status().last_failures[0].clone();
+    assert_eq!(lost.reason, dhani::feed::DisconnectReason::LivenessTimeout);
+    until("second active", || {
+        let s = feed.handle.status();
+        s.epoch == 2 && s.state == FeedState::Active
+    })
+    .await;
+    let seen = labels(&drain(&mut feed.events));
+    assert!(
+        seen.contains(&"Disconnected{LivenessTimeout}".to_owned()),
+        "{seen:?}"
+    );
+    assert_eq!(feed.harness.connections(), 2);
+}
+
+#[tokio::test(flavor = "current_thread", start_paused = true)]
+async fn a_stop_during_a_stalled_write_ends_with_send_interrupted() {
+    let feed = stalled(vec![]).await;
+    let status = feed.handle.status();
+    assert_eq!((status.epoch, status.state), (1, FeedState::Active));
+    let h = feed.handle.clone();
+    let asked = tokio::time::Instant::now();
+    let shutdown = tokio::spawn(async move { h.shutdown().await });
+    until("shutdown", || shutdown.is_finished()).await;
+    // The stop cuts the write at once, well inside the 5 s shutdown_timeout.
+    assert!(tokio::time::Instant::now() - asked < Duration::from_millis(100));
+    assert_eq!(
+        shutdown.await.unwrap(),
+        Err(FeedError(TerminalReason::SendInterrupted))
+    );
+    let outcome = tokio::spawn(feed.task.join());
+    until("task ended", || outcome.is_finished()).await;
+    assert_eq!(
+        outcome.await.unwrap(),
+        dhani::feed::TaskOutcome::Terminal(TerminalReason::SendInterrupted)
     );
 }
