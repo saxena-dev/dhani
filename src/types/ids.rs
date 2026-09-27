@@ -60,7 +60,7 @@ fn correlation_char(c: char) -> bool {
 macro_rules! id_type {
     ($(#[$meta:meta])* $name:ident, $field:literal, $validate:expr) => {
         $(#[$meta])*
-        #[derive(Clone, Debug, PartialEq, Eq, Hash)]
+        #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
         pub struct $name(String);
 
         impl $name {

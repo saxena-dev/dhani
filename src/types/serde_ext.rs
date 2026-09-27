@@ -1,5 +1,5 @@
 //! Crate-private serde helpers: `num_or_string`, `int_or_string`, `one_or_many`,
-//! `scalar_or_vec`, `na_as_none`, `bool_or_string` and `inbound_ci`.
+//! `scalar_or_vec`, `na_as_none`, `bool_or_string`, `inbound_ci` and `null_as_empty`.
 //!
 //! Each is used with `#[serde(default, deserialize_with = "…")]` on the response fields whose
 //! wire shape the documentation, the OpenAPI spec and the Python SDK disagree about, and only
@@ -186,6 +186,16 @@ where
             "expected a string, number or boolean enum value",
         )),
     }
+}
+
+/// A collection (or any `Default` value) where JSON `null` counts as empty (§7.0: an absent or
+/// `null` collection decodes as empty; `#[serde(default)]` alone covers only absence).
+pub(crate) fn null_as_empty<'de, D, T>(d: D) -> Result<T, D::Error>
+where
+    D: Deserializer<'de>,
+    T: Deserialize<'de> + Default,
+{
+    Ok(Option::<T>::deserialize(d)?.unwrap_or_default())
 }
 
 #[cfg(test)]

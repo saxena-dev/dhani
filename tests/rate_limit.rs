@@ -184,3 +184,31 @@ async fn the_twenty_sixth_modify_of_an_order_is_refused_locally() {
     assert!(!err.may_have_reached_server());
     assert_eq!(requests(&server).await, 25);
 }
+
+// Drift guard: the Quote-class facade waits for the same window as `__execute_for_tests`.
+#[tokio::test(start_paused = true)]
+async fn the_market_quote_facade_waits_for_the_quote_window() {
+    let server = server_answering("POST", "/v2/marketfeed/ltp").await;
+    let client = client(&server, limiter(AdmissionLimits::default()));
+    let raw_ltp = |client: &DhanClient| {
+        let client = client.clone();
+        async move {
+            let mut req = dhani::rest::QuoteRequest::new();
+            req.add(
+                dhani::types::ExchangeSegment::NseEq,
+                dhani::types::SecurityId::new("1333").unwrap(),
+            );
+            client.market_quote().ltp_raw(&req).await
+        }
+    };
+    let start = Instant::now();
+    finish(raw_ltp(&client)).await.unwrap();
+    let second = tokio::spawn(raw_ltp(&client));
+    assert!(!settle_for(&second, 10_000).await);
+    assert_eq!(requests(&server).await, 1);
+    tokio::time::advance(Duration::from_secs(1)).await;
+    assert!(settle(&second).await, "the second call did not finish");
+    second.await.unwrap().unwrap();
+    assert!(Instant::now() - start >= Duration::from_secs(1));
+    assert_eq!(requests(&server).await, 2);
+}
