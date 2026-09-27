@@ -149,6 +149,7 @@ impl<P: FeedProtocol> FeedBuilder<P> {
             lost: None,
             last_data_seq: None,
             status_queue: (0, 0),
+            status_sent_revision: None,
         };
         let session = spans::ws_session(P::FEED, SESSIONS.fetch_add(1, Ordering::Relaxed));
         let task = runtime.spawn(

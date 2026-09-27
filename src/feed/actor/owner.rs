@@ -165,6 +165,10 @@ pub(crate) struct Owner<P: FeedProtocol> {
     pub(crate) last_data_seq: Option<u64>,
     /// The queue length and drop count last published in the status.
     pub(crate) status_queue: (usize, u64),
+    /// The desired revision last written to a connection, the same value last published as
+    /// `FeedStatus::sent_revision`. It is `None` until the first restore, so the first connection
+    /// never reports `CommandsSent` on restore, even for commands queued while it was pending.
+    pub(crate) status_sent_revision: Option<Revision>,
 }
 
 impl<P: FeedProtocol> Owner<P> {
@@ -558,6 +562,15 @@ impl<P: FeedProtocol> Owner<P> {
             }
         }
         let revision = self.desired.revision();
+        // Commands accepted while disconnected (after an earlier connection's writes) are now
+        // written: report them before Active.
+        let previously_sent = self.status_sent_revision;
+        if previously_sent.is_some_and(|previous| previous != revision)
+            && let Err(t) = self.lifecycle(Lifecycle::CommandsSent { revision })
+        {
+            return Ended::Terminal(t);
+        }
+        self.status_sent_revision = Some(revision);
         self.budget.mark_active();
         self.status.update(|s| {
             s.state = FeedState::Active;
@@ -654,6 +667,7 @@ impl<P: FeedProtocol> Owner<P> {
                             return end;
                         }
                         let revision = self.desired.revision();
+                        self.status_sent_revision = Some(revision);
                         self.status.update(|s| s.sent_revision = Some(revision));
                         if let Err(t) = self.lifecycle(Lifecycle::CommandsSent { revision }) {
                             return Ended::Terminal(t);
