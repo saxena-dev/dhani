@@ -11,7 +11,7 @@ repository = "https://github.com/saxena-dev/dhani"
 keywords = ["dhanhq", "trading", "broker", "websocket"]
 categories = ["api-bindings", "finance", "asynchronous"]
 exclude = [
-    "DhanHQ-py/",
+    "vendor/DhanHQ-py/",
     "tests/",
     "examples/",
     "benches/",

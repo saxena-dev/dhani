@@ -1,7 +1,7 @@
 //! `tests/fixtures/MANIFEST.toml` lists every fixture file, and every listed file is intact.
 //!
 //! Checks: each `[[fixture]]` file exists with its recorded sha256 and byte length; every file
-//! under `tests/fixtures/` other than the manifest is listed; the `DhanHQ-py` submodule is
+//! under `tests/fixtures/` other than the manifest is listed; the `vendor/DhanHQ-py` submodule is
 //! checked out at the pinned commit (skipped with a message when the tree is not a git
 //! checkout).
 
@@ -16,7 +16,7 @@ use sha2::{Digest, Sha256};
 const ROOT: &str = env!("CARGO_MANIFEST_DIR");
 const MANIFEST: &str = "tests/fixtures/MANIFEST.toml";
 const FIXTURES_DIR: &str = "tests/fixtures";
-const SUBMODULE: &str = "DhanHQ-py";
+const SUBMODULE: &str = "vendor/DhanHQ-py";
 const PINNED_COMMIT: &str = "63b9030d700f0fd331c124fd948ba0b79a6e7fd8";
 const CLASSES: &[&str] = &["upstream", "synthesized", "derived", "captured"];
 

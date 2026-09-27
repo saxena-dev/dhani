@@ -1,12 +1,12 @@
 //! Fixture loader: envelope unwrap of upstream fixtures, raw byte access and manifest lookup.
 //!
 //! Every path resolves from `CARGO_MANIFEST_DIR`, never from the working directory. Upstream
-//! fixtures are read in place from the pinned `DhanHQ-py` submodule and never copied. A missing
+//! fixtures are read in place from the pinned `vendor/DhanHQ-py` submodule and never copied. A missing
 //! file is a setup failure that panics with the path; nothing is downloaded or substituted.
 
 use std::path::{Path, PathBuf};
 
-const UPSTREAM_DIR: &str = "DhanHQ-py/tests/data";
+const UPSTREAM_DIR: &str = "vendor/DhanHQ-py/tests/data";
 const SYNTH_DIR: &str = "tests/fixtures/synth";
 const MANIFEST: &str = "tests/fixtures/MANIFEST.toml";
 
@@ -25,7 +25,7 @@ pub fn upstream_payload(name: &str) -> Vec<u8> {
     let dir = root().join(UPSTREAM_DIR);
     assert!(
         dir.is_dir(),
-        "{} is missing; run `git submodule update --init DhanHQ-py`",
+        "{} is missing; run `git submodule update --init vendor/DhanHQ-py`",
         dir.display()
     );
     let path = dir.join(name);

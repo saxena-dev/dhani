@@ -3,7 +3,7 @@
 # tests/fixture_manifest.rs verifies every entry against the files on disk.
 
 [[fixture]]
-path = "DhanHQ-py/tests/data/place_order.json"
+path = "vendor/DhanHQ-py/tests/data/place_order.json"
 class = "upstream"
 origin = "DhanHQ-py@63b9030d700f0fd331c124fd948ba0b79a6e7fd8"
 sha256 = "aade2b9ba90c32a7b60d9a7c31404148a173f1670d012be440c8a24280ca9b53"
@@ -11,7 +11,7 @@ bytes = 120
 endpoint = "O1"
 
 [[fixture]]
-path = "DhanHQ-py/tests/data/place_slice_order.json"
+path = "vendor/DhanHQ-py/tests/data/place_slice_order.json"
 class = "upstream"
 origin = "DhanHQ-py@63b9030d700f0fd331c124fd948ba0b79a6e7fd8"
 sha256 = "8f943bc92c2fa9026e89b024a1757ac1a68fd9e45bab77cf7a6c9d374e934145"
@@ -19,7 +19,7 @@ bytes = 138
 endpoint = "O2"
 
 [[fixture]]
-path = "DhanHQ-py/tests/data/modify_pending_order.json"
+path = "vendor/DhanHQ-py/tests/data/modify_pending_order.json"
 class = "upstream"
 origin = "DhanHQ-py@63b9030d700f0fd331c124fd948ba0b79a6e7fd8"
 sha256 = "aade2b9ba90c32a7b60d9a7c31404148a173f1670d012be440c8a24280ca9b53"
@@ -27,7 +27,7 @@ bytes = 120
 endpoint = "O3"
 
 [[fixture]]
-path = "DhanHQ-py/tests/data/cancel_given_order.json"
+path = "vendor/DhanHQ-py/tests/data/cancel_given_order.json"
 class = "upstream"
 origin = "DhanHQ-py@63b9030d700f0fd331c124fd948ba0b79a6e7fd8"
 sha256 = "aade2b9ba90c32a7b60d9a7c31404148a173f1670d012be440c8a24280ca9b53"
@@ -35,7 +35,7 @@ bytes = 120
 endpoint = "O4"
 
 [[fixture]]
-path = "DhanHQ-py/tests/data/get-current-orders-list.json"
+path = "vendor/DhanHQ-py/tests/data/get-current-orders-list.json"
 class = "upstream"
 origin = "DhanHQ-py@63b9030d700f0fd331c124fd948ba0b79a6e7fd8"
 sha256 = "cbf218e1875829578219831917ea619234730b087b5a6ec24dfae87751e325d0"
@@ -43,7 +43,7 @@ bytes = 1052
 endpoint = "O5"
 
 [[fixture]]
-path = "DhanHQ-py/tests/data/get-order-by-id.json"
+path = "vendor/DhanHQ-py/tests/data/get-order-by-id.json"
 class = "upstream"
 origin = "DhanHQ-py@63b9030d700f0fd331c124fd948ba0b79a6e7fd8"
 sha256 = "d31c8c9401a1dbe2a45599943ade6d8d757966f44df15399cfd4711eba1799b2"
@@ -51,7 +51,7 @@ bytes = 1140
 endpoint = "O6"
 
 [[fixture]]
-path = "DhanHQ-py/tests/data/get-order-by-correlation-id.json"
+path = "vendor/DhanHQ-py/tests/data/get-order-by-correlation-id.json"
 class = "upstream"
 origin = "DhanHQ-py@63b9030d700f0fd331c124fd948ba0b79a6e7fd8"
 sha256 = "d31c8c9401a1dbe2a45599943ade6d8d757966f44df15399cfd4711eba1799b2"
@@ -59,7 +59,7 @@ bytes = 1140
 endpoint = "O7"
 
 [[fixture]]
-path = "DhanHQ-py/tests/data/get_all_trades.json"
+path = "vendor/DhanHQ-py/tests/data/get_all_trades.json"
 class = "upstream"
 origin = "DhanHQ-py@63b9030d700f0fd331c124fd948ba0b79a6e7fd8"
 sha256 = "05b45a5734dae88845d24ddc0f8337edb242a066770b59b6522788edb6ca5cf8"
@@ -67,7 +67,7 @@ bytes = 677
 endpoint = "O8"
 
 [[fixture]]
-path = "DhanHQ-py/tests/data/get_trade_book_by_orderid.json"
+path = "vendor/DhanHQ-py/tests/data/get_trade_book_by_orderid.json"
 class = "upstream"
 origin = "DhanHQ-py@63b9030d700f0fd331c124fd948ba0b79a6e7fd8"
 sha256 = "05b45a5734dae88845d24ddc0f8337edb242a066770b59b6522788edb6ca5cf8"
@@ -75,7 +75,7 @@ bytes = 677
 endpoint = "O9"
 
 [[fixture]]
-path = "DhanHQ-py/tests/data/get-forever-orders-list.json"
+path = "vendor/DhanHQ-py/tests/data/get-forever-orders-list.json"
 class = "upstream"
 origin = "DhanHQ-py@63b9030d700f0fd331c124fd948ba0b79a6e7fd8"
 sha256 = "2e5b3e2f3765dd5d94926e0b4d6b893052f725e9156196a528351c2cbcc0ed15"
@@ -83,7 +83,7 @@ bytes = 652
 endpoint = "F4"
 
 [[fixture]]
-path = "DhanHQ-py/tests/data/get-current-holdings.json"
+path = "vendor/DhanHQ-py/tests/data/get-current-holdings.json"
 class = "upstream"
 origin = "DhanHQ-py@63b9030d700f0fd331c124fd948ba0b79a6e7fd8"
 sha256 = "08eec0b6d9fa071ca82e322f511b0e4e7e60177c689db99dfd05908b76784d1e"
@@ -91,7 +91,7 @@ bytes = 361
 endpoint = "P1"
 
 [[fixture]]
-path = "DhanHQ-py/tests/data/get_positions.json"
+path = "vendor/DhanHQ-py/tests/data/get_positions.json"
 class = "upstream"
 origin = "DhanHQ-py@63b9030d700f0fd331c124fd948ba0b79a6e7fd8"
 sha256 = "7e6140640dec8e0bbe5465d3b01c3d392e0c2d805e5e5735854f9787210e53b4"
@@ -99,7 +99,7 @@ bytes = 864
 endpoint = "P2"
 
 [[fixture]]
-path = "DhanHQ-py/tests/data/convert_position.json"
+path = "vendor/DhanHQ-py/tests/data/convert_position.json"
 class = "upstream"
 origin = "DhanHQ-py@63b9030d700f0fd331c124fd948ba0b79a6e7fd8"
 sha256 = "12fc9eb6893293f56fbc8b91c8fc6a959c293d96d599ae40db8c26cb411f0503"
@@ -107,7 +107,7 @@ bytes = 60
 endpoint = "P3"
 
 [[fixture]]
-path = "DhanHQ-py/tests/data/get_fund_limits.json"
+path = "vendor/DhanHQ-py/tests/data/get_fund_limits.json"
 class = "upstream"
 origin = "DhanHQ-py@63b9030d700f0fd331c124fd948ba0b79a6e7fd8"
 sha256 = "645a8346bf66aa3e97f829063f309554904ff244b2b4d3551adac7adcdf3ba0b"
@@ -115,7 +115,7 @@ bytes = 434
 endpoint = "M1"
 
 [[fixture]]
-path = "DhanHQ-py/tests/data/margin_calculator.json"
+path = "vendor/DhanHQ-py/tests/data/margin_calculator.json"
 class = "upstream"
 origin = "DhanHQ-py@63b9030d700f0fd331c124fd948ba0b79a6e7fd8"
 sha256 = "4d0f163e27e2e5cb149d672a528741b82c5d09e3fdf4f90f59dbba2453372e3c"
@@ -123,7 +123,7 @@ bytes = 414
 endpoint = "M2"
 
 [[fixture]]
-path = "DhanHQ-py/tests/data/get_ledger_report.json"
+path = "vendor/DhanHQ-py/tests/data/get_ledger_report.json"
 class = "upstream"
 origin = "DhanHQ-py@63b9030d700f0fd331c124fd948ba0b79a6e7fd8"
 sha256 = "3521cfb4a56d3e8678981dbb4494b242f01a41f7883d4fb79790c8cf406aa3ad"
@@ -131,7 +131,7 @@ bytes = 315
 endpoint = "T1"
 
 [[fixture]]
-path = "DhanHQ-py/tests/data/get_trade_history.json"
+path = "vendor/DhanHQ-py/tests/data/get_trade_history.json"
 class = "upstream"
 origin = "DhanHQ-py@63b9030d700f0fd331c124fd948ba0b79a6e7fd8"
 sha256 = "28394c37cdeafeeac81e75ed57b6100d2ba211a214b612b3535ac062fbd76a45"
@@ -139,7 +139,7 @@ bytes = 854
 endpoint = "T2"
 
 [[fixture]]
-path = "DhanHQ-py/tests/data/historical_daily_data.json"
+path = "vendor/DhanHQ-py/tests/data/historical_daily_data.json"
 class = "upstream"
 origin = "DhanHQ-py@63b9030d700f0fd331c124fd948ba0b79a6e7fd8"
 sha256 = "3ad19773a4759848fd2ace31deb2b45b27512faec4d2eb324ad258c0595d8d23"
@@ -147,7 +147,7 @@ bytes = 62
 endpoint = "H1"
 
 [[fixture]]
-path = "DhanHQ-py/tests/data/intraday_minute_data.json"
+path = "vendor/DhanHQ-py/tests/data/intraday_minute_data.json"
 class = "upstream"
 origin = "DhanHQ-py@63b9030d700f0fd331c124fd948ba0b79a6e7fd8"
 sha256 = "501bd7f739bb4da812addd57c114e88f530f2bca7bd15d18ee985ff8207e8423"
@@ -155,7 +155,7 @@ bytes = 63
 endpoint = "H2"
 
 [[fixture]]
-path = "DhanHQ-py/tests/data/expired_options_data.json"
+path = "vendor/DhanHQ-py/tests/data/expired_options_data.json"
 class = "upstream"
 origin = "DhanHQ-py@63b9030d700f0fd331c124fd948ba0b79a6e7fd8"
 sha256 = "3ad19773a4759848fd2ace31deb2b45b27512faec4d2eb324ad258c0595d8d23"
@@ -163,7 +163,7 @@ bytes = 62
 endpoint = "H3"
 
 [[fixture]]
-path = "DhanHQ-py/tests/data/option_chain.json"
+path = "vendor/DhanHQ-py/tests/data/option_chain.json"
 class = "upstream"
 origin = "DhanHQ-py@63b9030d700f0fd331c124fd948ba0b79a6e7fd8"
 sha256 = "49da139d661ebd5efce2dae23b42e2bd1691234b61414d14bf279a2e3efa1867"
@@ -171,7 +171,7 @@ bytes = 180
 endpoint = "X1"
 
 [[fixture]]
-path = "DhanHQ-py/tests/data/security_list.json"
+path = "vendor/DhanHQ-py/tests/data/security_list.json"
 class = "upstream"
 origin = "DhanHQ-py@63b9030d700f0fd331c124fd948ba0b79a6e7fd8"
 sha256 = "505c7849e8acd4d71bb0789ef004c1c1cdcc835a9d6652a5ed5d6655b1ae806c"

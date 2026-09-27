@@ -34,7 +34,7 @@ jobs:
           - { name: "all features", args: "--all-features" }
     steps:
       - uses: actions/checkout@v4
-      - run: git submodule update --init DhanHQ-py
+      - run: git submodule update --init vendor/DhanHQ-py
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ matrix.toolchain }}
@@ -44,7 +44,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: git submodule update --init DhanHQ-py
+      - run: git submodule update --init vendor/DhanHQ-py
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy

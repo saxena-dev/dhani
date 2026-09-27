@@ -60,10 +60,10 @@ forbid_deps() { # <row> <crate>...
   echo "+ row '$row' excludes: $*"
 }
 
-# CI runs `git submodule update --init DhanHQ-py`; locally the checkout is only checked, because
+# CI runs `git submodule update --init vendor/DhanHQ-py`; locally the checkout is only checked, because
 # updating would silently move a submodule that was deliberately moved off the pin.
-if [ ! -e DhanHQ-py/.git ]; then
-  echo "DhanHQ-py is not checked out; run: git submodule update --init DhanHQ-py" >&2
+if [ ! -e vendor/DhanHQ-py/.git ]; then
+  echo "vendor/DhanHQ-py is not checked out; run: git submodule update --init vendor/DhanHQ-py" >&2
   exit 1
 fi
 run cargo fmt --all -- --check
