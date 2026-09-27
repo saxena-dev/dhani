@@ -303,10 +303,6 @@ pub struct OrderAck {
 }
 
 /// A slice response: one acknowledgement object or an array of them (Appendix A D30).
-#[cfg_attr(
-    not(test),
-    allow(dead_code, reason = "used by the orders facade of the next task")
-)]
 pub(crate) fn one_or_many_acks<'de, D: Deserializer<'de>>(d: D) -> Result<Vec<OrderAck>, D::Error> {
     one_or_many(d)
 }
@@ -314,10 +310,6 @@ pub(crate) fn one_or_many_acks<'de, D: Deserializer<'de>>(d: D) -> Result<Vec<Or
 /// The body of a slice response, decoded with [`one_or_many_acks`].
 #[derive(Debug, Deserialize)]
 #[serde(transparent)]
-#[cfg_attr(
-    not(test),
-    allow(dead_code, reason = "used by the orders facade of the next task")
-)]
 pub(crate) struct SlicedAcks(
     #[serde(deserialize_with = "one_or_many_acks")] pub(crate) Vec<OrderAck>,
 );

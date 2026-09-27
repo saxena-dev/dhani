@@ -736,3 +736,39 @@ async fn a_call_dropped_while_waiting_for_admission_sends_nothing() {
     tokio::time::advance(Duration::from_secs(2)).await;
     assert_eq!((server.requests().len(), server.connections()), (1, 1));
 }
+
+// Drift guard: the facade drives the same paths as `__execute_for_tests` above.
+#[tokio::test(start_paused = true)]
+async fn the_orders_facade_retries_a_read_and_never_resends_a_mutation() {
+    let unavailable = Reply::text(503, "Service Unavailable");
+    let server = FaultHttp::start(vec![unavailable, Reply::json(200, EMPTY_LIST)]).await;
+    let client = fault_client(&server);
+    let orders = drive(async move { client.orders().list().await }).await;
+    assert_eq!(orders.unwrap().len(), 0);
+    assert_eq!(server.requests().len(), 2);
+
+    let server = FaultHttp::start(vec![Reply::DropAfterRequest, Reply::json(200, "{}")]).await;
+    let client = fault_client(&server);
+    let req = dhani::rest::PlaceOrderRequest::new(
+        dhani::types::ExchangeSegment::NseEq,
+        dhani::types::SecurityId::new("1333").unwrap(),
+        dhani::types::TransactionType::Buy,
+        1,
+        dhani::types::OrderType::Market,
+        dhani::types::ProductType::Intraday,
+        dhani::types::Validity::Day,
+    );
+    let err = drive(async move { client.orders().place(&req).await })
+        .await
+        .unwrap_err();
+    assert_eq!(
+        (err.kind(), err.stage(), err.attempts()),
+        (ErrorKind::Transport, Stage::Sent, 1)
+    );
+    let requests = server.requests();
+    assert_eq!(requests.len(), 1);
+    assert_eq!(
+        (requests[0].method.as_str(), requests[0].target.as_str()),
+        ("POST", "/v2/orders")
+    );
+}

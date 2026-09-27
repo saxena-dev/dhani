@@ -351,6 +351,11 @@ fn slice_acks_decode_from_an_object_or_an_array() {
     .unwrap();
     let ids: Vec<&str> = many.0.iter().map(|a| a.order_id.as_ref()).collect();
     assert_eq!(ids, ["1", "2"]);
+    // An empty or null list decodes as no acks (the §7.0 collection rule).
+    for empty in [json!([]), json!(null)] {
+        let none: SlicedAcks = serde_json::from_value(empty).unwrap();
+        assert!(none.0.is_empty());
+    }
 }
 
 #[test]
