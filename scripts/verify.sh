@@ -3,8 +3,9 @@
 #
 #   scripts/verify.sh           feature rows on the stable toolchain, plus lint, docs and
 #                               dependency-graph checks
-#   scripts/verify.sh --msrv    additionally runs the feature rows on the MSRV toolchain
-#                               (rustup toolchain 1.88); CI always runs both
+#   scripts/verify.sh --msrv    additionally checks every feature row on the MSRV toolchain
+#                               (rustup toolchain 1.88) and runs the all-features tests on it;
+#                               CI runs every row's tests on both toolchains
 #
 # Exits non-zero on the first failure. Never fetches or hashes DhanHQ documentation and never
 # runs the live test lane.
@@ -70,7 +71,15 @@ run cargo fmt --all -- --check
 run cargo clippy --locked --all-targets --all-features -- -D warnings
 test_rows
 if [ "$msrv" = 1 ]; then
-  test_rows "+$MSRV"
+  # Locally, compiling each narrower row (all targets, so tests and benches too) proves it
+  # builds on the MSRV; running the tests once with every feature covers MSRV behaviour. This
+  # keeps the MSRV pass to a fraction of a full second matrix; CI still runs all of it.
+  for row in "${ROWS[@]}"; do
+    [ "$row" = all ] && continue
+    # shellcheck disable=SC2046
+    run cargo "+$MSRV" check --locked --all-targets $(row_args "$row")
+  done
+  run cargo "+$MSRV" test --locked --all-features
 fi
 RUSTDOCFLAGS=-Dwarnings run cargo doc --locked --all-features --no-deps
 run cargo test --locked --doc --all-features

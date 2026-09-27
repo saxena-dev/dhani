@@ -221,3 +221,11 @@ harness = false
 # Also built (and its smoke mode run) by plain `cargo test`, not only `cargo test --benches`.
 test = true
 required-features = ["rest"]
+
+# Line tables only for the crate and no debug info for dependencies: backtraces keep file and
+# line, while the many test binaries link far faster.
+[profile.dev]
+debug = "line-tables-only"
+
+[profile.dev.package."*"]
+debug = false
