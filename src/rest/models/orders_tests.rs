@@ -323,6 +323,18 @@ fn modify_validation() {
         invalid("trigger_price", ValidationReason::NotFinite)
     );
     assert_eq!(base().with_quantity(1).with_price(0.0).validate(), Ok(()));
+    // Disclosed quantity is checked against quantity only when both are set.
+    assert_eq!(
+        base()
+            .with_quantity(1)
+            .with_disclosed_quantity(100)
+            .validate(),
+        invalid(
+            "disclosed_quantity",
+            ValidationReason::Inconsistent("must not exceed quantity")
+        )
+    );
+    assert_eq!(base().with_disclosed_quantity(100).validate(), Ok(()));
 }
 
 // ---- Responses -----------------------------------------------------------------------------

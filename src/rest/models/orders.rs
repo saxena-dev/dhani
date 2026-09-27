@@ -1,8 +1,8 @@
 //! Request and response models for orders and trades.
 //!
 //! Requests: [`PlaceOrderRequest`] (DOC:3727-3741) and [`ModifyOrderRequest`] (DOC:3131-3139).
-//! Responses: [`OrderAck`] (DOC:3743-3749), [`Order`] (DOC:1256-1289, DOC:1326-1359,
-//! DOC:1389-1422) and [`Trade`] (DOC:1762-1782, DOC:1713-1731).
+//! Responses: [`OrderAck`] (DOC:3743-3749), [`Order`] (DOC:1254-1286, DOC:1323-1356,
+//! DOC:1386-1419) and [`Trade`] (DOC:1762-1782, DOC:1713-1732).
 
 use serde::{Deserialize, Deserializer, Serialize};
 
@@ -285,6 +285,14 @@ impl ModifyOrderRequest {
             check_quantity("quantity", quantity)?;
         }
         check_price("price", self.price)?;
+        if let (Some(disclosed), Some(quantity)) = (self.disclosed_quantity, self.quantity)
+            && disclosed > quantity
+        {
+            return Err(ValidationError::new(
+                "disclosed_quantity",
+                ValidationReason::Inconsistent("must not exceed quantity"),
+            ));
+        }
         check_price("trigger_price", self.trigger_price)
     }
 }
@@ -314,8 +322,8 @@ pub(crate) struct SlicedAcks(
     #[serde(deserialize_with = "one_or_many_acks")] pub(crate) Vec<OrderAck>,
 );
 
-/// An order from the order book or an order lookup (DOC:1256-1289, DOC:1326-1359,
-/// DOC:1389-1422).
+/// An order from the order book or an order lookup (DOC:1254-1286, DOC:1323-1356,
+/// DOC:1386-1419).
 ///
 /// A lookup by ID or correlation ID returns a single object (Appendix A D31, OQ-19). It is not
 /// `PartialEq`, because it carries the client ID, which is deliberately not comparable.
@@ -429,7 +437,7 @@ pub struct Order {
     pub filled_qty: Option<i64>,
 }
 
-/// A trade from the trade book (DOC:1762-1782, DOC:1713-1731).
+/// A trade from the trade book (DOC:1762-1782, DOC:1713-1732).
 ///
 /// Not `PartialEq`, because it carries the client ID, which is deliberately not comparable.
 #[non_exhaustive]
