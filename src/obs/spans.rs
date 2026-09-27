@@ -272,7 +272,21 @@ pub fn ws_frame(feed: FeedKind, bytes: usize) -> Span {
 mod tests {
     use super::*;
 
-    fn spec_of(span: &Span) -> SpanSpec {
+    /// The spec of the span `build` makes. Another test thread can cache a callsite's interest
+    /// as "never" while this thread's scoped dispatcher is being registered; a disabled span is
+    /// then rebuilt after recomputing the interest cache.
+    fn spec_of(build: impl Fn() -> Span) -> SpanSpec {
+        for _ in 0..16 {
+            let span = build();
+            if span.metadata().is_some() {
+                return spec_from(&span);
+            }
+            tracing::callsite::rebuild_interest_cache();
+        }
+        panic!("the span stays disabled");
+    }
+
+    fn spec_from(span: &Span) -> SpanSpec {
         let meta = span.metadata().expect("the span is enabled");
         let fields: Vec<&'static str> = meta.fields().iter().map(|f| f.name()).collect();
         SpanSpec {
@@ -285,30 +299,32 @@ mod tests {
 
     #[test]
     fn every_constructor_matches_its_catalogue_entry() {
-        // A scoped dispatcher rebuilds callsite interest when it is registered. If call sites in
-        // other tests later race this registration, move to the pinned global dispatch helper
-        // of tests/support/trace.rs (§6.7 item 1).
+        // A scoped dispatcher rebuilds callsite interest when it is registered; `spec_of`
+        // retries a span that another test thread's cached interest left disabled.
         let subscriber = tracing_subscriber::registry();
         tracing::subscriber::with_default(subscriber, || {
             let order = OrderId::new("112111182198").unwrap();
             let correlation = CorrelationId::new("corr-1").unwrap();
-            let request = http_request(
-                EndpointId::OrdersModify,
-                Method::Put,
-                RateClass::Order,
-                RetryClass::Mutation,
-                Some(&order),
-                Some(&correlation),
-            );
+            let request = || {
+                http_request(
+                    EndpointId::OrdersModify,
+                    Method::Put,
+                    RateClass::Order,
+                    RetryClass::Mutation,
+                    Some(&order),
+                    Some(&correlation),
+                )
+            };
+            let parent = request();
             let built = [
-                spec_of(&request),
-                spec_of(&http_admission(&request, RateClass::Order, false)),
-                spec_of(&http_attempt(&request, 1)),
-                spec_of(&ws_session(FeedKind::Market, 1)),
-                spec_of(&ws_connection(FeedKind::Market, 1, 1, "start")),
-                spec_of(&ws_restore(1, 1, 10, 1)),
-                spec_of(&ws_command("subscribe")),
-                spec_of(&ws_frame(FeedKind::Market, 162)),
+                spec_of(request),
+                spec_of(|| http_admission(&parent, RateClass::Order, false)),
+                spec_of(|| http_attempt(&parent, 1)),
+                spec_of(|| ws_session(FeedKind::Market, 1)),
+                spec_of(|| ws_connection(FeedKind::Market, 1, 1, "start")),
+                spec_of(|| ws_restore(1, 1, 10, 1)),
+                spec_of(|| ws_command("subscribe")),
+                spec_of(|| ws_frame(FeedKind::Market, 162)),
             ];
             assert_eq!(built.len(), SPAN_CATALOGUE.len());
             for (spec, entry) in built.iter().zip(SPAN_CATALOGUE) {
