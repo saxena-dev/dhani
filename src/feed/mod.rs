@@ -18,7 +18,7 @@ mod tls;
 pub use self::{
     builder::*, depth::*, global::*, handle::*, market::*, order_update::*, protocol::*, tls::*,
 };
-pub use actor::{CommandError, Revision, SubscriptionCommand, SubscriptionError};
+pub use actor::{CommandError, FeedEvents, Revision, SubscriptionCommand, SubscriptionError};
 
 use std::fmt;
 use std::time::{Duration, SystemTime};
