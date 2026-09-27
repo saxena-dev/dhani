@@ -641,3 +641,107 @@ sha256 = "bf5ec7544dbc2932d7291ab585d9509c1996111d4811af28f46eff48fddf7c47"
 bytes = 80
 endpoint = "W5"
 note = "the four global packets concatenated, exercising batching (DOC:1927)"
+
+[[fixture]]
+path = "tests/fixtures/ws/market_ticker.bin"
+class = "synthesized"
+origin = "DOC:5942-5950"
+method = "layout-encoder"
+sha256 = "32ea2fb0ef6ea388705c91c7641595b5c7e4722070e35a6dc2156b616266b992"
+bytes = 16
+endpoint = "W1"
+
+[[fixture]]
+path = "tests/fixtures/ws/market_quote.bin"
+class = "synthesized"
+origin = "DOC:5961-5978"
+method = "layout-encoder"
+sha256 = "fdbe28c8e0ceba75c2e21977f36ec05c1ad5e6e96ae22fc97e118126b90d1cc0"
+bytes = 50
+endpoint = "W1"
+
+[[fixture]]
+path = "tests/fixtures/ws/market_full.bin"
+class = "synthesized"
+origin = "DOC:5988-6020"
+method = "layout-encoder"
+sha256 = "d829a3d22d65306062437f13083317941d52f9eec9bb08c2553a78b5037af3b1"
+bytes = 162
+endpoint = "W1"
+
+[[fixture]]
+path = "tests/fixtures/ws/market_oi.bin"
+class = "synthesized"
+origin = "DOC:5980-5986"
+method = "layout-encoder"
+sha256 = "73e629c87197b0873633e9f8113e6002c2c8fbc5756c7588c3f428ab570eb479"
+bytes = 12
+endpoint = "W1"
+
+[[fixture]]
+path = "tests/fixtures/ws/market_prev_close.bin"
+class = "synthesized"
+origin = "DOC:5952-5959"
+method = "layout-encoder"
+sha256 = "de18670cc0085dc59c09f3d042f32cd7bd41b9072c931b3506fd212c38c73ca1"
+bytes = 16
+endpoint = "W1"
+
+[[fixture]]
+path = "tests/fixtures/ws/market_disconnect_805.bin"
+class = "synthesized"
+origin = "DOC:6036-6039"
+method = "layout-encoder"
+sha256 = "1e8712176e45a34dcb43087157b9ebfc7cbf1d62441196ee3c8c85bebf8a6042"
+bytes = 10
+endpoint = "W1"
+
+[[fixture]]
+path = "tests/fixtures/ws/market_multi.bin"
+class = "synthesized"
+origin = "DOC:5931-6020"
+method = "layout-encoder"
+sha256 = "4721faf08d29a7a70dfc9550a3e5a3f5d21dacc692b5ebb2d527caf25e349ea0"
+bytes = 228
+endpoint = "W1"
+note = "Ticker + Quote + Full concatenated"
+
+[[fixture]]
+path = "tests/fixtures/ws/depth20_bid_ask_2instr.bin"
+class = "synthesized"
+origin = "DOC:5533-5561"
+method = "layout-encoder"
+sha256 = "928bc69d51aa2f8aef5645c73b7a6b32235d159f3e8a18c95aededabdcc6a9e6"
+bytes = 1328
+endpoint = "W3"
+note = "stacked order of DOC:5595: instrument 1 bid, ask, instrument 2 bid, ask"
+
+[[fixture]]
+path = "tests/fixtures/ws/depth200_rows_37.bin"
+class = "synthesized"
+origin = "DOC:5565-5593"
+method = "layout-encoder"
+sha256 = "ddd08c419448acfdbbe1390709ba85b2c55c05848cb875cc13c1be06d976ce81"
+bytes = 604
+endpoint = "W4"
+note = "one bid packet with 37 rows"
+
+[[fixture]]
+path = "tests/fixtures/ws/depth_disconnect_12_13.bin"
+class = "synthesized"
+origin = "DOC:5610-5614"
+method = "layout-encoder"
+sha256 = "06e8a8cf97526ac8d821f7ddf4ad7ad8e92326340b14d1623a9765ff92745a00"
+bytes = 14
+endpoint = "W3,W4"
+note = "reason 805 as i16 at bytes 12-13 (documented location)"
+
+[[fixture]]
+path = "tests/fixtures/ws/depth_disconnect_8_11.bin"
+class = "synthesized"
+origin = "DOC:5533-5543"
+method = "layout-encoder"
+sha256 = "9f989f87c5400e969dc694e76a6119d78985d1e08ba425d8fbbea324c93d7e3d"
+bytes = 12
+endpoint = "W3,W4"
+note = "reason 805 as u32 at bytes 8-11, where the Python SDK reads it (fulldepth.py:361-365)"
