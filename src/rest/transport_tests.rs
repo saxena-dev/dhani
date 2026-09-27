@@ -698,16 +698,29 @@ async fn a_body_that_stalls_after_the_status_is_not_retried() {
     assert_eq!(err.detail(), None);
 }
 
-// real-time: a paused clock auto-advances while the client waits on the socket. The retry's
-// backoff (at most 250 ms) ends well inside the 1 s quote window, so the second admission is
-// refused at once with max_wait = 0.
+// real-time: a paused clock auto-advances while the client waits on the socket. The quote window
+// is widened to 60 s, so however slow the host, the retry's admission is refused at once with
+// max_wait = 0.
 #[tokio::test]
 async fn a_retry_refused_by_the_local_limiter_reports_one_attempt() {
     use crate::rest::ratelimit::{AdmissionLimits, QuotaProfile};
     let (base, hits) = scripted_server(vec![UNAVAILABLE, OK_JSON]).await;
     let mut t = loopback(base);
+    use crate::labels::RateClass;
+    use crate::rest::ratelimit::Window;
+    let slow_quotes = QuotaProfile::dhan_v2()
+        .with_windows(
+            RateClass::Quote,
+            vec![Window {
+                limit: 1,
+                period: crate::rest::ratelimit::WindowPeriod::Rolling(
+                    std::time::Duration::from_secs(60),
+                ),
+            }],
+        )
+        .unwrap();
     t.limiter = RateLimiter::new(
-        QuotaProfile::dhan_v2(),
+        slow_quotes,
         AdmissionLimits::new(std::time::Duration::ZERO, 256).unwrap(),
     );
     let body = serde_json::json!({"NSE_EQ": [1333]});

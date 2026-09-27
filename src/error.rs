@@ -148,7 +148,9 @@ impl Error {
     }
 
     /// How many attempts were made. An attempt refused by the local rate limiter does not count,
-    /// so a request refused before its first attempt reports zero.
+    /// so a request refused before its first attempt reports zero. An admitted attempt counts
+    /// even if it then fails before sending (the operation deadline passing, or the request
+    /// failing to build); its [`stage`](Error::stage) is still [`Stage::NotSent`].
     pub fn attempts(&self) -> u32 {
         self.0.attempts
     }

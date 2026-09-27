@@ -402,7 +402,6 @@ impl RateLimiter {
         key: Option<OptionChainKey>,
         modify: Option<&OrderId>,
     ) -> Attempt {
-        let now = Instant::now();
         let today = ist_day(self.0.clock.unix_seconds());
         let class = ep.rate;
         let windows = self.0.profile.windows(class);
@@ -410,6 +409,8 @@ impl RateLimiter {
         let key_period = key.and(self.0.profile.option_chain_key_period);
         let cap = modify.and(self.0.profile.modification_cap_per_order_per_day);
         let mut state = self.lock();
+        // Read under the lock so log entries stay in grant order.
+        let now = Instant::now();
         state.roll_day(today);
 
         // Hard ceilings first: they never wait.
