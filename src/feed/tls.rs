@@ -11,10 +11,6 @@ use tokio_tungstenite::Connector;
 use super::FeedSpawnError;
 
 /// The TLS client configuration for `wss://` feeds.
-#[cfg_attr(
-    not(test),
-    allow(dead_code, reason = "used when a feed connects over wss://")
-)]
 pub(crate) fn client_config() -> Result<Arc<ClientConfig>, FeedSpawnError> {
     let roots = rustls::RootCertStore::from_iter(webpki_roots::TLS_SERVER_ROOTS.iter().cloned());
     let provider = Arc::new(rustls::crypto::aws_lc_rs::default_provider());
@@ -27,10 +23,6 @@ pub(crate) fn client_config() -> Result<Arc<ClientConfig>, FeedSpawnError> {
 }
 
 /// The tokio-tungstenite connector carrying [`client_config`].
-#[cfg_attr(
-    not(test),
-    allow(dead_code, reason = "used when a feed connects over wss://")
-)]
 pub(crate) fn connector() -> Result<Connector, FeedSpawnError> {
     Ok(Connector::Rustls(client_config()?))
 }

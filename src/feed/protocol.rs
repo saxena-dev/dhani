@@ -15,7 +15,7 @@ use crate::labels::FeedKind;
 
 #[allow(dead_code, reason = "implemented by the feed protocols")]
 pub(crate) mod sealed {
-    /// Only this crate implements [`super::FeedProtocol`].
+    /// Only this crate implements [`super::FeedTypes`].
     pub trait Sealed {}
 }
 
@@ -37,16 +37,22 @@ pub(crate) enum Decoded<T> {
     },
 }
 
+/// The item types of a feed: its subscription key and its decoded data. Implemented only by
+/// this crate's feeds (`MarketProtocol`, `OrderUpdateProtocol`, …); it lets
+/// `FeedBuilder::spawn` name the handle and stream types.
+pub trait FeedTypes: sealed::Sealed {
+    /// The desired-state key, e.g. `(Instrument, Mode)`.
+    type Sub: Clone + Ord + Send + std::fmt::Debug + 'static;
+    /// The decoded item.
+    type Data: Send + 'static;
+}
+
 /// What a feed contributes to the shared owner loop.
 #[allow(
     dead_code,
     reason = "implemented by the feed protocols and driven by the owner task"
 )]
-pub(crate) trait FeedProtocol: sealed::Sealed + Send + 'static {
-    /// The desired-state key, e.g. `(Instrument, Mode)`.
-    type Sub: Clone + Ord + Send + std::fmt::Debug + 'static;
-    /// The decoded item.
-    type Data: Send + 'static;
+pub(crate) trait FeedProtocol: FeedTypes + Send + 'static {
     /// The label for spans and metrics.
     const FEED: FeedKind;
     /// The connection URL; it carries credentials, so it stays secret.

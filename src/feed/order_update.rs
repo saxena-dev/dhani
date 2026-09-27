@@ -16,7 +16,7 @@ use std::time::Duration;
 
 use secrecy::{ExposeSecret, SecretString};
 
-use super::protocol::{Decoded, FeedProtocol, Message, sealed};
+use super::protocol::{Decoded, FeedProtocol, FeedTypes, Message, sealed};
 use super::{FeedBuilder, FeedLimits};
 use crate::config::{Environment, Urls};
 use crate::credentials::{Credentials, PartnerCredentials};
@@ -96,9 +96,12 @@ impl fmt::Debug for OrderUpdateProtocol {
 
 impl sealed::Sealed for OrderUpdateProtocol {}
 
-impl FeedProtocol for OrderUpdateProtocol {
+impl FeedTypes for OrderUpdateProtocol {
     type Sub = ();
     type Data = OrderUpdateEvent;
+}
+
+impl FeedProtocol for OrderUpdateProtocol {
     const FEED: FeedKind = FeedKind::OrderUpdate;
 
     fn url(&self) -> &SecretString {

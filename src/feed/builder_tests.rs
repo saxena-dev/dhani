@@ -3,7 +3,7 @@ use std::time::Duration;
 
 use secrecy::SecretString;
 
-use super::super::protocol::{Decoded, FeedProtocol, Message, sealed};
+use super::super::protocol::{Decoded, FeedProtocol, FeedTypes, Message, sealed};
 use super::*;
 use crate::feed::{CommandError, SubscriptionCommand};
 use crate::labels::FeedKind;
@@ -15,9 +15,12 @@ struct TestProtocol {
 
 impl sealed::Sealed for TestProtocol {}
 
-impl FeedProtocol for TestProtocol {
+impl FeedTypes for TestProtocol {
     type Sub = u32;
     type Data = ();
+}
+
+impl FeedProtocol for TestProtocol {
     const FEED: FeedKind = FeedKind::Market;
 
     fn url(&self) -> &SecretString {

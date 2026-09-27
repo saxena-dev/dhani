@@ -11,7 +11,7 @@ use tracing::Instrument;
 
 use super::actor::{self, Desired, Owner, ReconnectBudget, StatusCell, Stop};
 use super::handle::{FeedHandle, FeedTask};
-use super::protocol::FeedProtocol;
+use super::protocol::{FeedProtocol, FeedTypes};
 use super::{
     FeedError, FeedEvents, FeedLimits, FeedSpawnError, FeedState, FeedStatus, OverflowPolicy,
     TaskOutcome, TerminalReason, tls,
@@ -100,7 +100,14 @@ impl<P: FeedProtocol> FeedBuilder<P> {
     )]
     pub fn spawn(
         self,
-    ) -> Result<(FeedHandle<P::Sub>, FeedEvents<P::Data>, FeedTask), FeedSpawnError> {
+    ) -> Result<
+        (
+            FeedHandle<<P as FeedTypes>::Sub>,
+            FeedEvents<<P as FeedTypes>::Data>,
+            FeedTask,
+        ),
+        FeedSpawnError,
+    > {
         let runtime =
             tokio::runtime::Handle::try_current().map_err(|_| FeedSpawnError::NoRuntime)?;
         self.limits.validate().map_err(FeedSpawnError::Config)?;
@@ -112,15 +119,8 @@ impl<P: FeedProtocol> FeedBuilder<P> {
             None if self.endpoint_available => self.protocol.url().clone(),
             None => return Err(FeedSpawnError::UnsupportedEnvironment),
         };
-        let secure = {
-            use secrecy::ExposeSecret;
-            url.expose_secret().starts_with("wss://")
-        };
-        let connector = if secure {
-            Some(tls::connector()?)
-        } else {
-            None
-        };
+        // Always the explicit rustls connector; tungstenite ignores it for ws:// URLs.
+        let connector = Some(tls::connector()?);
         let (tx, mailbox) = mpsc::channel(self.limits.mailbox);
         let (status, reader) = StatusCell::new(FeedStatus::initial());
         let status = Arc::new(status);

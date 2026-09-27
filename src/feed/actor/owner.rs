@@ -377,6 +377,11 @@ impl<P: FeedProtocol> Owner<P> {
 
     /// One connection: handshake, restore, serve.
     async fn connection(&mut self, attempt: u32) -> Ended {
+        // Commands queued since the last read apply before connecting, so the restore writes
+        // them.
+        while let Ok(envelope) = self.mailbox.try_recv() {
+            self.apply(envelope);
+        }
         self.status.update(|s| {
             s.state = FeedState::Connecting;
             s.epoch = self.epoch;
@@ -661,6 +666,12 @@ impl<P: FeedProtocol> Owner<P> {
                     };
                     let frame = match frame {
                         Ok(frame) => frame,
+                        // The peer dropped the TCP connection without a close frame.
+                        Err(tungstenite::Error::Protocol(
+                            tungstenite::error::ProtocolError::ResetWithoutClosingHandshake,
+                        )) => {
+                            return Ended::Cause(Cause::Disconnected(DisconnectReason::Eof), None);
+                        }
                         Err(tungstenite::Error::Capacity(_) | tungstenite::Error::Protocol(_) | tungstenite::Error::Utf8(_)) => {
                             return Ended::Cause(Cause::Disconnected(DisconnectReason::Protocol), None);
                         }

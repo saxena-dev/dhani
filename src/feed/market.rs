@@ -12,7 +12,7 @@ use std::time::Duration;
 use secrecy::{ExposeSecret, SecretString};
 
 use super::handle::FeedHandle;
-use super::protocol::{Decoded, FeedProtocol, Message, sealed};
+use super::protocol::{Decoded, FeedProtocol, FeedTypes, Message, sealed};
 use super::{CommandError, FeedBuilder, Revision, SubscriptionCommand};
 use crate::config::{Environment, Urls};
 use crate::credentials::Credentials;
@@ -213,9 +213,12 @@ impl MarketProtocol {
 
 impl sealed::Sealed for MarketProtocol {}
 
-impl FeedProtocol for MarketProtocol {
+impl FeedTypes for MarketProtocol {
     type Sub = MarketSub;
     type Data = MarketEvent;
+}
+
+impl FeedProtocol for MarketProtocol {
     const FEED: FeedKind = FeedKind::Market;
 
     fn url(&self) -> &SecretString {
