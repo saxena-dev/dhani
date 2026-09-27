@@ -190,6 +190,21 @@ where
     }
 }
 
+/// Like [`install`], but records only spans and events at `max` or more severe, as a
+/// subscriber configured at that level would (for example `Level::DEBUG` leaves TRACE spans
+/// disabled).
+pub fn install_with_max_level(max: Level) -> (Capture, DefaultGuard) {
+    use tracing_subscriber::Layer;
+    use tracing_subscriber::filter::LevelFilter;
+
+    static KEEP: OnceLock<Dispatch> = OnceLock::new();
+    KEEP.get_or_init(|| Dispatch::new(NoSubscriber::default()));
+    let capture = Capture::default();
+    let layer = CaptureLayer(capture.clone()).with_filter(LevelFilter::from_level(max));
+    let subscriber = tracing_subscriber::registry().with(layer);
+    (capture, tracing::subscriber::set_default(subscriber))
+}
+
 /// Starts capturing on this thread until the guard drops.
 pub fn install() -> (Capture, DefaultGuard) {
     static KEEP: OnceLock<Dispatch> = OnceLock::new();

@@ -93,6 +93,10 @@ async fn a5_generate_access_token() {
     let issued = capture.events_named("auth.token.issued");
     assert_eq!(issued.len(), 1);
     assert_eq!(issued[0].field("method"), Some("totp"));
+    assert_eq!(
+        (issued[0].level, issued[0].target),
+        (tracing::Level::INFO, "dhani::auth")
+    );
     assert_eq!(issued[0].field("expiry_present"), Some("true"));
 }
 

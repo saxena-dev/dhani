@@ -197,7 +197,6 @@ required-features = ["feed"]
 
 [[test]]
 name = "observability"
-required-features = ["rest"]
 
 [[test]]
 name = "fixture_manifest"

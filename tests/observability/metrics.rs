@@ -223,12 +223,12 @@ async fn distinct_order_ids_add_no_series() {
     let snapshotter = recorder.snapshotter();
     let _guard = metrics::set_default_local_recorder(&recorder);
     // Nothing listens: every cancel fails fast at connect, one attempt each.
-    let base = support::fault_http::refused_base_url().await;
+    let base = crate::support::fault_http::refused_base_url().await;
     let mut urls = Urls::for_env(Environment::Live);
     urls.rest = url::Url::parse(&format!("{base}/v2")).unwrap();
     let client = DhanClient::builder()
         .urls(urls)
-        .credentials(support::mock::credentials())
+        .credentials(crate::support::mock::credentials())
         .rate_limiter(RateLimiter::disabled())
         .build()
         .unwrap();
