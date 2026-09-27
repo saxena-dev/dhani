@@ -420,6 +420,8 @@ impl MarketSplit<'_> {
     }
 }
 
+impl std::iter::FusedIterator for MarketSplit<'_> {}
+
 impl Iterator for MarketSplit<'_> {
     type Item = Result<MarketPacket, DecodeError>;
 

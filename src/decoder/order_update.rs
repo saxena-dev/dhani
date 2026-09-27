@@ -46,17 +46,17 @@ pub struct OrderUpdate {
     /// Order source, e.g. `P` for API orders.
     #[serde(default)]
     pub source: Option<String>,
-    /// Security ID.
-    #[serde(default)]
+    /// Security ID (accepted as a number too).
+    #[serde(default, deserialize_with = "text_or_number")]
     pub security_id: Option<String>,
-    /// The account's client ID (redacted in `Debug`).
-    #[serde(default)]
+    /// The account's client ID (redacted in `Debug`; accepted as a number too).
+    #[serde(default, deserialize_with = "client_id_text_or_number")]
     pub client_id: Option<ClientId>,
-    /// Exchange order number.
-    #[serde(default)]
+    /// Exchange order number (accepted as a number too).
+    #[serde(default, deserialize_with = "text_or_number")]
     pub exch_order_no: Option<String>,
-    /// Dhan order number.
-    #[serde(default)]
+    /// Dhan order number (accepted as a number too).
+    #[serde(default, deserialize_with = "text_or_number")]
     pub order_no: Option<String>,
     /// Product code: `C`, `I`, `M`, `F`, `V` or `B`; see [`OrderUpdate::product`].
     #[serde(default)]
@@ -166,8 +166,8 @@ pub struct OrderUpdate {
     /// Tick size.
     #[serde(default, deserialize_with = "num_or_string")]
     pub tick_size: Option<f64>,
-    /// Exchange ID for special order types.
-    #[serde(default)]
+    /// Exchange ID for special order types (accepted as a number too).
+    #[serde(default, deserialize_with = "text_or_number")]
     pub algo_id: Option<String>,
     /// Contract multiplier.
     #[serde(default, deserialize_with = "int_or_string")]
@@ -207,6 +207,13 @@ fn text_or_number<'de, D: Deserializer<'de>>(d: D) -> Result<Option<String>, D::
         })),
         _ => Err(D::Error::custom("expected a string or a number")),
     }
+}
+
+/// A client ID that may arrive as a number; kept unvalidated like every response client ID.
+fn client_id_text_or_number<'de, D: Deserializer<'de>>(d: D) -> Result<Option<ClientId>, D::Error> {
+    text_or_number(d)?
+        .map(|s| ClientId::deserialize(serde::de::value::StringDeserializer::<D::Error>::new(s)))
+        .transpose()
 }
 
 /// One parsed order-update feed message.
@@ -301,6 +308,28 @@ mod tests {
         );
         let o = order(r#"{"Type":"order_alert","Data":{"AlgoOrdNo":12.5}}"#);
         assert_eq!(o.algo_ord_no.as_deref(), Some("12.5"));
+    }
+
+    #[test]
+    fn id_fields_sent_as_numbers_keep_the_order() {
+        let o = order(
+            r#"{"Type":"order_alert","Data":{"SecurityId":14366,"OrderNo":1124091136546,"ExchOrderNo":1400000000404591,"AlgoId":0,"ClientId":1100000009}}"#,
+        );
+        assert_eq!(
+            (
+                o.security_id.as_deref(),
+                o.order_no.as_deref(),
+                o.exch_order_no.as_deref(),
+                o.algo_id.as_deref()
+            ),
+            (
+                Some("14366"),
+                Some("1124091136546"),
+                Some("1400000000404591"),
+                Some("0")
+            )
+        );
+        assert_eq!(format!("{:?}", o.client_id), "Some(ClientId(<redacted>))");
     }
 
     #[test]

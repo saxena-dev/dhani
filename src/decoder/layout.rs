@@ -25,7 +25,9 @@ pub const H_HEADER_LEN: usize = 8;
 
 // ---- Live Market Feed: response codes (DOC:4208-4219) ----
 
-/// Index packet: not described by the current documentation (DOC:4208-4219).
+/// Index packet: not described by the current documentation (DOC:4208-4219). The Python SDK also
+/// reads a code 3 legacy market-depth packet of 112 bytes (PY:src/dhanhq/marketfeed.py:330, 373
+/// `'<BHBIf100s'`); like code 1 and 7 it has no fixed size here and is delivered length-delimited.
 pub const CODE_INDEX: u8 = 1;
 /// Ticker packet (DOC:4208-4219).
 pub const CODE_TICKER: u8 = 2;
