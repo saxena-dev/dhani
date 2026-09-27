@@ -147,7 +147,8 @@ impl Error {
         self.0.stage
     }
 
-    /// How many attempts were made.
+    /// How many attempts were made. An attempt refused by the local rate limiter does not count,
+    /// so a request refused before its first attempt reports zero.
     pub fn attempts(&self) -> u32 {
         self.0.attempts
     }

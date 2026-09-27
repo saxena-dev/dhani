@@ -27,8 +27,8 @@ use crate::backoff::SplitMix64;
 use crate::config::{Environment, Urls};
 use crate::credentials::Credentials;
 use crate::error::{
-    ApiError, ConfigError, Error, ErrorKind, RateLimitInfo, Stage, ValidationError,
-    ValidationReason, classify_kind, unparsed_body_detail,
+    ApiError, ConfigError, Error, ErrorKind, RateLimitInfo, RateLimitSource, Stage,
+    ValidationError, ValidationReason, classify_kind, unparsed_body_detail,
 };
 use crate::labels::{EndpointId, Method};
 use crate::obs::Redactor;
@@ -490,7 +490,13 @@ impl Transport {
                 }
                 Err(failure) => failure,
             };
-            let error = error.with_attempts(attempt);
+            // A local rate-limit refusal happens before anything is handed to the HTTP client, so
+            // it is not an attempt.
+            let refused_locally = matches!(
+                error.rate_limit().map(|r| r.source),
+                Some(RateLimitSource::LocalWaitExceeded | RateLimitSource::LocalCeiling)
+            );
+            let error = error.with_attempts(attempt - u32::from(refused_locally));
             let Some(cause) = cause else {
                 return Err(error);
             };

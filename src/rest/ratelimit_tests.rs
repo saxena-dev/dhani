@@ -6,7 +6,7 @@ use crate::rest::endpoint::by_id;
 use crate::types::ExchangeSegment;
 
 const SEC: Duration = Duration::from_secs(1);
-/// 2024-09-22 00:00:00 IST, an IST midnight: 20 000 UTC days minus 5 h 30 min.
+/// 2024-10-04 00:00:00 IST, an IST midnight: 20 000 UTC days minus 5 h 30 min.
 const MIDNIGHT_IST: i64 = 1_727_980_200;
 
 struct FakeClock(AtomicI64);

@@ -697,3 +697,40 @@ async fn a_body_that_stalls_after_the_status_is_not_retried() {
     assert_eq!(err.attempts(), 1);
     assert_eq!(err.detail(), None);
 }
+
+// real-time: a paused clock auto-advances while the client waits on the socket. The retry's
+// backoff (at most 250 ms) ends well inside the 1 s quote window, so the second admission is
+// refused at once with max_wait = 0.
+#[tokio::test]
+async fn a_retry_refused_by_the_local_limiter_reports_one_attempt() {
+    use crate::rest::ratelimit::{AdmissionLimits, QuotaProfile};
+    let (base, hits) = scripted_server(vec![UNAVAILABLE, OK_JSON]).await;
+    let mut t = loopback(base);
+    t.limiter = RateLimiter::new(
+        QuotaProfile::dhan_v2(),
+        AdmissionLimits::new(std::time::Duration::ZERO, 256).unwrap(),
+    );
+    let body = serde_json::json!({"NSE_EQ": [1333]});
+    let err = t
+        .execute::<serde_json::Value>(
+            Some(&credentials()),
+            by_id(EndpointId::MarketQuoteLtp),
+            || {
+                Ok(Call {
+                    body: Some(body),
+                    ..Call::empty()
+                })
+            },
+        )
+        .await
+        .unwrap_err();
+    assert_eq!(
+        (err.kind(), err.stage(), err.attempts()),
+        (ErrorKind::RateLimited, Stage::NotSent, 1)
+    );
+    assert_eq!(
+        err.rate_limit().map(|r| r.source),
+        Some(RateLimitSource::LocalWaitExceeded)
+    );
+    assert_eq!(hits.load(std::sync::atomic::Ordering::SeqCst), 1);
+}
