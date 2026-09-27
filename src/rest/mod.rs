@@ -6,7 +6,9 @@ mod client;
 mod endpoint;
 mod models;
 mod ratelimit;
+mod response;
 mod retry;
+mod telemetry;
 mod transport;
 
 #[allow(

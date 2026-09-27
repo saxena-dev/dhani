@@ -496,7 +496,7 @@ impl ApiErrorCode {
     }
 
     /// The code as the broker writes it: `DH-905`, `805` or the other text.
-    fn label(&self) -> String {
+    pub(crate) fn label(&self) -> String {
         match self {
             Self::Data(code) => code.code().to_string(),
             Self::Other(text) => text.clone(),

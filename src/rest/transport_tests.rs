@@ -747,3 +747,6 @@ async fn a_retry_refused_by_the_local_limiter_reports_one_attempt() {
     );
     assert_eq!(hits.load(std::sync::atomic::Ordering::SeqCst), 1);
 }
+
+#[path = "transport_telemetry_tests.rs"]
+mod telemetry;

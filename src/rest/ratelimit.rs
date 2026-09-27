@@ -16,7 +16,9 @@ use tokio::time::Instant;
 
 use crate::error::{ConfigError, Error, ErrorKind, RateLimitInfo, RateLimitSource, Stage};
 use crate::labels::RateClass;
+use crate::obs::spans;
 use crate::rest::endpoint::Endpoint;
+use crate::rest::telemetry::{self, Refusal};
 use crate::rest::transport::OptionChainKey;
 use crate::types::OrderId;
 
@@ -369,23 +371,41 @@ impl RateLimiter {
         let wait_until = (start + self.0.limits.max_wait).min(deadline);
         let modify = order_id.filter(|_| ep.modification_cap);
         let mut waiting: Option<WaiterGuard<'_>> = None;
+        // Opened only when admission is not immediate.
+        let mut admission: Option<Admission> = None;
+        let refuse = |refusal: Refusal, admission: &mut Option<Admission>| {
+            admission
+                .get_or_insert_with(|| Admission::open(ep, key.is_some(), start))
+                .result = Some(refusal.as_str());
+            telemetry::admission_refused(ep.rate, refusal);
+            let source = match refusal {
+                Refusal::Ceiling => RateLimitSource::LocalCeiling,
+                Refusal::WaitExceeded | Refusal::WaitersFull => RateLimitSource::LocalWaitExceeded,
+            };
+            refused(ep, source, start)
+        };
         loop {
             match self.try_grant(ep, key, modify) {
-                Attempt::Granted(grant) => return Ok(grant),
-                Attempt::Ceiling => {
-                    return Err(refused(ep, RateLimitSource::LocalCeiling, start));
+                Attempt::Granted(grant) => {
+                    if let Some(admission) = &mut admission {
+                        admission.result = Some("granted");
+                        telemetry::admission_waited(ep.rate, start.elapsed());
+                    }
+                    return Ok(grant);
                 }
+                Attempt::Ceiling => return Err(refuse(Refusal::Ceiling, &mut admission)),
                 Attempt::Wait(ready_at) => {
                     if ready_at > wait_until {
-                        return Err(refused(ep, RateLimitSource::LocalWaitExceeded, start));
+                        return Err(refuse(Refusal::WaitExceeded, &mut admission));
                     }
                     if waiting.is_none() {
                         let guard = WaiterGuard::enter(&self.0.waiters);
                         if guard.count > self.0.limits.max_waiters {
-                            return Err(refused(ep, RateLimitSource::LocalWaitExceeded, start));
+                            return Err(refuse(Refusal::WaitersFull, &mut admission));
                         }
                         waiting = Some(guard);
                     }
+                    admission.get_or_insert_with(|| Admission::open(ep, key.is_some(), start));
                     tokio::time::sleep_until(ready_at).await;
                 }
             }
@@ -518,6 +538,34 @@ fn refused(ep: &Endpoint, source: RateLimitSource, start: Instant) -> Error {
             class: ep.rate,
             waited: start.elapsed(),
         })
+}
+
+/// The `dhani.http.admission` span of one non-immediate admission. It records `wait_ms` and
+/// `result` when dropped; a caller dropped while waiting records `cancelled`.
+struct Admission {
+    span: tracing::Span,
+    start: Instant,
+    result: Option<&'static str>,
+}
+
+impl Admission {
+    fn open(ep: &Endpoint, keyed: bool, start: Instant) -> Self {
+        let span = spans::http_admission(&tracing::Span::current(), ep.rate, keyed);
+        Admission {
+            span,
+            start,
+            result: None,
+        }
+    }
+}
+
+impl Drop for Admission {
+    fn drop(&mut self) {
+        self.span
+            .record("wait_ms", telemetry::millis(self.start.elapsed()));
+        self.span
+            .record("result", self.result.unwrap_or("cancelled"));
+    }
 }
 
 /// Counts one caller as waiting until dropped.

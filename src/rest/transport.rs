@@ -22,19 +22,21 @@ use reqwest::header::{
 use secrecy::{ExposeSecret, SecretString};
 use serde::de::DeserializeOwned;
 use tokio::time::Instant;
+use tracing::{Instrument, Span};
 
 use crate::backoff::SplitMix64;
 use crate::config::{Environment, Urls};
 use crate::credentials::Credentials;
 use crate::error::{
-    ApiError, ConfigError, Error, ErrorKind, RateLimitInfo, RateLimitSource, Stage,
-    ValidationError, ValidationReason, classify_kind, unparsed_body_detail,
+    ConfigError, Error, ErrorKind, RateLimitSource, Stage, ValidationError, ValidationReason,
 };
 use crate::labels::{EndpointId, Method};
-use crate::obs::Redactor;
+use crate::obs::{Redactor, spans};
 use crate::rest::endpoint::{AuthMode, BodyPolicy, Endpoint, Host, ResponseShape};
 use crate::rest::ratelimit::RateLimiter;
+use crate::rest::response::{Success, classify, decode_json, read_bounded, shape_mismatch};
 use crate::rest::retry::{self, Cause, Decision, RetryLimits};
+use crate::rest::telemetry;
 use crate::types::{ExchangeSegment, OrderId};
 
 /// Characters left unescaped in a path segment: ASCII alphanumerics and `-`, `_`, `.`, `~`.
@@ -57,10 +59,6 @@ pub(crate) struct Call<'a> {
     /// Span field and modification-cap key.
     pub order_id: Option<&'a OrderId>,
     /// Span field only.
-    #[allow(
-        dead_code,
-        reason = "recorded on the request span by the observability layer"
-    )]
     pub correlation_id: Option<&'a str>,
     /// Per-call secrets masked in any stored broker text.
     pub secrets: &'a [&'a SecretString],
@@ -130,15 +128,6 @@ struct Done {
     status: u16,
 }
 
-/// A successful response, before decoding into the caller's type.
-#[derive(Debug, PartialEq)]
-pub(crate) enum Success {
-    Json(Vec<u8>),
-    Empty,
-    JsonOrEmpty(Option<Vec<u8>>),
-    Csv(String),
-}
-
 /// Fills `{…}` placeholders of `template` with `args` in order, percent-encoding each argument.
 /// `None` if the number of arguments does not match.
 pub(crate) fn fill_path(template: &str, args: &[&str]) -> Option<String> {
@@ -158,81 +147,6 @@ pub(crate) fn fill_path(template: &str, args: &[&str]) -> Option<String> {
     }
     out.push_str(rest);
     args.next().is_none().then_some(out)
-}
-
-/// Classifies a response by status and the endpoint's declared shape (step 8 of the pipeline).
-pub(crate) fn classify(
-    ep: &Endpoint,
-    status: u16,
-    bytes: Vec<u8>,
-    redactor: &Redactor,
-) -> Result<Success, Error> {
-    let blank = bytes.iter().all(u8::is_ascii_whitespace);
-    if !(200..300).contains(&status) {
-        let api = ApiError::parse(status, &bytes, redactor);
-        let (kind, source) = classify_kind(status, api.as_ref());
-        let mut error = Error::new(kind, Stage::ResponseReceived)
-            .with_endpoint(ep.id)
-            .with_status(status);
-        error = match api {
-            Some(api) => error.with_api(api),
-            None => error.with_detail(redactor, &unparsed_body_detail(&bytes)),
-        };
-        if let Some(source) = source {
-            error = error.with_rate_limit(RateLimitInfo {
-                source,
-                class: ep.rate,
-                waited: Duration::ZERO,
-            });
-        }
-        return Err(error);
-    }
-    let decode = |detail: &str| {
-        Error::new(ErrorKind::Decode, Stage::ResponseReceived)
-            .with_endpoint(ep.id)
-            .with_status(status)
-            .with_detail(redactor, detail)
-    };
-    match ep.response {
-        ResponseShape::Json if blank => Err(decode("empty response body")),
-        ResponseShape::Json => Ok(Success::Json(bytes)),
-        ResponseShape::Empty
-            if blank || serde_json::from_slice::<serde::de::IgnoredAny>(&bytes).is_ok() =>
-        {
-            Ok(Success::Empty)
-        }
-        ResponseShape::Empty => Err(decode("response body is not JSON")),
-        ResponseShape::JsonOrEmpty => {
-            let trimmed = bytes.trim_ascii();
-            if blank || trimmed == b"{}" || trimmed == b"null" {
-                Ok(Success::JsonOrEmpty(None))
-            } else {
-                Ok(Success::JsonOrEmpty(Some(bytes)))
-            }
-        }
-        ResponseShape::Csv => String::from_utf8(bytes)
-            .map(Success::Csv)
-            .map_err(|_| decode("response body is not UTF-8")),
-    }
-}
-
-/// Decodes a JSON success body; a mismatch reports only serde's category, line and column,
-/// never its message (which quotes values).
-pub(crate) fn decode_json<T: DeserializeOwned>(
-    ep: &Endpoint,
-    bytes: &[u8],
-    redactor: &Redactor,
-) -> Result<T, Error> {
-    serde_json::from_slice(bytes).map_err(|e| {
-        let category = match e.classify() {
-            serde_json::error::Category::Io => "io",
-            serde_json::error::Category::Syntax => "syntax",
-            serde_json::error::Category::Data => "data",
-            serde_json::error::Category::Eof => "eof",
-        };
-        let detail = format!("response body does not match the expected shape ({category} error at line {} column {})", e.line(), e.column());
-        Error::new(ErrorKind::Decode, Stage::ResponseReceived).with_endpoint(ep.id).with_detail(redactor, &detail)
-    })
 }
 
 /// The redactor for one call: the client's credentials plus the call's own secrets.
@@ -466,6 +380,13 @@ impl Transport {
         let start = Instant::now();
         let deadline = start + self.settings.operation_timeout;
         let call = prepare().map_err(|v| Error::from_validation(v).with_endpoint(ep.id))?;
+        let span = Span::current();
+        if let Some(id) = call.order_id {
+            span.record("order_id", id.as_ref());
+        }
+        if let Some(id) = call.correlation_id {
+            span.record("correlation_id", id);
+        }
         let redactor = call_redactor(credentials, call.secrets);
         let prepared = self.prepare(credentials, ep, call, &redactor)?;
         let seed = self
@@ -478,7 +399,9 @@ impl Transport {
         let mut rate_limit_retries = 0u32;
         loop {
             attempt += 1;
-            let result = self.attempt(ep, &prepared, deadline, &redactor).await;
+            let result = self
+                .attempt(ep, &prepared, deadline, &redactor, attempt)
+                .await;
             let (error, cause) = match result {
                 Ok((success, status)) => {
                     return Ok(Done {
@@ -501,7 +424,7 @@ impl Transport {
                 return Err(error);
             };
             let now = Instant::now();
-            match retry::decide(
+            let decision = retry::decide(
                 ep,
                 cause,
                 attempt,
@@ -510,11 +433,17 @@ impl Transport {
                 deadline.into_std(),
                 &self.settings.retry,
                 &mut rng,
-            ) {
+            );
+            if let Cause::RemoteRateLimit { retry_after } = cause {
+                let will_retry = matches!(decision, Decision::Retry { .. });
+                telemetry::remote_rate_limited(ep, &error, will_retry, retry_after);
+            }
+            match decision {
                 Decision::Retry { delay } => {
                     if matches!(cause, Cause::RemoteRateLimit { .. }) {
                         rate_limit_retries += 1;
                     }
+                    telemetry::retry_scheduled(ep, attempt, cause, delay);
                     tokio::time::sleep(delay).await;
                 }
                 Decision::Stop => return Err(error),
@@ -523,13 +452,14 @@ impl Transport {
     }
 
     /// One attempt: admission, send, bounded read and classification. On failure, also the retry
-    /// cause, if the failure is retryable.
+    /// cause, if the failure is retryable. `number` is 1-based.
     async fn attempt(
         &self,
         ep: &'static Endpoint,
         p: &Prepared,
         deadline: Instant,
         redactor: &Redactor,
+        number: u32,
     ) -> Result<(Success, u16), (Error, Option<Cause>)> {
         let mut grant = self
             .limiter
@@ -554,6 +484,28 @@ impl Transport {
             )
         })?;
         grant.dispatch();
+        let span = spans::http_attempt(&Span::current(), number);
+        let started = Instant::now();
+        let result = self
+            .exchange(ep, request, deadline, redactor)
+            .instrument(span.clone())
+            .await;
+        let outcome = result
+            .as_ref()
+            .map(|(_, status)| *status)
+            .map_err(|(e, _)| e);
+        telemetry::attempt_finished(&span, ep, outcome, started.elapsed());
+        result
+    }
+
+    /// Sends a dispatched request, reads its body within the attempt deadline and classifies it.
+    async fn exchange(
+        &self,
+        ep: &'static Endpoint,
+        request: reqwest::Request,
+        deadline: Instant,
+        redactor: &Redactor,
+    ) -> Result<(Success, u16), (Error, Option<Cause>)> {
         let timed_out = || {
             (
                 Error::new(ErrorKind::Timeout, Stage::Sent)
@@ -634,6 +586,26 @@ impl Transport {
         }
     }
 
+    /// Runs `body` inside a new `dhani.http.request` span (opened before the call is prepared)
+    /// and finishes the span with the call's one terminal event.
+    async fn traced<T>(
+        &self,
+        ep: &'static Endpoint,
+        body: impl Future<Output = Result<(T, u16, u32), Error>>,
+    ) -> Result<T, Error> {
+        let span = spans::http_request(ep.id, ep.method, ep.rate, ep.retry, None, None);
+        let started = Instant::now();
+        // A caller that drops the call mid-flight gets no terminal event; the span records why.
+        let mut pending = telemetry::Pending::new(&span, started);
+        let result = body.instrument(span.clone()).await;
+        pending.finished();
+        let outcome = result
+            .as_ref()
+            .map(|(_, status, attempts)| (*status, *attempts));
+        telemetry::request_finished(&span, ep, outcome, started.elapsed());
+        result.map(|(value, _, _)| value)
+    }
+
     /// Decodes a `Json` endpoint's response into `T`.
     pub(crate) async fn execute<'a, T: DeserializeOwned>(
         &self,
@@ -641,13 +613,15 @@ impl Transport {
         ep: &'static Endpoint,
         prepare: impl FnOnce() -> Result<Call<'a>, ValidationError>,
     ) -> Result<T, Error> {
-        let done = self.run(credentials, ep, prepare).await?;
-        let (attempts, status) = (done.attempts, done.status);
-        let finish = move |e: Error| e.with_attempts(attempts).with_status(status);
-        match (done.success, done.redactor) {
-            (Success::Json(bytes), redactor) => decode_json(ep, &bytes, &redactor).map_err(finish),
-            (other, _) => Err(finish(shape_mismatch(ep, &other))),
-        }
+        self.traced(ep, async {
+            let done = self.run(credentials, ep, prepare).await?;
+            let value = match &done.success {
+                Success::Json(bytes) => decode_json(ep, bytes, &done.redactor),
+                other => Err(shape_mismatch(ep, other)),
+            };
+            done.finish(value)
+        })
+        .await
     }
 
     /// Runs an `Empty` endpoint.
@@ -657,13 +631,15 @@ impl Transport {
         ep: &'static Endpoint,
         prepare: impl FnOnce() -> Result<Call<'a>, ValidationError>,
     ) -> Result<(), Error> {
-        let done = self.run(credentials, ep, prepare).await?;
-        let (attempts, status) = (done.attempts, done.status);
-        let finish = move |e: Error| e.with_attempts(attempts).with_status(status);
-        match (done.success, done.redactor) {
-            (Success::Empty, _) => Ok(()),
-            (other, _) => Err(finish(shape_mismatch(ep, &other))),
-        }
+        self.traced(ep, async {
+            let done = self.run(credentials, ep, prepare).await?;
+            let value = match &done.success {
+                Success::Empty => Ok(()),
+                other => Err(shape_mismatch(ep, other)),
+            };
+            done.finish(value)
+        })
+        .await
     }
 
     /// Runs a `JsonOrEmpty` endpoint: `None` for an empty body, `{}` or `null`.
@@ -673,16 +649,18 @@ impl Transport {
         ep: &'static Endpoint,
         prepare: impl FnOnce() -> Result<Call<'a>, ValidationError>,
     ) -> Result<Option<T>, Error> {
-        let done = self.run(credentials, ep, prepare).await?;
-        let (attempts, status) = (done.attempts, done.status);
-        let finish = move |e: Error| e.with_attempts(attempts).with_status(status);
-        match (done.success, done.redactor) {
-            (Success::JsonOrEmpty(None), _) => Ok(None),
-            (Success::JsonOrEmpty(Some(bytes)), redactor) => {
-                decode_json(ep, &bytes, &redactor).map(Some).map_err(finish)
-            }
-            (other, _) => Err(finish(shape_mismatch(ep, &other))),
-        }
+        self.traced(ep, async {
+            let done = self.run(credentials, ep, prepare).await?;
+            let value = match &done.success {
+                Success::JsonOrEmpty(None) => Ok(None),
+                Success::JsonOrEmpty(Some(bytes)) => {
+                    decode_json(ep, bytes, &done.redactor).map(Some)
+                }
+                other => Err(shape_mismatch(ep, other)),
+            };
+            done.finish(value)
+        })
+        .await
     }
 
     /// Runs a `Csv` endpoint and returns the text.
@@ -692,17 +670,17 @@ impl Transport {
         ep: &'static Endpoint,
         prepare: impl FnOnce() -> Result<Call<'a>, ValidationError>,
     ) -> Result<String, Error> {
-        let done = self.run(credentials, ep, prepare).await?;
-        let (attempts, status) = (done.attempts, done.status);
-        let finish = move |e: Error| e.with_attempts(attempts).with_status(status);
-        match (done.success, done.redactor) {
-            (Success::Csv(text), _) => Ok(text),
-            (other, _) => Err(finish(shape_mismatch(ep, &other))),
-        }
+        self.traced(ep, async {
+            let mut done = self.run(credentials, ep, prepare).await?;
+            let value = match std::mem::replace(&mut done.success, Success::Empty) {
+                Success::Csv(text) => Ok(text),
+                other => Err(shape_mismatch(ep, &other)),
+            };
+            done.finish(value)
+        })
+        .await
     }
-}
 
-impl Transport {
     /// Runs any endpoint and returns its body as raw JSON: a CSV body as a JSON string, an
     /// empty body as `None`. Backs the client's test hook.
     pub(crate) async fn execute_raw<'a>(
@@ -711,68 +689,31 @@ impl Transport {
         ep: &'static Endpoint,
         prepare: impl FnOnce() -> Result<Call<'a>, ValidationError>,
     ) -> Result<Option<crate::types::RawJson>, Error> {
-        let done = self.run(credentials, ep, prepare).await?;
-        let (attempts, status) = (done.attempts, done.status);
-        let finish = move |e: Error| e.with_attempts(attempts).with_status(status);
-        match done.success {
-            Success::Json(bytes) | Success::JsonOrEmpty(Some(bytes)) => {
-                decode_json(ep, &bytes, &done.redactor)
-                    .map(Some)
-                    .map_err(finish)
-            }
-            Success::Empty | Success::JsonOrEmpty(None) => Ok(None),
-            Success::Csv(text) => Ok(Some(crate::types::RawJson(serde_json::Value::String(text)))),
-        }
+        self.traced(ep, async {
+            let mut done = self.run(credentials, ep, prepare).await?;
+            let value = match std::mem::replace(&mut done.success, Success::Empty) {
+                Success::Json(bytes) | Success::JsonOrEmpty(Some(bytes)) => {
+                    decode_json(ep, &bytes, &done.redactor).map(Some)
+                }
+                Success::Empty | Success::JsonOrEmpty(None) => Ok(None),
+                Success::Csv(text) => {
+                    Ok(Some(crate::types::RawJson(serde_json::Value::String(text))))
+                }
+            };
+            done.finish(value)
+        })
+        .await
     }
 }
 
-/// A facade called the wrong `execute*` variant for its endpoint; nothing about the response is
-/// reported.
-fn shape_mismatch(ep: &Endpoint, _got: &Success) -> Error {
-    Error::new(ErrorKind::Decode, Stage::ResponseReceived)
-        .with_endpoint(ep.id)
-        .with_detail(
-            &Redactor::new(),
-            "response shape does not match the endpoint",
-        )
-}
-
-/// Reads the body in chunks, refusing more than `max` bytes (checked against Content-Length
-/// first). A failure here arrived with a status, so it is never retried.
-async fn read_bounded(
-    ep: &Endpoint,
-    mut response: reqwest::Response,
-    max: usize,
-) -> Result<Vec<u8>, (Error, Option<Cause>)> {
-    let status = response.status().as_u16();
-    let too_large = || {
-        (
-            Error::new(ErrorKind::Decode, Stage::ResponseReceived)
-                .with_endpoint(ep.id)
-                .with_status(status)
-                .with_detail(&Redactor::new(), "response body exceeds its bound"),
-            None,
-        )
-    };
-    if response.content_length().is_some_and(|n| n > max as u64) {
-        return Err(too_large());
-    }
-    let mut body = Vec::new();
-    while let Some(chunk) = response.chunk().await.map_err(|e| {
-        (
-            Error::new(ErrorKind::Transport, Stage::ResponseReceived)
-                .with_endpoint(ep.id)
-                .with_status(status)
-                .with_source(e.without_url()),
-            None,
-        )
-    })? {
-        if body.len() + chunk.len() > max {
-            return Err(too_large());
+impl Done {
+    /// Attaches the attempt count and status to a decoding outcome.
+    fn finish<T>(&self, value: Result<T, Error>) -> Result<(T, u16, u32), Error> {
+        match value {
+            Ok(v) => Ok((v, self.status, self.attempts)),
+            Err(e) => Err(e.with_attempts(self.attempts).with_status(self.status)),
         }
-        body.extend_from_slice(&chunk);
     }
-    Ok(body)
 }
 
 #[cfg(test)]

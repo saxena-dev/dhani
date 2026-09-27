@@ -3,10 +3,6 @@
 //! Only `Read` and `Query` endpoints are retried; `Mutation` and `Session` endpoints get exactly
 //! one attempt for every cause. Remote rate limits are retried at most `rate_limit_retries` times
 //! per operation with a delay of at least one second.
-#![cfg_attr(
-    not(test),
-    allow(dead_code, reason = "used by the transport pipeline when it lands")
-)]
 
 use std::time::{Duration, Instant, SystemTime};
 
