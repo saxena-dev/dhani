@@ -13,7 +13,7 @@ use std::time::Duration;
 use dhani::decoder::MarketPacket;
 use dhani::feed::{
     CommandError, DisconnectReason, FeedEvent, FeedEvents, FeedHandle, FeedLimits, Instrument,
-    Lifecycle, MarketFeed, MarketSub, Mode, SubscriptionError,
+    Lifecycle, MarketFeed, MarketSub, Mode, Revision, SubscriptionError,
 };
 use dhani::types::{ExchangeSegment, SecurityId};
 use dhani::{AccessToken, ClientId, Credentials};
@@ -329,4 +329,39 @@ async fn a_peer_close_reconnects_with_its_close_code() {
             .iter()
             .any(|l| matches!(l, Lifecycle::CommandsSent { .. }))
     );
+}
+
+#[tokio::test(flavor = "current_thread", start_paused = true)]
+async fn commands_queued_together_are_written_by_one_reconcile() {
+    let (harness, handle, log) = live(vec![]).await;
+    // One poll of the join queues all three before the owner next runs.
+    let h = handle.clone();
+    let (a, b, c) = run(async move {
+        tokio::join!(
+            h.subscribe([nse(1)], Mode::Ticker),
+            h.subscribe([nse(2)], Mode::Ticker),
+            h.subscribe([nse(3)], Mode::Ticker)
+        )
+    })
+    .await;
+    assert_eq!(
+        [a.unwrap(), b.unwrap(), c.unwrap()],
+        [Revision(1), Revision(2), Revision(3)]
+    );
+    let end = tokio::time::Instant::now() + Duration::from_secs(1);
+    until("a second passed", || tokio::time::Instant::now() >= end).await;
+    assert_eq!(
+        requests(&harness, 0),
+        [(15, vec!["1".to_owned(), "2".to_owned(), "3".to_owned()])]
+    );
+    let sent: Vec<_> = log
+        .lock()
+        .unwrap()
+        .iter()
+        .filter_map(|l| match l {
+            Lifecycle::CommandsSent { revision } => Some(*revision),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(sent, [Revision(3)]);
 }

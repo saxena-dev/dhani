@@ -520,7 +520,7 @@ pub struct FeedStatus {
     pub sent_revision: Option<Revision>,
     /// Number of desired subscriptions.
     pub subscriptions: usize,
-    /// Items waiting in the data queue.
+    /// Items waiting in the data and lifecycle queues together.
     pub queue_len: usize,
     /// Data items dropped so far under `DropOldest`.
     pub dropped_total: u64,
