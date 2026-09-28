@@ -401,6 +401,42 @@ pub enum ValidationReason {
     },
 }
 
+/// A short phrase that follows the field name, such as `must be positive`.
+impl fmt::Display for ValidationReason {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Missing => f.write_str("is missing"),
+            Self::Empty => f.write_str("is empty"),
+            Self::TooLong { max } => write!(f, "is longer than {max}"),
+            Self::TooMany { max } => write!(f, "has more than {max} entries"),
+            Self::OutOfRange => f.write_str("is out of range"),
+            Self::NotFinite => f.write_str("is not a finite number"),
+            Self::NotPositive => f.write_str("must be positive"),
+            Self::InvalidCharacters => f.write_str("contains characters that are not allowed"),
+            Self::UnknownEnumValue => f.write_str("is not a value this request accepts"),
+            Self::Inconsistent(why) => write!(f, "is inconsistent: {why}"),
+            Self::BodyTooLarge { max } => write!(f, "is larger than {max} bytes"),
+        }
+    }
+}
+
+/// `"<field> <reason>"`; the value itself is never included.
+impl fmt::Display for ValidationError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{} {}", self.field, self.reason)
+    }
+}
+
+impl std::error::Error for ValidationError {}
+
+/// A validation failure as `ErrorKind::Validation`, nothing sent: lets `?` lift an ID or
+/// request constructor's error into [`Error`].
+impl From<ValidationError> for Error {
+    fn from(error: ValidationError) -> Self {
+        Self::from_validation(error)
+    }
+}
+
 /// An invalid configuration value. The value itself is never included.
 #[non_exhaustive]
 #[derive(Clone, Debug, PartialEq, Eq, thiserror::Error)]
@@ -603,6 +639,23 @@ impl DataErrorCode {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_validation_error_displays_and_lifts_into_error() {
+        let v = ValidationError::new("quantity", ValidationReason::NotPositive);
+        assert_eq!(v.to_string(), "quantity must be positive");
+        let too_long =
+            ValidationError::new("correlation_id", ValidationReason::TooLong { max: 30 });
+        assert_eq!(too_long.to_string(), "correlation_id is longer than 30");
+        let err: Error = v.clone().into();
+        assert_eq!(
+            (err.kind(), err.stage()),
+            (ErrorKind::Validation, Stage::NotSent)
+        );
+        assert_eq!(err.validation(), Some(&v));
+        let boxed: Box<dyn std::error::Error> = Box::new(too_long);
+        assert_eq!(boxed.to_string(), "correlation_id is longer than 30");
+    }
 
     const SENTINEL_TOKEN: &str = "SENTINEL-ACCESS-TOKEN-7f3a";
     const SENTINEL_CLIENT: &str = "SENTINELCLIENT42";

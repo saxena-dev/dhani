@@ -221,6 +221,26 @@ name = "no_environment"
 name = "live"
 required-features = ["live-tests"]
 
+[[example]]
+name = "rest_basic"
+required-features = ["rest"]
+
+[[example]]
+name = "totp_login"
+required-features = ["rest"]
+
+[[example]]
+name = "observability"
+required-features = ["rest"]
+
+[[example]]
+name = "market_feed"
+required-features = ["feed"]
+
+[[example]]
+name = "order_updates"
+required-features = ["feed"]
+
 [[bench]]
 name = "overhead"
 harness = false
