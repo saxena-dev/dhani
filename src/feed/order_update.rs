@@ -34,6 +34,9 @@ const LIVENESS: Duration = Duration::from_secs(45);
 /// Dhan allows at most five WebSocket connections per user; opening a sixth disconnects the
 /// oldest with code 805 (DOC:6034). This SDK does not count connections across feeds.
 ///
+/// The login message carries the access token (or the partner secret): never enable TRACE
+/// logging for the `tungstenite` target (see [the logging note](crate::feed#logging)).
+///
 /// The builders set a 45 s liveness timeout; when passing your own limits, start from the
 /// builder's (`liveness_timeout: Duration::from_secs(45)`) rather than `FeedLimits::default()`.
 #[derive(Debug)]

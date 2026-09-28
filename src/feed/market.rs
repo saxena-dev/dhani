@@ -127,6 +127,9 @@ pub struct MarketFeed;
 impl MarketFeed {
     /// A builder for the production feed with `credentials`. At most five WebSocket connections
     /// per user are allowed; a sixth disconnects the oldest with code 805 (see [`MarketFeed`]).
+    ///
+    /// The feed URL carries the access token: never enable TRACE logging for the `tungstenite`
+    /// target (see [the logging note](crate::feed#logging)).
     pub fn builder(credentials: Credentials) -> FeedBuilder<MarketProtocol> {
         let urls = Urls::for_env(Environment::Live);
         FeedBuilder::new(MarketProtocol::new(&credentials, &urls.market_feed), true)

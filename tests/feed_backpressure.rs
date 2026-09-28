@@ -468,3 +468,30 @@ async fn a_stop_during_a_stalled_write_ends_with_send_interrupted() {
         dhani::feed::TaskOutcome::Terminal(TerminalReason::SendInterrupted)
     );
 }
+
+#[tokio::test(flavor = "current_thread", start_paused = true)]
+async fn dropping_the_stream_of_a_quiet_feed_ends_it_at_the_next_ping() {
+    // The server only pings: nothing is ever pushed to the dropped stream.
+    let pings = (0..10)
+        .flat_map(|_| [Step::Wait(Duration::from_secs(1)), Step::Ping])
+        .collect();
+    let harness = WsHarness::start(vec![WsConnection::accept(pings)]).await;
+    let (handle, events, task) = MarketFeed::builder(credentials())
+        .url(harness.url())
+        .limits(limits(256))
+        .spawn()
+        .unwrap();
+    until("active", || handle.status().state == FeedState::Active).await;
+    drop(events);
+    let dropped_at = tokio::time::Instant::now();
+    until("terminal", || terminal(&handle).is_some()).await;
+    assert_eq!(terminal(&handle), Some(TerminalReason::ReceiverDropped));
+    // Noticed at the first ping, a second later, not at the liveness timeout.
+    assert!(tokio::time::Instant::now() - dropped_at <= Duration::from_millis(1100));
+    let outcome = tokio::spawn(task.join());
+    until("task ended", || outcome.is_finished()).await;
+    assert_eq!(
+        outcome.await.unwrap(),
+        dhani::feed::TaskOutcome::Terminal(TerminalReason::ReceiverDropped)
+    );
+}

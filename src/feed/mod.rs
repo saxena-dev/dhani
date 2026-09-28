@@ -1,5 +1,15 @@
 //! WebSocket feeds: builders, handles and public feed types, including `FeedLimits`,
 //! `ReconnectPolicy` and `OverflowPolicy`.
+//!
+//! # Logging
+//!
+//! dhani never logs the feed URL (which carries the access token and client ID) or the
+//! order-update login message. The WebSocket library it uses, `tungstenite`, does: at TRACE it
+//! logs the full handshake request and every outgoing frame through the `log` crate. If your
+//! application forwards `log` records into `tracing` (for example with `tracing-log`, which
+//! `tracing-subscriber`'s `fmt().init()` installs by default), never enable TRACE for the
+//! `tungstenite` target; filter it to `debug` or lower, for example
+//! `RUST_LOG=trace,tungstenite=debug`.
 
 pub(crate) mod actor;
 mod builder;
@@ -144,7 +154,9 @@ const SEC: Duration = Duration::from_secs(1);
 #[non_exhaustive]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct ReconnectPolicy {
-    /// Connection attempts per outage: 1..=100 (default 10).
+    /// Reconnection attempts per outage, not counting the first connection: 1..=100 (default
+    /// 10). `Lifecycle::Connecting::attempt` numbers every attempt of the outage, including the
+    /// first, so the last allowed attempt is `max_attempts + 1`.
     pub max_attempts: u32,
     /// Longest outage before giving up: 10 s..=1 h (default 5 min).
     pub outage_deadline: Duration,

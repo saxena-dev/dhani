@@ -707,6 +707,11 @@ impl<P: FeedProtocol> Owner<P> {
                     };
                     last_frame = Instant::now();
                     self.status.frame_received(last_frame);
+                    // A dropped stream is otherwise noticed only at the next push, and pings and
+                    // pongs push nothing: a quiet feed would keep its connection open.
+                    if self.delivery.is_closed() {
+                        return Ended::Terminal(TerminalReason::ReceiverDropped);
+                    }
                     if let Some(end) = self.frame(frame, &mut sampler).await {
                         return end;
                     }
@@ -718,6 +723,9 @@ impl<P: FeedProtocol> Owner<P> {
                 }
                 () = tokio::time::sleep_until(ping_at), if next_ping.is_some() => {
                     next_ping = ping_every.map(|p| Instant::now() + p);
+                    if self.delivery.is_closed() {
+                        return Ended::Terminal(TerminalReason::ReceiverDropped);
+                    }
                     if let Some(end) = self.write(socket, Message::Ping(Vec::new().into())).await {
                         return end;
                     }

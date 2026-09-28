@@ -205,6 +205,19 @@ pub fn install_with_max_level(max: Level) -> (Capture, DefaultGuard) {
     (capture, tracing::subscriber::set_default(subscriber))
 }
 
+/// Like [`install`], filtered by `EnvFilter` directives such as `"trace,tungstenite=debug"`.
+pub fn install_with_filter(directives: &str) -> (Capture, DefaultGuard) {
+    use tracing_subscriber::EnvFilter;
+    use tracing_subscriber::Layer;
+
+    static KEEP: OnceLock<Dispatch> = OnceLock::new();
+    KEEP.get_or_init(|| Dispatch::new(NoSubscriber::default()));
+    let capture = Capture::default();
+    let layer = CaptureLayer(capture.clone()).with_filter(EnvFilter::new(directives));
+    let subscriber = tracing_subscriber::registry().with(layer);
+    (capture, tracing::subscriber::set_default(subscriber))
+}
+
 /// Starts capturing on this thread until the guard drops.
 pub fn install() -> (Capture, DefaultGuard) {
     static KEEP: OnceLock<Dispatch> = OnceLock::new();

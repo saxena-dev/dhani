@@ -75,6 +75,8 @@ rust_decimal = { version = "1.42.1", default-features = false, features = ["std"
 tokio = { version = "1.52", features = ["full", "test-util"] }
 wiremock = "0.6.5"
 tracing-subscriber = { version = "0.3.22", features = ["registry", "fmt", "env-filter"] }
+# LogTracer, for the test that forwards dependency `log` records (already in the lockfile).
+tracing-log = "0.2.0"
 metrics-util = "0.20.4"
 sha2 = "0.10.9"
 hex = "0.4.3"
@@ -193,6 +195,10 @@ required-features = ["feed"]
 
 [[test]]
 name = "feed_order_update"
+required-features = ["feed"]
+
+[[test]]
+name = "log_leak"
 required-features = ["feed"]
 
 [[test]]
