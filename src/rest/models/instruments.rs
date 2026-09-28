@@ -33,8 +33,8 @@ pub struct InstrumentRecord {
     pub exchange: Option<String>,
     /// The segment letter: `SEGMENT` / `SEM_SEGMENT`.
     pub segment: Option<String>,
-    /// The security ID: `SEM_SMST_SECURITY_ID` in the compact file (Appendix A D22); the
-    /// detailed file's name is not documented, so `SECURITY_ID` is also read (OQ-14). If a file
+    /// The security ID: `SEM_SMST_SECURITY_ID` in the compact file; the
+    /// detailed file's name is not documented, so `SECURITY_ID` is also read. If a file
     /// had both, the first non-empty one by column position is kept.
     pub security_id: Option<SecurityId>,
     /// The ISIN: `ISIN`.

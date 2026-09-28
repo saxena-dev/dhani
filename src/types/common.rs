@@ -17,7 +17,8 @@ crate::types::wire_enum! {
     ///
     /// The documentation's table lists six segments. `NSE_CURRENCY` and `BSE_CURRENCY` come from
     /// the Python SDK's feed codes (PY:src/dhanhq/marketfeed.py:23-30, 314-321), `NSE_COMM` from
-    /// the order request fields (DOC:3731) and `INX_EQ` from the Global Stocks feed (DOC:1833; code 14 at DOC:1935).
+    /// the order request fields (DOC:3731) and `INX_EQ` from the Global Stocks feed (DOC:1833;
+    /// code 14 at DOC:1935).
     /// Binary feeds carry the numeric code: see [`feed_code`](ExchangeSegment::feed_code).
     pub enum ExchangeSegment {
         /// Index values (feed code 0).
@@ -36,14 +37,14 @@ crate::types::wire_enum! {
         BseCurrency => "BSE_CURRENCY",
         /// BSE futures and options (feed code 8).
         BseFno => "BSE_FNO",
-        /// NSE commodity; it has no documented feed code (OQ-16).
+        /// NSE commodity; it has no documented feed code.
         NseComm => "NSE_COMM",
         /// Global Stocks equity (feed code 14, Global Stocks feed only).
         InxEq => "INX_EQ",
     }
 }
 
-/// The single mapping between segments and binary feed codes (Appendix A D17, S14).
+/// The single mapping between segments and binary feed codes.
 const FEED_CODES: [(ExchangeSegment, u8); 9] = [
     (ExchangeSegment::IdxI, 0),
     (ExchangeSegment::NseEq, 1),
@@ -57,7 +58,7 @@ const FEED_CODES: [(ExchangeSegment, u8); 9] = [
 ];
 
 impl ExchangeSegment {
-    /// The numeric code binary feeds use for this segment; `None` for `NseComm` (OQ-16).
+    /// The numeric code binary feeds use for this segment; `None` for `NseComm`.
     pub fn feed_code(self) -> Option<u8> {
         FEED_CODES.iter().find(|(s, _)| *s == self).map(|&(_, c)| c)
     }
@@ -123,7 +124,7 @@ crate::types::wire_enum! {
 
 crate::types::wire_enum! {
     /// An order status: the union of the values listed on different pages (DOC:4140-4151,
-    /// DOC:195, DOC:1587, DOC:2340; Appendix A D56). Always received as `Inbound<OrderStatus>`.
+    /// DOC:195, DOC:1587, DOC:2340). Always received as `Inbound<OrderStatus>`.
     pub enum OrderStatus {
         /// Did not reach the exchange.
         Transit => "TRANSIT",
@@ -152,7 +153,7 @@ crate::types::wire_enum! {
 
 crate::types::wire_enum! {
     /// When an after-market order is sent to the exchange (DOC:4155-4162). `PRE_OPEN` is
-    /// allowed, following the documentation rather than the Python SDK (Appendix A D26).
+    /// allowed, following the documentation rather than the Python SDK.
     pub enum AmoTime {
         /// At the pre-market session.
         PreOpen => "PRE_OPEN",
@@ -235,7 +236,7 @@ crate::types::wire_enum! {
 
 /// Which expiry of a contract series (DOC:4166-4172). Sent as a JSON integer.
 ///
-/// **Unverified encoding (OQ-30).** The documentation's annexure and the rolling-options page
+/// **Unverified encoding.** The documentation's annexure and the rolling-options page
 /// (DOC:814) use 1 = near, 2 = next, 3 = far, which is what this type sends. The OpenAPI spec
 /// describes 0 = current, 1 = next, 2 = far (`OAS:#/components/schemas/ExpiredOptionsRequest`),
 /// and the Python SDK accepts 0 to 3 for daily data (PY:src/dhanhq/_historical_data.py:57) and

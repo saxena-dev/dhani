@@ -1,4 +1,4 @@
-//! REST facade for the instrument master CSVs (§9 rows I1–I2).
+//! REST facade for the instrument master CSVs.
 
 use crate::error::Result;
 use crate::rest::endpoint::{self, Endpoint};
@@ -6,7 +6,8 @@ use crate::rest::models::parse_scrip_master;
 use crate::rest::transport::Call;
 use crate::rest::{DhanClient, InstrumentRecord, ScripMasterKind};
 
-/// The Instruments facade, borrowed from a [`DhanClient`].
+/// The compact and detailed scrip master CSVs, parsed off the async runtime. Borrowed from a
+/// client with `DhanClient::instruments`, with the `instruments` feature.
 pub struct Instruments<'c> {
     client: &'c DhanClient,
 }

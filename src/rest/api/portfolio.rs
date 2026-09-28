@@ -1,4 +1,4 @@
-//! REST facade for holdings and positions (§9 rows P1–P4).
+//! REST facade for holdings and positions.
 
 use super::json_body;
 use crate::error::Result;
@@ -6,7 +6,11 @@ use crate::rest::endpoint;
 use crate::rest::transport::Call;
 use crate::rest::{ConvertPositionRequest, DhanClient, Holding, Position};
 
-/// The Portfolio facade, borrowed from a [`DhanClient`].
+/// Holdings and positions, converting a position between products and exiting all positions.
+/// Borrowed from a client with [`DhanClient::portfolio`].
+///
+/// The reads follow the client's [retry rules](crate::rest#retries); conversion and exit make
+/// exactly one attempt.
 pub struct Portfolio<'c> {
     client: &'c DhanClient,
 }
@@ -48,7 +52,7 @@ impl<'c> Portfolio<'c> {
 
     /// Exits every open position and cancels every open order for the day:
     /// `DELETE /positions` (DOC:548-578). Documented as `202` with no body (DOC:560); the
-    /// OpenAPI spec shows a `{status, message}` body (OQ-18), which succeeds only when `status`
+    /// OpenAPI spec shows a `{status, message}` body, which succeeds only when `status`
     /// is `success` (in any case) and is otherwise an `Api` error.
     pub async fn exit_all(&self) -> Result<()> {
         self.client

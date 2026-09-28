@@ -15,11 +15,8 @@ use serde_json::Value;
 
 use crate::types::{Inbound, UnknownValue, WireEnum};
 
-/// An `f64` from a JSON number or a numeric string (Appendix A D38, D60).
-#[cfg_attr(
-    not(test),
-    allow(dead_code, reason = "applied by the response models of later tasks")
-)]
+/// An `f64` from a JSON number or a numeric string.
+#[cfg_attr(not(test), allow(dead_code, reason = "applied by the response models"))]
 pub(crate) fn num_or_string<'de, D: Deserializer<'de>>(d: D) -> Result<Option<f64>, D::Error> {
     match Value::deserialize(d)? {
         Value::Null => Ok(None),
@@ -36,11 +33,8 @@ pub(crate) fn num_or_string<'de, D: Deserializer<'de>>(d: D) -> Result<Option<f6
 }
 
 /// An `i64` from a JSON integer, a numeric string, or an integral float such as `3.0`; a
-/// non-integral value is an error (Appendix A D54).
-#[cfg_attr(
-    not(test),
-    allow(dead_code, reason = "applied by the response models of later tasks")
-)]
+/// non-integral value is an error.
+#[cfg_attr(not(test), allow(dead_code, reason = "applied by the response models"))]
 pub(crate) fn int_or_string<'de, D: Deserializer<'de>>(d: D) -> Result<Option<i64>, D::Error> {
     let invalid = || D::Error::custom("expected an integer or an integer string");
     match Value::deserialize(d)? {
@@ -121,11 +115,8 @@ impl<'de> Deserialize<'de> for LenientInt {
     }
 }
 
-/// A `Vec<T>` from a single object or an array of objects (Appendix A D30, D37).
-#[cfg_attr(
-    not(test),
-    allow(dead_code, reason = "applied by the response models of later tasks")
-)]
+/// A `Vec<T>` from a single object or an array of objects.
+#[cfg_attr(not(test), allow(dead_code, reason = "applied by the response models"))]
 pub(crate) fn one_or_many<'de, D, T>(d: D) -> Result<Vec<T>, D::Error>
 where
     D: Deserializer<'de>,
@@ -148,12 +139,9 @@ where
 }
 
 /// A `Vec<String>` from a single scalar (string or number) or an array of scalars; numbers are
-/// kept as their JSON text (Appendix A D41: a field typed string in one table and array in
+/// kept as their JSON text (for a field documented as a string in one table and an array in
 /// another).
-#[cfg_attr(
-    not(test),
-    allow(dead_code, reason = "applied by the response models of later tasks")
-)]
+#[cfg_attr(not(test), allow(dead_code, reason = "applied by the response models"))]
 pub(crate) fn scalar_or_vec<'de, D: Deserializer<'de>>(d: D) -> Result<Vec<String>, D::Error> {
     fn scalar(v: Value) -> Option<String> {
         match v {
@@ -175,10 +163,7 @@ pub(crate) fn scalar_or_vec<'de, D: Deserializer<'de>>(d: D) -> Result<Vec<Strin
 
 /// `"NA"`, `""` or `null` as `None`; anything else decodes as `T` (DOC:6979-6980, for example
 /// `"drvOptionType": "NA"`).
-#[cfg_attr(
-    not(test),
-    allow(dead_code, reason = "applied by the response models of later tasks")
-)]
+#[cfg_attr(not(test), allow(dead_code, reason = "applied by the response models"))]
 pub(crate) fn na_as_none<'de, D, T>(d: D) -> Result<Option<T>, D::Error>
 where
     D: Deserializer<'de>,
@@ -192,11 +177,8 @@ where
 }
 
 /// `true`, `false`, `"true"` or `"false"` (lowercase only); anything else is an error
-/// (Appendix A D41: a flag documented as both a boolean and a string).
-#[cfg_attr(
-    not(test),
-    allow(dead_code, reason = "applied by the response models of later tasks")
-)]
+/// (for a flag documented as both a boolean and a string).
+#[cfg_attr(not(test), allow(dead_code, reason = "applied by the response models"))]
 pub(crate) fn bool_or_string<'de, D: Deserializer<'de>>(d: D) -> Result<Option<bool>, D::Error> {
     match Value::deserialize(d)? {
         Value::Null => Ok(None),
@@ -210,13 +192,10 @@ pub(crate) fn bool_or_string<'de, D: Deserializer<'de>>(d: D) -> Result<Option<b
 }
 
 /// An `Inbound<T>` whose string matches a wire value ignoring ASCII case; the original text is
-/// preserved when nothing matches (Appendix A S15: the order-update sample sends "Cancelled"
-/// for `CANCELLED`). Numbers and booleans are kept as unknown text, arrays and objects are
+/// preserved when nothing matches (the order-update sample sends "Cancelled" for
+/// `CANCELLED`). Numbers and booleans are kept as unknown text, arrays and objects are
 /// errors, as for any `Inbound`.
-#[cfg_attr(
-    not(test),
-    allow(dead_code, reason = "applied by the response models of later tasks")
-)]
+#[cfg_attr(not(test), allow(dead_code, reason = "applied by the response models"))]
 pub(crate) fn inbound_ci<'de, D, T>(d: D) -> Result<Option<Inbound<T>>, D::Error>
 where
     D: Deserializer<'de>,
@@ -241,14 +220,13 @@ where
 /// `ExpiryCode` (DOC:758, DOC:5370): a number whose decimal text is a wire value is `Known`, as
 /// is the same text as a string; other numbers and strings are kept as `Unknown`, booleans as
 /// unknown text, and arrays or objects are errors. An integral float such as `1.0` counts as
-/// its integer. The plain `Inbound` policy (§7.0.1) keeps every number `Unknown`; apply this
-/// helper to such fields instead (decision recorded on DHQ-M1.14), with `#[serde(default)]` so
-/// that an absent field is `None`.
+/// its integer. The plain `Inbound` policy keeps every number `Unknown`; apply this helper to
+/// fields sent as numbers instead, with `#[serde(default)]` so that an absent field is `None`.
 #[cfg_attr(
     not(test),
     allow(
         dead_code,
-        reason = "applied by the expired-options response model (L9.1)"
+        reason = "kept for response fields that send an enum as a JSON integer"
     )
 )]
 pub(crate) fn inbound_num<'de, D, T>(d: D) -> Result<Option<Inbound<T>>, D::Error>
@@ -301,8 +279,8 @@ where
         .collect())
 }
 
-/// A collection (or any `Default` value) where JSON `null` counts as empty (§7.0: an absent or
-/// `null` collection decodes as empty; `#[serde(default)]` alone covers only absence).
+/// A collection (or any `Default` value) where JSON `null` counts as empty (an absent or `null`
+/// collection decodes as empty; `#[serde(default)]` alone covers only absence).
 #[cfg_attr(
     not(feature = "rest"),
     allow(dead_code, reason = "used by the REST response models")
@@ -344,7 +322,7 @@ mod tests {
     }
 
     #[test]
-    fn num_or_string_d38() {
+    fn num_or_string_accepts_numbers_and_numeric_strings() {
         assert_eq!(de::<Num>("1.5").unwrap(), Num(Some(1.5)));
         assert_eq!(de::<Num>(r#""1.5""#).unwrap(), Num(Some(1.5)));
         assert_eq!(de::<Num>("7").unwrap(), Num(Some(7.0)));
@@ -366,7 +344,7 @@ mod tests {
     }
 
     #[test]
-    fn int_or_string_d54() {
+    fn int_or_string_accepts_integers_numeric_strings_and_integral_floats() {
         assert_eq!(de::<Int>("3").unwrap(), Int(Some(3)));
         assert_eq!(de::<Int>(r#""3""#).unwrap(), Int(Some(3)));
         assert_eq!(de::<Int>("3.0").unwrap(), Int(Some(3)));
@@ -396,7 +374,7 @@ mod tests {
     }
 
     #[test]
-    fn one_or_many_d30_d37() {
+    fn one_or_many_accepts_one_object_or_an_array() {
         assert_eq!(
             de::<Legs>(r#"{"id":1}"#).unwrap(),
             Legs(vec![Leg { id: 1 }])
@@ -413,7 +391,7 @@ mod tests {
     }
 
     #[test]
-    fn scalar_or_vec_d41() {
+    fn scalar_or_vec_accepts_one_scalar_or_an_array() {
         assert_eq!(de::<Scalars>(r#""a""#).unwrap(), Scalars(vec!["a".into()]));
         assert_eq!(
             de::<Scalars>(r#"["a",1]"#).unwrap(),
@@ -440,7 +418,7 @@ mod tests {
     }
 
     #[test]
-    fn bool_or_string_d41() {
+    fn bool_or_string_accepts_booleans_and_their_lowercase_text() {
         assert_eq!(de::<Flag>("true").unwrap(), Flag(Some(true)));
         assert_eq!(de::<Flag>("false").unwrap(), Flag(Some(false)));
         assert_eq!(de::<Flag>(r#""false""#).unwrap(), Flag(Some(false)));
@@ -452,7 +430,7 @@ mod tests {
     }
 
     #[test]
-    fn inbound_ci_s15() {
+    fn inbound_ci_matches_wire_values_ignoring_case() {
         assert_eq!(
             de::<Status>(r#""cancelled""#).unwrap(),
             Status(Some(Inbound::Known(OrderStatus::Cancelled)))

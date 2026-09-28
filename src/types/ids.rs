@@ -147,7 +147,7 @@ id_type!(
     /// A caller-chosen correlation ID: 1..=30 characters from `[A-Za-z0-9_-]` (DOC:3729).
     ///
     /// The documentation's list ends in a dot that may be punctuation; the dot is rejected
-    /// locally (OQ-29), since a wrong exclusion only fails before sending. Responses may carry
+    /// locally, since a wrong exclusion only fails before sending. Responses may carry
     /// characters this rule forbids (DOC:6321), so response fields use a plain string.
     CorrelationId,
     "correlation_id",

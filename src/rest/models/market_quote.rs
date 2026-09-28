@@ -2,7 +2,7 @@
 //!
 //! Request: [`QuoteRequest`] (DOC:2878-2892). Responses: [`QuoteData`] over [`LtpQuote`],
 //! [`OhlcQuote`] and [`FullQuote`], typed from the OpenAPI schemas `LTPResponse`,
-//! `OHLCResponse` and `QuoteResponse` (OQ-6), with snake_case wire names.
+//! `OHLCResponse` and `QuoteResponse`, with snake_case wire names.
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -18,11 +18,10 @@ pub(crate) const MAX_QUOTE_INSTRUMENTS: usize = 1000;
 
 /// The instruments to quote, grouped by segment (DOC:2878-2892).
 ///
-/// On the wire each segment maps to an array of numeric security IDs, for example
-/// `{"NSE_EQ": [11536], "NSE_FNO": [49081, 49082]}`, so every ID must be digits without leading
-/// zeros; the Global Stocks segment (`InxEq`) cannot be quoted here. Adding the same instrument twice keeps
-/// one. A request holds 1..=1000 instruments in total and is never split into several
-/// requests.
+/// On the wire each segment maps to an array of numeric security IDs, for example `{"NSE_EQ":
+/// [11536], "NSE_FNO": [49081, 49082]}`, so every ID must be digits without leading zeros; the
+/// Global Stocks segment (`InxEq`) cannot be quoted here. Adding the same instrument twice keeps
+/// one. A request holds 1..=1000 instruments in total and is never split into several requests.
 #[non_exhaustive]
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct QuoteRequest {
@@ -123,7 +122,7 @@ impl QuoteRequest {
 /// A quote response: `{"status": .., "data": {"<SEGMENT>": {"<securityId>": T}}}`.
 ///
 /// The OpenAPI schemas show one level under `data`, which cannot carry both the segment and the
-/// ID; the published example nests two (Appendix A D59, OQ-31).
+/// ID; the published example nests two.
 #[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 #[serde(bound(deserialize = "T: Deserialize<'de>"))]

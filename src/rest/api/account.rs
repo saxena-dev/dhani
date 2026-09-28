@@ -1,5 +1,4 @@
-//! REST facade for the account endpoints on the API host: token renewal and the profile (§9
-//! rows A6–A7).
+//! REST facade for the account endpoints on the API host: token renewal and the profile.
 
 use tracing::Level;
 
@@ -9,7 +8,7 @@ use crate::rest::endpoint;
 use crate::rest::transport::Call;
 use crate::rest::{DhanClient, IssuedToken, Profile};
 
-/// The Account facade, borrowed from a [`DhanClient`].
+/// Token renewal and the profile. Borrowed from a client with [`DhanClient::account`].
 pub struct Account<'c> {
     client: &'c DhanClient,
 }
@@ -25,7 +24,7 @@ impl<'c> Account<'c> {
     /// The documentation describes renewing an active token generated from Dhan Web
     /// (DOC:4608-4610); whether a token from
     /// [`generate_access_token`](crate::rest::Auth::generate_access_token) can be renewed is not
-    /// documented. Renewing an expired token is an error (DOC:4612, Appendix A D5). The call is
+    /// documented. Renewing an expired token is an error (DOC:4612). The call is
     /// made once and never retried. The client keeps its old credentials: switch with
     /// [`DhanClient::with_credentials`](crate::rest::DhanClient::with_credentials).
     pub async fn renew_token(&self) -> Result<IssuedToken> {
@@ -44,8 +43,7 @@ impl<'c> Account<'c> {
     }
 
     /// The user profile: `GET /profile` (DOC:4870-4879), a quick check that the token works.
-    /// The `dhanClientId` header is sent as well as the token, as the Python SDK does
-    /// (Appendix A D4).
+    /// The `dhanClientId` header is sent as well as the token, as the Python SDK does.
     pub async fn profile(&self) -> Result<Profile> {
         self.client
             .execute(&endpoint::ACCOUNT_PROFILE, || Ok(Call::empty()))

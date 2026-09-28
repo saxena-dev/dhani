@@ -6,7 +6,7 @@ use serde::Deserialize;
 
 use crate::types::RawJson;
 
-/// The user profile, kept as raw JSON: no source documents its fields (Appendix A D14, OQ-6).
+/// The user profile, kept as raw JSON: no source documents its fields.
 ///
 /// `Debug` lists only the top-level key names, because a profile carries account details.
 #[non_exhaustive]

@@ -107,7 +107,7 @@ fn an_amo_time_without_the_amo_flag_is_inconsistent() {
             ValidationReason::Inconsistent("requires after_market_order = true")
         )
     );
-    // PRE_OPEN follows DOC, not PY (Appendix A D26).
+    // PRE_OPEN is accepted, as the documentation lists it; the Python SDK does not.
     assert_eq!(
         limit(Some(10.0)).with_amo(AmoTime::PreOpen).validate(),
         Ok(())
@@ -363,7 +363,7 @@ fn slice_acks_decode_from_an_object_or_an_array() {
     .unwrap();
     let ids: Vec<&str> = many.0.iter().map(|a| a.order_id.as_ref()).collect();
     assert_eq!(ids, ["1", "2"]);
-    // An empty or null list decodes as no acks (the §7.0 collection rule).
+    // An empty or null list decodes as no acks, like every response collection.
     for empty in [json!([]), json!(null)] {
         let none: SlicedAcks = serde_json::from_value(empty).unwrap();
         assert!(none.0.is_empty());

@@ -1,4 +1,15 @@
-//! Environment selection and endpoint base URLs: `Environment` and `Urls`.
+//! Which Dhan environment a client talks to, and the base URL of every host.
+//!
+//! Most programs need only [`Environment`]: the default, [`Environment::Live`], or
+//! [`Environment::Sandbox`] to try calls against Dhan's sandbox with a sandbox token. [`Urls`]
+//! holds every base URL behind them, for pointing a client or feed at another host, such as a
+//! local mock server in your tests.
+//!
+//! The sandbox changes only the REST base URL. Of the calls in this release, it serves orders
+//! and trades, holdings, positions and position conversion, the fund limit and
+//! single-instrument margin, the ledger and trade history, and historical candles. Market
+//! quotes, option chains, multi-instrument margin, exiting all positions, the profile, token
+//! calls and the feeds are not in it.
 
 use url::Url;
 
@@ -11,9 +22,9 @@ pub enum Environment {
     /// The production environment (the default).
     #[default]
     Live,
-    /// The DhanHQ sandbox (DOC:3840-3896), which dhani supports (Appendix A D23). Only the REST
+    /// The DhanHQ sandbox (DOC:3840-3896), which dhani supports. Only the REST
     /// base URL differs from [`Live`]: the documentation gives no sandbox counterpart for the
-    /// other hosts, and sandbox WebSocket endpoints are undocumented (OQ-22).
+    /// other hosts, and sandbox WebSocket endpoints are undocumented.
     ///
     /// [`Live`]: Environment::Live
     Sandbox,
@@ -41,7 +52,7 @@ pub struct Urls {
     pub depth_20: Url,
     /// 200-level Full Market Depth WebSocket: `wss://full-depth-api.dhan.co/twohundreddepth`
     /// (DOC:5465). The Python SDK connects to the host root instead; dhani follows the
-    /// documentation and the URL can be overridden (Appendix A S1, OQ-8).
+    /// documentation and the URL can be overridden.
     pub depth_200: Url,
     /// Global Stocks Live Feed WebSocket: `wss://global-stocks-api-feed.dhan.co/` (DOC:1846).
     pub global_feed: Url,
@@ -78,8 +89,7 @@ impl Urls {
     /// The documented base URLs for `env`.
     ///
     /// [`Environment::Sandbox`] changes only [`rest`](Urls::rest); every other field keeps its
-    /// production value, because the documentation gives no sandbox counterpart for those hosts
-    /// (OQ-22).
+    /// production value, because the documentation gives no sandbox counterpart for those hosts.
     pub fn for_env(env: Environment) -> Self {
         let rest = match env {
             Environment::Live => REST_LIVE,

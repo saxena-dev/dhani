@@ -50,7 +50,7 @@ fn check_common(
 /// Daily candles for one instrument (DOC:753-761).
 ///
 /// `to_date` is not inclusive (DOC:761), so the range must hold at least one day. `oi` is sent
-/// as a JSON boolean (Appendix A D6); `expiry_code` only when set (Appendix A D7).
+/// as a JSON boolean; `expiry_code` only when set.
 #[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -126,7 +126,7 @@ impl DailyRequest {
 /// (`OAS:#/components/schemas/IntradayHistoricalRequest`).
 ///
 /// The values follow the OpenAPI spec, the guide (DOC:5411) and the Python SDK, which list 25;
-/// the endpoint table's 30 (DOC:998) is not used (Appendix A D8).
+/// the endpoint table's 30 (DOC:998) is not used.
 #[non_exhaustive]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum IntradayInterval {
@@ -163,7 +163,7 @@ impl Serialize for IntradayInterval {
 
 /// Intraday candles for one instrument (DOC:993-1001).
 ///
-/// The interval is required and has no default (Appendix A D10). The endpoint table does not say
+/// The interval is required and has no default. The endpoint table does not say
 /// `to_date` is exclusive, so a single day (`from_date == to_date`) is allowed.
 #[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Serialize)]
@@ -230,7 +230,7 @@ impl IntradayRequest {
     }
 }
 
-/// Candles as the server sends them: one array per field, index-aligned (DOC:5383-5399, OQ-5).
+/// Candles as the server sends them: one array per field, index-aligned (DOC:5383-5399).
 ///
 /// Every array defaults to empty, and `null` is empty; a scalar where an array belongs is a
 /// decode error. All non-empty arrays must have the same length, and when there are timestamps

@@ -1,4 +1,4 @@
-//! REST facade for the auth host (auth.dhan.co): token generation (§9 row A5).
+//! REST facade for the auth host (auth.dhan.co): token generation.
 //!
 //! The auth calls need no client credentials, so a client built without them can use this
 //! facade and then switch to the issued token with
@@ -15,7 +15,11 @@ use crate::rest::endpoint;
 use crate::rest::transport::Call;
 use crate::rest::{DhanClient, IssuedToken};
 
-/// The Auth facade, borrowed from a [`DhanClient`].
+/// Access-token generation on Dhan's auth host. Borrowed from a client with
+/// [`DhanClient::auth`].
+///
+/// These calls need no credentials, so a client built without them can generate a token and
+/// then switch to it with [`DhanClient::with_credentials`]. They make exactly one attempt.
 pub struct Auth<'c> {
     client: &'c DhanClient,
 }
@@ -34,7 +38,7 @@ impl<'c> Auth<'c> {
     /// the admission wait, in which case the call waits and then goes out. A call that reached
     /// the server uses up the window even if it failed (for example a mistyped TOTP), and a
     /// failed call is never retried. The client ID, PIN and TOTP are masked in any stored error
-    /// text. dhani does not generate TOTP codes: that would mean holding the TOTP seed (OQ-27).
+    /// text. dhani does not generate TOTP codes: that would mean holding the TOTP seed.
     pub async fn generate_access_token(
         &self,
         client_id: &ClientId,

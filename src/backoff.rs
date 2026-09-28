@@ -10,20 +10,14 @@ use std::time::Duration;
 /// A small, seedable pseudo-random generator (SplitMix64).
 #[cfg_attr(
     not(test),
-    allow(
-        dead_code,
-        reason = "first used by REST retries (M3.2) and feed reconnects (M11.3)"
-    )
+    allow(dead_code, reason = "used by REST retries and feed reconnects")
 )]
 #[derive(Clone, Debug)]
 pub(crate) struct SplitMix64(u64);
 
 #[cfg_attr(
     not(test),
-    allow(
-        dead_code,
-        reason = "first used by REST retries (M3.2) and feed reconnects (M11.3)"
-    )
+    allow(dead_code, reason = "used by REST retries and feed reconnects")
 )]
 impl SplitMix64 {
     /// A generator with a fixed seed; the same seed gives the same sequence.
@@ -51,10 +45,7 @@ impl SplitMix64 {
 /// Full-jitter exponential backoff.
 #[cfg_attr(
     not(test),
-    allow(
-        dead_code,
-        reason = "first used by REST retries (M3.2) and feed reconnects (M11.3)"
-    )
+    allow(dead_code, reason = "used by REST retries and feed reconnects")
 )]
 #[derive(Clone, Debug)]
 pub(crate) struct Backoff {
@@ -65,10 +56,7 @@ pub(crate) struct Backoff {
 
 #[cfg_attr(
     not(test),
-    allow(
-        dead_code,
-        reason = "first used by REST retries (M3.2) and feed reconnects (M11.3)"
-    )
+    allow(dead_code, reason = "used by REST retries and feed reconnects")
 )]
 impl Backoff {
     /// A backoff starting at `initial`, capped at `max`, drawing jitter from `rng`.
@@ -86,10 +74,7 @@ impl Backoff {
 /// `failures == 0`. The exponent saturates at `max` instead of overflowing.
 #[cfg_attr(
     not(test),
-    allow(
-        dead_code,
-        reason = "first used by REST retries (M3.2) and feed reconnects (M11.3)"
-    )
+    allow(dead_code, reason = "used by REST retries and feed reconnects")
 )]
 pub(crate) fn full_jitter(
     initial: Duration,

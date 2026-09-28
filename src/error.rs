@@ -1,6 +1,22 @@
-//! The crate error model: `Error`, `ErrorKind`, `Stage`, `ApiError`, `ApiErrorCode`,
-//! `DataErrorCode`, `ValidationError`, `ValidationReason`, `ConfigError`, `RateLimitInfo`,
-//! `RateLimitSource` and the `Result` alias.
+//! Errors, and what they tell you about a failed call.
+//!
+//! Every failure is an [`Error`]. Branch on its [`kind`](Error::kind), and read its
+//! [`stage`](Error::stage) to learn how far the request got:
+//!
+//! - [`Stage::NotSent`] only when dhani knows for certain that the request never left the
+//!   process: a validation failure, a local rate-limit refusal, missing credentials, a failed
+//!   connection.
+//! - [`Stage::Sent`] when the request was, or may have been, sent and no response arrived.
+//! - [`Stage::ResponseReceived`] when Dhan answered.
+//!
+//! [`Error::may_have_reached_server`] folds that into one question for mutations: `true` means
+//! Dhan may have acted on the request, so check before trying again. Broker errors carry Dhan's
+//! code and message in [`api`](Error::api); local rejections carry their reason in
+//! [`validation`](Error::validation), [`config`](Error::config) or
+//! [`rate_limit`](Error::rate_limit).
+//!
+//! An error never contains a URL, a header, a request body, a credential or a value from a
+//! response body. Dhan's own message is kept, sanitised and bounded to 512 bytes.
 
 use std::fmt;
 use std::time::Duration;
@@ -198,10 +214,7 @@ impl Error {
 /// Crate-private builders; users cannot construct an `Error`.
 #[cfg_attr(
     not(test),
-    allow(
-        dead_code,
-        reason = "used by the transport, limiter and facades as they land"
-    )
+    allow(dead_code, reason = "used by the transport, limiter and facades")
 )]
 impl Error {
     pub(crate) fn new(kind: ErrorKind, stage: Stage) -> Self {
@@ -566,7 +579,7 @@ impl ApiErrorCode {
 
 /// A Data API error code, also used as a feed disconnect reason (DOC:4244-4255).
 ///
-/// Meanings follow the documentation where the Python SDK differs (808 and 809, Appendix A D18).
+/// Meanings follow the documentation where the Python SDK differs (808 and 809).
 #[non_exhaustive]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum DataErrorCode {

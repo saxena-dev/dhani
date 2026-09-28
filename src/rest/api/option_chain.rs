@@ -1,4 +1,4 @@
-//! REST facade for the option chain and the expiry list (§9 rows X1–X2).
+//! REST facade for the option chain and the expiry list.
 
 use chrono::NaiveDate;
 
@@ -10,7 +10,12 @@ use crate::rest::transport::{Call, OptionChainKey};
 use crate::rest::{DhanClient, OptionChainData, OptionChainRequest, UnderlyingRef};
 use crate::types::RawJson;
 
-/// The OptionChain facade, borrowed from a [`DhanClient`].
+/// The option chain of an underlying and its expiry list. Borrowed from a client with
+/// [`DhanClient::option_chain`].
+///
+/// Dhan allows one chain call every three seconds for the same underlying and expiry; the
+/// client's rate limiter waits for that window. Every call is read-only and follows the
+/// client's [retry rules](crate::rest#retries).
 pub struct OptionChain<'c> {
     client: &'c DhanClient,
 }

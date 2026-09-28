@@ -1,4 +1,14 @@
-//! Shared domain types: wire enums, ids, wire timestamps, raw JSON and bounded text.
+//! The shared vocabulary of requests and responses.
+//!
+//! - **Enums** such as [`ExchangeSegment`], [`OrderType`] and [`OrderStatus`], with their exact
+//!   wire spellings.
+//! - **[`Inbound<T>`]**, which every response enum field uses: a value dhani knows is
+//!   [`Inbound::Known`], and one Dhan added later is kept as [`Inbound::Unknown`] rather than
+//!   failing the whole response.
+//! - **IDs** such as [`OrderId`], [`SecurityId`] and [`CorrelationId`], checked when you build
+//!   them so that no string can change a request path.
+//! - **[`WireTime`]**, a timestamp exactly as Dhan sent it, **[`RawJson`]** for responses kept
+//!   undecoded, and **[`BoundedText`]** for broker text that has been sanitised and bounded.
 
 mod common;
 mod enums;
@@ -17,7 +27,7 @@ pub use text::{BoundedText, DecimalString};
 pub use time::{IST, WireTime, epoch_to_ist};
 
 /// Converts a price to `rust_decimal::Decimal`; `None` for NaN, infinities and values outside
-/// `Decimal`'s range (the upstream fixtures contain `-3.402823669209385e+38`) (OQ-1).
+/// `Decimal`'s range (the upstream fixtures contain `-3.402823669209385e+38`).
 ///
 /// ```
 /// let d = dhani::types::to_decimal(1.5).unwrap();

@@ -1,5 +1,54 @@
-//! WebSocket feeds: builders, handles and public feed types, including `FeedLimits`,
-//! `ReconnectPolicy` and `OverflowPolicy`.
+//! The WebSocket feeds: the Live Market Feed and the Live Order Update feed.
+//!
+//! A feed is one background task that owns the connection. [`spawn`](FeedBuilder::spawn)
+//! returns three things:
+//!
+//! - a [`FeedHandle`] for subscribing (on a [`MarketFeed`]), [`status`](FeedHandle::status) and
+//!   [`shutdown`](FeedHandle::shutdown). Handles are cheap to clone; dropping every one
+//!   stops the feed.
+//! - a [`FeedEvents`] stream of [`FeedEvent`]s: data, [`Lifecycle`] transitions and decode
+//!   errors, in the order they happened.
+//! - a [`FeedTask`] whose [`join`](FeedTask::join) reports how the feed ended.
+//!
+//! ```no_run
+//! use dhani::feed::{FeedEvent, Instrument, MarketFeed, Mode};
+//! use dhani::types::{ExchangeSegment, SecurityId};
+//! use futures_util::StreamExt;
+//!
+//! # async fn run(credentials: dhani::Credentials) -> Result<(), Box<dyn std::error::Error>> {
+//! let (handle, mut events, task) = MarketFeed::builder(credentials).spawn()?;
+//! let hdfc_bank = Instrument::new(ExchangeSegment::NseEq, SecurityId::new("1333")?)?;
+//! handle.subscribe([hdfc_bank], Mode::Quote).await?;
+//! while let Some(event) = events.next().await {
+//!     if let FeedEvent::Data(d) = event? {
+//!         println!("{:?}", d.value);
+//!     }
+//! }
+//! println!("feed ended: {:?}", task.join().await);
+//! # Ok(()) }
+//! ```
+//!
+//! # What you can rely on
+//!
+//! - **Subscriptions survive reconnects.** The feed reconnects with jittered backoff under
+//!   [`ReconnectPolicy`] and writes your subscriptions again on every new connection, reporting
+//!   [`Lifecycle::Active`] once they are sent.
+//! - **The stream says how it ends.** It yields `None` only after a clean
+//!   [`shutdown`](FeedHandle::shutdown). Any other ending, such as a rejected token, a final
+//!   server disconnect such as 805, or reconnect attempts running out, yields exactly one
+//!   `Err(FeedError)` first.
+//! - **Nothing is dropped silently.** Delivery is bounded by [`FeedLimits`]. Under the default
+//!   [`OverflowPolicy::Fail`], a consumer that falls too far behind ends the feed with an error;
+//!   under [`OverflowPolicy::DropOldest`], dropped data is reported as [`Lifecycle::Lagged`].
+//!   Lifecycle events are never dropped.
+//! - **A bad packet is reported, not fatal.** It arrives as [`FeedEvent::DecodeError`] and the
+//!   feed carries on.
+//! - **Silence is noticed.** A connection that receives nothing for the liveness timeout is
+//!   replaced: 30 seconds by default for the market feed, 45 seconds for the order-update feed.
+//!
+//! Dhan allows at most five WebSocket connections per user; a sixth evicts the oldest with
+//! disconnect code 805, which ends the feed rather than reconnecting into a loop. dhani does not
+//! count connections across feeds for you.
 //!
 //! # Logging
 //!
@@ -23,7 +72,7 @@ mod tls;
 
 #[allow(
     unused_imports,
-    reason = "glob re-export scheme is fixed before the items exist; each glob imports nothing until its module gains public items"
+    reason = "some re-exported modules intentionally have no public items"
 )]
 pub use self::{
     builder::*, depth::*, global::*, handle::*, market::*, order_update::*, protocol::*, tls::*,

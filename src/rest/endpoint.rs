@@ -1,17 +1,14 @@
 //! `Endpoint`, `Host`, `AuthMode`, `BodyPolicy`, `ResponseShape` and the `const` endpoint
 //! descriptors.
 //!
-//! One descriptor per REST row of the endpoint matrix. Method and path are source facts (each
+//! One descriptor per REST endpoint. Method and path are source facts (each
 //! descriptor's `doc` cites where); the rate class of non-order endpoints is local policy
-//! (`NonTrading`, OQ-3). Path templates use `{name}` placeholders filled positionally by the
-//! transport; query parameters are not part of the path. Scrip-master CSV rows have an empty
-//! path: their absolute URL comes from the matching `Urls` field.
+//! (`NonTrading`). Path templates use `{name}` placeholders filled positionally by the
+//! transport; query parameters are not part of the path. Scrip-master CSV descriptors have an
+//! empty path: their absolute URL comes from the matching `Urls` field.
 #![cfg_attr(
     not(test),
-    allow(
-        dead_code,
-        reason = "the transport and facades that read these descriptors land later"
-    )
+    allow(dead_code, reason = "not every descriptor has a public facade method")
 )]
 
 use crate::labels::{EndpointId, Method, RateClass, RetryClass};
@@ -50,10 +47,10 @@ pub(crate) enum BodyPolicy {
     /// The JSON body as built by the facade.
     #[allow(
         dead_code,
-        reason = "every documented JSON body on the REST host carries the client id (Appendix A D44)"
+        reason = "every documented JSON body on the REST host carries the client id"
     )]
     Json,
-    /// The JSON body with `"dhanClientId"` inserted at the top level (Appendix A D44).
+    /// The JSON body with `"dhanClientId"` inserted at the top level.
     JsonWithClientId,
 }
 
@@ -115,7 +112,8 @@ const fn has(flags: &[Flag], flag: Flag) -> bool {
     false
 }
 
-/// Declares one `pub(crate) const` descriptor per table row, and `ALL` in table order. Columns:
+/// Declares one `pub(crate) const` descriptor per endpoint, and `ALL` in declaration order.
+/// Columns:
 /// id, method, host, path, retry, rate, auth, body, response, flags, doc.
 macro_rules! endpoints {
     ($(
@@ -140,165 +138,90 @@ macro_rules! endpoints {
             };
         )+
 
-        /// Every descriptor, in endpoint-matrix order (unit-test support).
+        /// Every descriptor, in declaration order (unit-test support).
         #[cfg(test)]
         pub(crate) static ALL: &[&Endpoint] = &[$(&$name),+];
     };
 }
 
-// Row ids refer to the endpoint matrix. Scrip-master rows have an empty path.
+// Scrip-master descriptors have an empty path: their URL comes from `Urls`.
 endpoints! {
-    // A1
     AUTH_GENERATE_CONSENT = AuthGenerateConsent, Post, Auth, "/app/generate-consent", Session, Unmetered, AppCredentials, None, Json, [], doc: "DOC:4367-4412";
-    // A2
     AUTH_CONSUME_CONSENT = AuthConsumeConsent, Get, Auth, "/app/consumeApp-consent", Session, Unmetered, AppCredentials, None, Json, [], doc: "DOC:4321-4366";
-    // A3
     AUTH_PARTNER_GENERATE_CONSENT = AuthPartnerGenerateConsent, Post, Auth, "/partner/generate-consent", Session, Unmetered, PartnerCredentials, None, Json, [], doc: "DOC:4569-4603";
-    // A4
     AUTH_PARTNER_CONSUME_CONSENT = AuthPartnerConsumeConsent, Get, Auth, "/partner/consume-consent", Session, Unmetered, PartnerCredentials, None, Json, [], doc: "DOC:4523-4568";
-    // A5
     AUTH_GENERATE_ACCESS_TOKEN = AuthGenerateAccessToken, Post, Auth, "/app/generateAccessToken", Session, TokenGeneration, None, None, Json, [], doc: "DOC:4413-4451";
-    // A6
     ACCOUNT_RENEW_TOKEN = AccountRenewToken, Get, Rest, "/RenewToken", Session, NonTrading, AccessTokenAndClientIdHeader, None, Json, [], doc: "DOC:4604-4643";
-    // A7
     ACCOUNT_PROFILE = AccountProfile, Get, Rest, "/profile", Read, NonTrading, AccessTokenAndClientIdHeader, None, Json, [], doc: "DOC:4870-4879";
-    // A8
     ACCOUNT_SET_IP = AccountSetIp, Post, Rest, "/ip/setIP", Mutation, NonTrading, AccessToken, JsonWithClientId, Json, [], doc: "DOC:4644-4685";
-    // A9
     ACCOUNT_MODIFY_IP = AccountModifyIp, Put, Rest, "/ip/modifyIP", Mutation, NonTrading, AccessToken, JsonWithClientId, Json, [], doc: "DOC:4481-4522";
-    // A10
     ACCOUNT_GET_IP = AccountGetIp, Get, Rest, "/ip/getIP", Read, NonTrading, AccessToken, None, Json, [], doc: "DOC:4452-4480";
-    // O1
     ORDERS_PLACE = OrdersPlace, Post, Rest, "/orders", Mutation, Order, AccessToken, JsonWithClientId, Json, [Sandbox], doc: "DOC:3712-3770";
-    // O2
     ORDERS_PLACE_SLICED = OrdersPlaceSliced, Post, Rest, "/orders/slicing", Mutation, Order, AccessToken, JsonWithClientId, Json, [Sandbox], doc: "DOC:3898-3954";
-    // O3
     ORDERS_MODIFY = OrdersModify, Put, Rest, "/orders/{order_id}", Mutation, Order, AccessToken, JsonWithClientId, Json, [Sandbox Cap], doc: "DOC:3109-3166";
-    // O4
     ORDERS_CANCEL = OrdersCancel, Delete, Rest, "/orders/{order_id}", Mutation, Order, AccessToken, None, Json, [Sandbox], doc: "DOC:131-170";
-    // O5
     ORDERS_LIST = OrdersList, Get, Rest, "/orders", Read, NonTrading, AccessToken, None, Json, [Sandbox], doc: "DOC:1375-1437";
-    // O6
     ORDERS_GET = OrdersGet, Get, Rest, "/orders/{order_id}", Read, NonTrading, AccessToken, None, Json, [Sandbox], doc: "DOC:1305-1374";
-    // O7
     ORDERS_GET_BY_CORRELATION = OrdersGetByCorrelation, Get, Rest, "/orders/external/{correlation_id}", Read, NonTrading, AccessToken, None, Json, [Sandbox], doc: "DOC:1236-1304";
-    // O8
     TRADES_LIST = TradesList, Get, Rest, "/trades", Read, NonTrading, AccessToken, None, Json, [Sandbox], doc: "DOC:1751-1800";
-    // O9
     TRADES_FOR_ORDER = TradesForOrder, Get, Rest, "/trades/{order_id}", Read, NonTrading, AccessToken, None, Json, [Sandbox], doc: "DOC:1695-1750";
-    // S1
     SUPER_ORDERS_PLACE = SuperOrdersPlace, Post, Rest, "/super/orders", Mutation, Order, AccessToken, JsonWithClientId, Json, [], doc: "DOC:3771-3826";
-    // S2
     SUPER_ORDERS_MODIFY = SuperOrdersModify, Put, Rest, "/super/orders/{order_id}", Mutation, Order, AccessToken, JsonWithClientId, Json, [], doc: "DOC:3167-3226";
-    // S3
     SUPER_ORDERS_CANCEL_LEG = SuperOrdersCancelLeg, Delete, Rest, "/super/orders/{order_id}/{order_leg}", Mutation, Order, AccessToken, None, JsonOrEmpty, [], doc: "DOC:171-213";
-    // S4
     SUPER_ORDERS_LIST = SuperOrdersList, Get, Rest, "/super/orders", Read, NonTrading, AccessToken, None, Json, [], doc: "DOC:1570-1627";
-    // F1
     FOREVER_ORDERS_PLACE = ForeverOrdersPlace, Post, Rest, "/forever/orders", Mutation, Order, AccessToken, JsonWithClientId, Json, [], doc: "LEGACY:forever";
-    // F2
     FOREVER_ORDERS_MODIFY = ForeverOrdersModify, Put, Rest, "/forever/orders/{order_id}", Mutation, Order, AccessToken, JsonWithClientId, Json, [], doc: "LEGACY:forever";
-    // F3
     FOREVER_ORDERS_CANCEL = ForeverOrdersCancel, Delete, Rest, "/forever/orders/{order_id}", Mutation, Order, AccessToken, None, Json, [], doc: "LEGACY:forever";
-    // F4
     FOREVER_ORDERS_LIST = ForeverOrdersList, Get, Rest, "/forever/orders", Read, NonTrading, AccessToken, None, Json, [], doc: "LEGACY:forever";
-    // C1
     CONDITIONAL_PLACE = ConditionalPlace, Post, Rest, "/alerts/orders", Mutation, Order, AccessToken, JsonWithClientId, Json, [], doc: "DOC:3262-3463";
-    // C2
     CONDITIONAL_MODIFY = ConditionalModify, Put, Rest, "/alerts/orders/{alert_id}", Mutation, Order, AccessToken, JsonWithClientId, Json, [], doc: "DOC:2894-3108";
-    // C3
     CONDITIONAL_DELETE = ConditionalDelete, Delete, Rest, "/alerts/orders/{alert_id}", Mutation, Order, AccessToken, None, Json, [], doc: "DOC:369-409";
-    // C4
     CONDITIONAL_GET = ConditionalGet, Get, Rest, "/alerts/orders/{alert_id}", Read, NonTrading, AccessToken, None, Json, [], doc: "DOC:709-741";
-    // C5
     CONDITIONAL_LIST = ConditionalList, Get, Rest, "/alerts/orders", Read, NonTrading, AccessToken, None, Json, [], doc: "DOC:683-708";
-    // C6
     CONDITIONAL_PLACE_MULTI = ConditionalPlaceMulti, Post, Rest, "/alerts/multi/orders", Mutation, Order, AccessToken, JsonWithClientId, Json, [], doc: "DOC:3464-3711";
-    // P1
     PORTFOLIO_HOLDINGS = PortfolioHoldings, Get, Rest, "/holdings", Read, NonTrading, AccessToken, None, Json, [Sandbox], doc: "DOC:938-981";
-    // P2
     PORTFOLIO_POSITIONS = PortfolioPositions, Get, Rest, "/positions", Read, NonTrading, AccessToken, None, Json, [Sandbox], doc: "DOC:1470-1528";
-    // P3
     PORTFOLIO_CONVERT_POSITION = PortfolioConvertPosition, Post, Rest, "/positions/convert", Mutation, NonTrading, AccessToken, JsonWithClientId, Empty, [Sandbox], doc: "DOC:281-325";
-    // P4
     PORTFOLIO_EXIT_ALL = PortfolioExitAll, Delete, Rest, "/positions", Mutation, NonTrading, AccessToken, None, Empty, [], doc: "DOC:548-578";
-    // M1
     FUNDS_LIMITS = FundsLimits, Get, Rest, "/fundlimit", Read, NonTrading, AccessToken, None, Json, [Sandbox], doc: "DOC:899-937";
-    // M2
     FUNDS_MARGIN = FundsMargin, Post, Rest, "/margincalculator", Query, NonTrading, AccessToken, JsonWithClientId, Json, [Sandbox], doc: "DOC:10-72";
-    // M3
     FUNDS_MARGIN_MULTI = FundsMarginMulti, Post, Rest, "/margincalculator/multi", Query, NonTrading, AccessToken, JsonWithClientId, Json, [], doc: "DOC:73-130";
-    // T1
     STATEMENTS_LEDGER = StatementsLedger, Get, Rest, "/ledger", Read, NonTrading, AccessToken, None, Json, [Sandbox], doc: "DOC:1068-1116";
-    // T2
     STATEMENTS_TRADE_HISTORY = StatementsTradeHistory, Get, Rest, "/trades/{from_date}/{to_date}/{page_number}", Read, NonTrading, AccessToken, None, Json, [Sandbox], doc: "DOC:1628-1694";
-    // K1
     TRADER_CONTROL_SET_KILL_SWITCH = TraderControlSetKillSwitch, Post, Rest, "/killswitch", Mutation, NonTrading, AccessToken, None, Json, [Sandbox], doc: "DOC:2832-2877";
-    // K2
     TRADER_CONTROL_KILL_SWITCH_STATUS = TraderControlKillSwitchStatus, Get, Rest, "/killswitch", Read, NonTrading, AccessToken, None, Json, [], doc: "DOC:1034-1067";
-    // K3
     TRADER_CONTROL_SET_PNL_EXIT = TraderControlSetPnlExit, Post, Rest, "/pnlExit", Mutation, NonTrading, AccessToken, JsonWithClientId, Json, [], doc: "DOC:234-280";
-    // K4
     TRADER_CONTROL_PNL_EXIT = TraderControlPnlExit, Get, Rest, "/pnlExit", Read, NonTrading, AccessToken, None, Json, [], doc: "DOC:1438-1469";
-    // K5
     TRADER_CONTROL_STOP_PNL_EXIT = TraderControlStopPnlExit, Delete, Rest, "/pnlExit", Mutation, NonTrading, AccessToken, None, Json, [], doc: "DOC:3968-3999";
-    // E1: a GET with a side effect (it issues a T-PIN), kept a Mutation so it gets exactly one
-    // attempt, as the endpoint matrix marks it; JsonOrEmpty accepts both the documented empty
-    // 202 body and a JSON ack.
+    // A GET with a side effect (it issues a T-PIN), kept a Mutation so it gets exactly one
+    // attempt; JsonOrEmpty accepts both the documented empty 202 body and a JSON ack.
     EDIS_GENERATE_TPIN = EdisGenerateTpin, Get, Rest, "/edis/tpin", Mutation, NonTrading, AccessToken, None, JsonOrEmpty, [Sandbox], doc: "DOC:648-682";
-    // E2
     EDIS_FORM = EdisForm, Post, Rest, "/edis/form", Mutation, NonTrading, AccessToken, JsonWithClientId, Json, [], doc: "DOC:5145-5179";
-    // E3
     EDIS_BULK_FORM = EdisBulkForm, Post, Rest, "/edis/bulkform", Mutation, NonTrading, AccessToken, JsonWithClientId, Json, [Sandbox], doc: "DOC:603-647";
-    // E4
     EDIS_INQUIRE = EdisInquire, Get, Rest, "/edis/inquire/{isin}", Read, NonTrading, AccessToken, None, Json, [Sandbox], doc: "DOC:489-535";
-    // Q1
     MARKET_QUOTE_LTP = MarketQuoteLtp, Post, Rest, "/marketfeed/ltp", Query, Quote, AccessToken, JsonWithClientId, Json, [], doc: "DOC:1117-1158";
-    // Q2
     MARKET_QUOTE_OHLC = MarketQuoteOhlc, Post, Rest, "/marketfeed/ohlc", Query, Quote, AccessToken, JsonWithClientId, Json, [], doc: "DOC:1159-1199";
-    // Q3
     MARKET_QUOTE_QUOTE = MarketQuoteQuote, Post, Rest, "/marketfeed/quote", Query, Quote, AccessToken, JsonWithClientId, Json, [], doc: "DOC:1529-1569";
-    // H1
     HISTORICAL_DAILY = HistoricalDaily, Post, Rest, "/charts/historical", Query, Data, AccessToken, JsonWithClientId, Json, [Sandbox], doc: "DOC:742-793";
-    // H2
     HISTORICAL_INTRADAY = HistoricalIntraday, Post, Rest, "/charts/intraday", Query, Data, AccessToken, JsonWithClientId, Json, [Sandbox], doc: "DOC:982-1033";
-    // H3
     HISTORICAL_ROLLING_OPTIONS = HistoricalRollingOptions, Post, Rest, "/charts/rollingoption", Query, Data, AccessToken, JsonWithClientId, Json, [], doc: "DOC:794-856";
-    // X1
     OPTION_CHAIN_CHAIN = OptionChainChain, Post, Rest, "/optionchain", Query, Data, AccessToken, JsonWithClientId, Json, [Keyed], doc: "DOC:1200-1234";
-    // X2
     OPTION_CHAIN_EXPIRIES = OptionChainExpiries, Post, Rest, "/optionchain/expirylist", Query, Data, AccessToken, JsonWithClientId, Json, [], doc: "DOC:857-897";
-    // I1
     INSTRUMENTS_SCRIP_MASTER_COMPACT = InstrumentsScripMasterCompact, Get, ScripMaster, "", Read, Unmetered, None, None, Csv, [], doc: "DOC:5729";
-    // I2
     INSTRUMENTS_SCRIP_MASTER_DETAILED = InstrumentsScripMasterDetailed, Get, ScripMaster, "", Read, Unmetered, None, None, Csv, [], doc: "DOC:5735";
-    // I3
     INSTRUMENTS_SEGMENT = InstrumentsSegment, Get, Rest, "/instrument/{exchange_segment}", Read, NonTrading, AccessToken, None, Csv, [], doc: "DOC:5742-5751";
-    // I4
     INSTRUMENTS_GLOBAL_SCRIP_MASTER = InstrumentsGlobalScripMaster, Get, ScripMaster, "", Read, Unmetered, None, None, Csv, [], doc: "DOC:5806";
-    // G1
     GLOBAL_MARKET_STATUS = GlobalMarketStatus, Get, Rest, "/globalstocks/marketstatus", Read, NonTrading, AccessToken, None, Json, [], doc: "DOC:2274-2308";
-    // G2
     GLOBAL_FUND_LIMIT = GlobalFundLimit, Get, Rest, "/globalstocks/fundlimit", Read, NonTrading, AccessToken, None, Json, [], doc: "DOC:2191-2228";
-    // G3
     GLOBAL_HOLDINGS = GlobalHoldings, Get, Rest, "/globalstocks/holdings", Read, NonTrading, AccessToken, None, Json, [], doc: "DOC:2229-2273";
-    // G4
     GLOBAL_ORDERS = GlobalOrders, Get, Rest, "/globalstocks/orders", Read, NonTrading, AccessToken, None, Json, [], doc: "DOC:2309-2369";
-    // G5
     GLOBAL_ORDER = GlobalOrder, Get, Rest, "/globalstocks/orders/{order_id}", Read, NonTrading, AccessToken, None, Json, [], doc: "DOC:2370-2437";
-    // G6
     GLOBAL_TRADES = GlobalTrades, Get, Rest, "/globalstocks/trades", Read, NonTrading, AccessToken, None, Json, [], doc: "DOC:2494-2542";
-    // G7
     GLOBAL_TRADES_FOR_SECURITY = GlobalTradesForSecurity, Get, Rest, "/globalstocks/trades/{security_id}", Read, NonTrading, AccessToken, None, Json, [], doc: "DOC:2438-2493";
-    // G8
     GLOBAL_MARGIN = GlobalMargin, Post, Rest, "/globalstocks/margincalculator", Query, NonTrading, AccessToken, JsonWithClientId, Json, [], doc: "DOC:2543-2595";
-    // G9
     GLOBAL_ESTIMATE = GlobalEstimate, Post, Rest, "/globalstocks/transEstimate", Query, NonTrading, AccessToken, JsonWithClientId, Json, [], doc: "DOC:2657-2710";
-    // G10
     GLOBAL_PLACE = GlobalPlace, Post, Rest, "/globalstocks/orders", Mutation, Order, AccessToken, JsonWithClientId, Json, [], doc: "DOC:2727-2785";
-    // G11
     GLOBAL_MODIFY = GlobalModify, Put, Rest, "/globalstocks/orders/{order_id}", Mutation, Order, AccessToken, JsonWithClientId, Json, [], doc: "DOC:2596-2656";
-    // G12
     GLOBAL_CANCEL = GlobalCancel, Delete, Rest, "/globalstocks/orders/{order_id}", Mutation, Order, AccessToken, None, Json, [], doc: "DOC:2127-2166";
 }
 
@@ -448,7 +371,7 @@ mod tests {
     }
 
     #[test]
-    fn selected_rows_match_the_matrix() {
+    fn selected_descriptors_match_the_documentation() {
         let place = by_id(EndpointId::OrdersPlace);
         assert_eq!((place.method, place.path), (Method::Post, "/orders"));
         assert!(matches!(place.retry, RetryClass::Mutation) && place.rate == RateClass::Order);
@@ -499,7 +422,7 @@ mod tests {
         assert_eq!(by_id(EndpointId::HistoricalDaily).rate, RateClass::Data);
         assert!(!by_id(EndpointId::ConditionalPlaceMulti).sandbox);
         for e in ALL {
-            // Every JSON body on the REST host carries the client id (Appendix A D44).
+            // Every JSON body on the REST host carries the client id.
             if e.host != Host::Rest {
                 assert!(matches!(e.body, BodyPolicy::None), "{:?}", e.id);
             }

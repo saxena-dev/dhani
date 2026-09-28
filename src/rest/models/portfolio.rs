@@ -38,11 +38,10 @@ pub struct Holding {
     /// The quantity awaiting T+1 delivery.
     #[serde(default)]
     pub t1_qty: Option<i64>,
-    /// The margin-trading quantity awaiting T+1 delivery; the wire name is snake_case
-    /// (Appendix A D47).
+    /// The margin-trading quantity awaiting T+1 delivery; the wire name is snake_case.
     #[serde(default, rename = "mtf_t1_qty")]
     pub mtf_t1_qty: Option<i64>,
-    /// The margin-trading quantity; the wire name is snake_case (Appendix A D47).
+    /// The margin-trading quantity; the wire name is snake_case.
     #[serde(default, rename = "mtf_qty")]
     pub mtf_qty: Option<i64>,
     /// The quantity available to sell.
@@ -154,9 +153,9 @@ pub struct Position {
 
 /// A conversion of an open position between product types (DOC:298-306).
 ///
-/// Every documented field is required here (Appendix A D36). `trading_symbol` is optional and
+/// Every documented field is required here. `trading_symbol` is optional and
 /// sent only when set: the OpenAPI spec requires it while the documentation table and the Python
-/// SDK omit it (Appendix A D61), so setting it is recommended.
+/// SDK omit it, so setting it is recommended.
 #[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -207,7 +206,7 @@ impl ConvertPositionRequest {
         }
     }
 
-    /// Sets the trading symbol (recommended; Appendix A D61).
+    /// Sets the trading symbol (recommended).
     pub fn with_trading_symbol(mut self, trading_symbol: impl Into<String>) -> Self {
         self.trading_symbol = Some(trading_symbol.into());
         self

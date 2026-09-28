@@ -12,13 +12,13 @@ use crate::types::serde_ext::num_or_string;
 use crate::types::{ExchangeSegment, ProductType, SecurityId, TransactionType};
 
 /// The most legs one multi-margin request may carry. The documentation states no bound; this
-/// is a local sanity bound (SDK policy, OQ-24).
+/// is a local sanity bound (SDK policy).
 pub(crate) const MAX_MULTI_MARGIN_LEGS: usize = 50;
 
 /// The account's funds (DOC:910-919).
 ///
 /// Two wire names are misspelled by the server and kept as sent: `availabelBalance` and
-/// `receiveableAmount` (Appendix A D47). Not `PartialEq`, because it carries the client ID,
+/// `receiveableAmount`. Not `PartialEq`, because it carries the client ID,
 /// which is deliberately not comparable.
 #[non_exhaustive]
 #[derive(Debug, Clone, Deserialize)]
@@ -54,7 +54,7 @@ pub struct FundLimits {
 /// [`MultiMarginRequest`].
 ///
 /// `price` is required: the OpenAPI spec and the Python SDK both require it, although the
-/// documentation table marks it optional (Appendix A D62).
+/// documentation table marks it optional.
 #[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -182,8 +182,8 @@ pub struct Margin {
 /// Several orders priced together, with hedge benefits (DOC:86-97).
 ///
 /// The wire names are `includeOrder` and `scripList`, as in the documentation table and the
-/// Python SDK; the OpenAPI spec's `includeOrders` and `scripts` are not used (Appendix A D63).
-/// Between 1 and 50 legs; the upper bound is SDK policy (OQ-24).
+/// Python SDK; the OpenAPI spec's `includeOrders` and `scripts` are not used.
+/// Between 1 and 50 legs; the upper bound is SDK policy.
 #[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -239,7 +239,7 @@ impl MultiMarginRequest {
 ///
 /// The documentation table uses camelCase floats; the OpenAPI spec uses snake_case strings
 /// (`MultiMarginResponse`). Both are accepted: each amount has its camelCase name, a snake_case
-/// alias and accepts a number or a numeric string (Appendix A D60). Not `PartialEq`, because it
+/// alias and accepts a number or a numeric string. Not `PartialEq`, because it
 /// carries the client ID.
 #[non_exhaustive]
 #[derive(Debug, Clone, Deserialize)]

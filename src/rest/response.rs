@@ -1,5 +1,5 @@
 //! Response handling: bounded body reads, classification by status and declared shape
-//! (step 8 of the pipeline), and JSON decoding that never quotes the body.
+//! (the last step of a call), and JSON decoding that never quotes the body.
 
 use std::time::Duration;
 
@@ -21,7 +21,7 @@ pub(crate) enum Success {
     Csv(String),
 }
 
-/// Classifies a response by status and the endpoint's declared shape (step 8 of the pipeline).
+/// Classifies a response by status and the endpoint's declared shape.
 pub(crate) fn classify(
     ep: &Endpoint,
     status: u16,
@@ -59,7 +59,7 @@ pub(crate) fn classify(
         ResponseShape::Json => Ok(Success::Json(bytes)),
         ResponseShape::Empty if blank => Ok(Success::Empty),
         ResponseShape::Empty => match serde_json::from_slice::<serde_json::Value>(&bytes) {
-            // A 2xx body that reports a failure is not a success (DHQ-ebr): exit-all, for one,
+            // A 2xx body that reports a failure is not a success: exit-all, for one,
             // answers 200 with {status, message}.
             Ok(serde_json::Value::Object(body)) if failed_status(&body).is_some() => {
                 let error = Error::new(ErrorKind::Api, Stage::ResponseReceived)

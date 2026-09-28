@@ -44,8 +44,8 @@ fn check_quantity(field: &'static str, quantity: u32) -> Result<(), ValidationEr
 ///
 /// Build it with [`new`](Self::new) and the `with_*` setters; the facade calls
 /// [`validate`](Self::validate) before sending. `price` is omitted when `None`, including for
-/// market orders (Appendix A D27, OQ-21), and the bracket-order fields `boProfitValue` and
-/// `boStopLossValue` are never sent (Appendix A D28).
+/// market orders, and the bracket-order fields `boProfitValue` and
+/// `boStopLossValue` are never sent.
 #[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -204,7 +204,7 @@ impl PlaceOrderRequest {
 
 /// A change to a pending order (DOC:3131-3139).
 ///
-/// Fields left `None` are omitted rather than sent as `null` (Appendix A D29). `quantity` is the
+/// Fields left `None` are omitted rather than sent as `null`. `quantity` is the
 /// order's placed quantity, not the pending remainder (DOC:6545).
 #[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Serialize)]
@@ -310,7 +310,7 @@ pub struct OrderAck {
     pub order_status: Option<Inbound<OrderStatus>>,
 }
 
-/// A slice response: one acknowledgement object or an array of them (Appendix A D30).
+/// A slice response: one acknowledgement object or an array of them.
 pub(crate) fn one_or_many_acks<'de, D: Deserializer<'de>>(d: D) -> Result<Vec<OrderAck>, D::Error> {
     one_or_many(d)
 }
@@ -325,7 +325,7 @@ pub(crate) struct SlicedAcks(
 /// An order from the order book or an order lookup (DOC:1254-1286, DOC:1323-1356,
 /// DOC:1386-1419).
 ///
-/// A lookup by ID or correlation ID returns a single object (Appendix A D31, OQ-19). It is not
+/// A lookup by ID or correlation ID returns a single object. It is not
 /// `PartialEq`, because it carries the client ID, which is deliberately not comparable.
 /// The struct is `#[non_exhaustive]`, so it cannot be built outside the crate:
 ///
@@ -341,10 +341,10 @@ pub struct Order {
     /// The account; redacted in `Debug`.
     #[serde(default)]
     pub dhan_client_id: Option<ClientId>,
-    /// The order's ID. One table spells it `order-id` (DOC:1326, Appendix A D46).
+    /// The order's ID. One table spells it `order-id` (DOC:1326).
     #[serde(alias = "order-id")]
     pub order_id: OrderId,
-    /// The exchange's order ID (fixture evidence; Appendix A D55).
+    /// The exchange's order ID.
     #[serde(default)]
     pub exchange_order_id: Option<String>,
     /// The caller's correlation ID. One table spells it `correlation-id` (DOC:1258).
@@ -471,7 +471,7 @@ pub struct Trade {
     /// The trading symbol.
     #[serde(default)]
     pub trading_symbol: Option<String>,
-    /// The display symbol (fixture evidence; Appendix A D55).
+    /// The display symbol.
     #[serde(default)]
     pub custom_symbol: Option<String>,
     /// The instrument.

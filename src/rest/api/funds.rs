@@ -1,4 +1,4 @@
-//! REST facade for fund limits and the margin calculators (§9 rows M1–M3).
+//! REST facade for fund limits and the margin calculators.
 
 use super::json_body;
 use crate::error::Result;
@@ -6,7 +6,9 @@ use crate::rest::endpoint;
 use crate::rest::transport::Call;
 use crate::rest::{DhanClient, FundLimits, Margin, MarginRequest, MultiMargin, MultiMarginRequest};
 
-/// The Funds facade, borrowed from a [`DhanClient`].
+/// Fund limits and the margin calculators. Borrowed from a client with [`DhanClient::funds`].
+///
+/// Every call is read-only and follows the client's [retry rules](crate::rest#retries).
 pub struct Funds<'c> {
     client: &'c DhanClient,
 }

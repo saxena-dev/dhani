@@ -1,8 +1,8 @@
-//! REST facade for market quotes (§9 rows Q1–Q3).
+//! REST facade for market quotes.
 //!
 //! Every call is a read-only query in the Quote rate class, with a `JsonWithClientId` body: the
-//! client ID is injected next to the segment keys, as the Python SDK sends it (Appendix A D42,
-//! D44). Each typed method has a `*_raw` twin returning the same response undecoded.
+//! client ID is injected next to the segment keys, as the Python SDK sends it. Each typed method
+//! has a `*_raw` twin returning the same response undecoded.
 
 use serde::de::DeserializeOwned;
 
@@ -12,7 +12,12 @@ use crate::rest::transport::Call;
 use crate::rest::{DhanClient, FullQuote, LtpQuote, OhlcQuote, QuoteData, QuoteRequest};
 use crate::types::RawJson;
 
-/// The MarketQuote facade, borrowed from a [`DhanClient`].
+/// LTP, OHLC and full market quotes for up to 1000 instruments per call. Borrowed from a client
+/// with [`DhanClient::market_quote`].
+///
+/// Each typed method has a `*_raw` twin that returns the same response undecoded. Dhan allows
+/// one quote call per second; the client's rate limiter spaces them for you. Every call is
+/// read-only and follows the client's [retry rules](crate::rest#retries).
 pub struct MarketQuote<'c> {
     client: &'c DhanClient,
 }

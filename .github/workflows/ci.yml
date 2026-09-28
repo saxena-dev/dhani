@@ -57,6 +57,31 @@ jobs:
       # The live lane needs Dhan credentials: it is compiled, never run.
       - run: cargo test --locked --features live-tests --test live --no-run
 
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: git submodule update --init vendor/DhanHQ-py
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: llvm-tools-preview
+      - uses: taiki-e/install-action@cargo-llvm-cov
+      # The live lane is compiled here too; its tests are all ignored, so none of them runs.
+      - run: cargo llvm-cov --locked --all-features --lcov --output-path lcov.info
+      - name: coverage summary
+        run: |
+          {
+            echo '```'
+            cargo llvm-cov report --summary-only
+            echo '```'
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+      # Needs the CODECOV_TOKEN repository secret; an upload failure does not fail the build.
+      - uses: codecov/codecov-action@v5
+        with:
+          files: lcov.info
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
+
   package:
     runs-on: ubuntu-latest
     steps:

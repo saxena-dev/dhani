@@ -51,7 +51,7 @@ feed = [
     "dep:webpki-roots",
 ]
 decoder = []
-# tokio/rt: scrip master CSVs are parsed on the blocking pool (user decision, 2026-09-28).
+# tokio/rt: scrip master CSVs are parsed on the blocking pool, off the async runtime.
 instruments = ["rest", "dep:csv", "tokio/rt"]
 metrics = ["dep:metrics"]
 decimal = ["dep:rust_decimal"]
@@ -83,15 +83,15 @@ rust_decimal = { version = "1.42.1", default-features = false, features = ["std"
 tokio = { version = "1.52", features = ["full", "test-util"] }
 wiremock = "0.6.5"
 tracing-subscriber = { version = "0.3.22", features = ["registry", "fmt", "env-filter"] }
-# LogTracer, for the test that forwards dependency `log` records (already in the lockfile).
+# LogTracer forwards `log` records into `tracing` in one test.
 tracing-log = "0.2.0"
 metrics-util = "0.20.4"
 sha2 = "0.10.9"
 hex = "0.4.3"
 toml = "1"
 
-# Every integration test target declares the features it needs, so each feature row can run
-# `cargo test` over exactly the targets it supports.
+# Each integration test target declares the features it needs, so `cargo test` with any feature
+# set builds exactly the targets that set supports.
 
 [[test]]
 name = "rest_orders"

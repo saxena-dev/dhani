@@ -113,7 +113,7 @@ impl<P: FeedProtocol> FeedBuilder<P> {
     /// Starts the feed on the current tokio runtime.
     #[allow(
         clippy::type_complexity,
-        reason = "the handle, stream and task triple of the public API (§8.2)"
+        reason = "the handle, stream and task triple of the public API"
     )]
     pub fn spawn(
         self,

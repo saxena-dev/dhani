@@ -1,7 +1,7 @@
 //! Reconnect dispositions and the reconnect budget.
 //!
 //! Every way a connection attempt or a live connection can end is a [`Cause`], and [`dispose`]
-//! maps each one to retry or a terminal reason, following the architecture's disposition table:
+//! maps each one to retry or a terminal reason, as this table shows:
 //!
 //! | Cause | Disposition |
 //! |---|---|

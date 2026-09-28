@@ -2,7 +2,7 @@
 //!
 //! Requests: [`OptionChainRequest`] (DOC:1211-1215) and [`UnderlyingRef`] (DOC:868-871), with
 //! PascalCase wire keys. Response: [`OptionChainData`], typed from the OpenAPI schemas
-//! `OptionChainResponse` and `OptionData` (OQ-6).
+//! `OptionChainResponse` and `OptionData`.
 
 use std::collections::BTreeMap;
 

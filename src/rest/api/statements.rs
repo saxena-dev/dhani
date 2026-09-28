@@ -1,4 +1,4 @@
-//! REST facade for the ledger and the trade history (§9 rows T1–T2).
+//! REST facade for the ledger and the trade history.
 
 use std::borrow::Cow;
 
@@ -10,7 +10,10 @@ use crate::rest::models::LedgerEntries;
 use crate::rest::transport::Call;
 use crate::rest::{DhanClient, HistoricalTrade, LedgerEntry};
 
-/// The Statements facade, borrowed from a [`DhanClient`].
+/// The ledger and the trade history. Borrowed from a client with [`DhanClient::statements`].
+///
+/// Both take a date range, which is checked before anything is sent, and follow the client's
+/// [retry rules](crate::rest#retries).
 pub struct Statements<'c> {
     client: &'c DhanClient,
 }
@@ -40,7 +43,7 @@ impl<'c> Statements<'c> {
     /// Ledger entries between two dates, inclusive: `GET /ledger` with the `from-date` and
     /// `to-date` query parameters in `%Y-%m-%d` form (DOC:1068-1116).
     ///
-    /// The response may be one entry or an array of them (Appendix A D37). A range that ends
+    /// The response may be one entry or an array of them. A range that ends
     /// before it starts is refused without a request.
     pub async fn ledger(&self, from: NaiveDate, to: NaiveDate) -> Result<Vec<LedgerEntry>> {
         let query = [

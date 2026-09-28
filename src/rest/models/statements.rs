@@ -74,7 +74,7 @@ impl LedgerEntry {
     }
 }
 
-/// A ledger response: one entry object or an array of them (Appendix A D37).
+/// A ledger response: one entry object or an array of them.
 #[derive(Debug, Deserialize)]
 #[serde(transparent)]
 pub(crate) struct LedgerEntries(
@@ -84,7 +84,7 @@ pub(crate) struct LedgerEntries(
 /// A trade from the trade history (DOC:1648-1675, guide DOC:6951-7036).
 ///
 /// The trade-book fields, plus the ISIN, the instrument kind and six charges. The charges are
-/// floats in one table and strings in the guide, so both are accepted (Appendix A D38). Not
+/// floats in one table and strings in the guide, so both are accepted. Not
 /// `PartialEq`, because it carries the client ID.
 #[non_exhaustive]
 #[derive(Debug, Clone, Deserialize)]

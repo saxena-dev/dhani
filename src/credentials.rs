@@ -1,6 +1,8 @@
-//! Credential and secret types: `ClientId`, `AccessToken`, `Credentials`, `Pin`, `Totp`, `AppId`,
-//! `AppSecret`, `AppCredentials`, `PartnerId`, `PartnerSecret`, `PartnerCredentials`, `TokenId`
-//! and `ConsentId`.
+//! Your client ID, access token and the other secrets Dhan's API calls take.
+//!
+//! Most programs need [`Credentials`]: a [`ClientId`] and an [`AccessToken`], passed to
+//! [`DhanClient::builder`](crate::DhanClient::builder) or a feed builder. [`Pin`] and [`Totp`]
+//! generate an access token; the app and partner types are for partner integrations.
 //!
 //! Every secret wraps a [`SecretString`], is validated on construction, exposes its value only
 //! through `expose_secret()`, prints `TypeName(<redacted>)` in `Debug` and implements no
@@ -224,7 +226,9 @@ secret_type!(
 /// The client ID and access token that authenticate ordinary API calls.
 ///
 /// Cloning copies the values; there is no shared or refreshed state. To rotate a token, build new
-/// credentials and a new client.
+/// credentials and switch to them with
+/// [`DhanClient::with_credentials`](crate::DhanClient::with_credentials), which keeps the
+/// connection pool and rate limiter.
 #[derive(Clone)]
 pub struct Credentials {
     client_id: ClientId,

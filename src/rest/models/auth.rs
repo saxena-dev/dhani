@@ -38,7 +38,7 @@ impl IssuedToken {
     }
 }
 
-/// Shows the field names only (§6.3).
+/// Shows the field names only: every value is redacted.
 impl fmt::Debug for IssuedToken {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let hidden = format_args!("<redacted>");

@@ -1,38 +1,61 @@
-# dhani
+dhani
+=====
 
-`dhani` is an asynchronous Rust client library for the [DhanHQ v2](https://docs.dhanhq.co/)
-developer API: REST trading and data calls, the streaming feeds, and `tracing`-based
-observability with redaction.
+[![CI](https://github.com/saxena-dev/dhani/actions/workflows/ci.yml/badge.svg)](https://github.com/saxena-dev/dhani/actions/workflows/ci.yml)
+[![Coverage](https://codecov.io/gh/saxena-dev/dhani/graph/badge.svg)](https://codecov.io/gh/saxena-dev/dhani)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Rust 1.88+](https://img.shields.io/badge/rust-1.88%2B-orange.svg)](https://www.rust-lang.org/)
+[![Docs.rs](https://docs.rs/dhani/badge.svg)](https://docs.rs/dhani)
+[![Crates.io](https://img.shields.io/crates/v/dhani.svg)](https://crates.io/crates/dhani)
+[![Downloads](https://img.shields.io/crates/d/dhani.svg)](https://crates.io/crates/dhani)
 
-**Status: 0.1.0 has not been run against a Dhan account.** Every request and response shape is
-built from Dhan's published documentation and the official Python SDK, and tested against local
-mock servers. The defaults it chooses where the sources are silent or disagree are listed in
-[Unverified against a live account](#unverified-against-a-live-account).
+**dhani** is an asynchronous Rust SDK for [Dhan](https://dhan.co/)'s
+[DhanHQ](https://docs.dhanhq.co/) developer API (version 2): the REST API for orders, portfolio,
+funds, statements and market data, and the WebSocket feeds for live market data and order
+updates.
 
-## What 0.1.0 covers
+> **Dhani** (Hindi: धनी) n.: A person of wealth; someone who is rich.
 
-| Area | Calls |
-|---|---|
-| Orders | place, place sliced, modify, cancel, order book, order by ID, order by correlation ID, trade book, trades of an order |
-| Portfolio | holdings, positions, convert position, exit all positions |
-| Funds | fund limit, margin, multi-instrument margin |
-| Statements | ledger, trade history |
-| Market quote | LTP, OHLC and full quote, typed or raw JSON |
-| Historical data | daily and intraday candles |
-| Option chain | chain and expiry list |
-| Instruments | the compact and detailed scrip master CSVs (feature `instruments`) |
-| Auth and account | access token from PIN and TOTP, token renewal, profile |
-| Feeds | Live Market Feed (ticker, quote and full modes) and Live Order Update (individual and partner) |
-| Environments | live, and the REST sandbox |
+A trading program earns its keep by being boringly correct. The bugs that cost money are
+rarely the ones that crash: they are an order placed twice because a timeout was retried, a
+rate limit discovered by being blocked, a feed that quietly stopped after a reconnect, an
+access token copied into a log file. dhani is built so that none of these can happen without
+you being told, with enough detail to decide what to do next.
 
-Later 0.x releases add super orders, forever orders, conditional and multi orders, trader's
-control, EDIS, the Global Stocks APIs and feed, the 20- and 200-level depth feeds, rolling
-options, per-segment instruments, and the consent, partner-consent and static-IP flows. The REST
-facades for super, forever and conditional orders, trader's control, EDIS and Global Stocks
-(`client.super_orders()` and so on) already exist but have no calls yet.
+## Why dhani
 
-The library reads no environment variables, installs no global subscriber or metrics recorder,
-and runs no background task for REST calls: everything is configured explicitly.
+- **Failures are never disguised as success.** A call succeeds only when Dhan answers with a
+  2xx status and a body of the expected shape. A 2xx answer that reports a failure is an
+  error, and every error says what failed, where, and how far the request got.
+- **Orders are never sent twice behind your back.** Every call that can change your account,
+  and every token call, makes exactly one attempt. If the response is lost, the error says
+  Dhan *may* have received the request, so you can check before trying again. Reads, which
+  are safe to repeat, retry failures that happen before a response arrives, and 502, 503 and
+  504 answers, on their own ([the exact rule](#rate-limits-retries-and-deadlines)).
+- **Dhan's rate limits are enforced before you hit them.** Every published limit, from 10
+  orders a second to 25 modifications per order, is applied locally. A request waits briefly
+  for capacity, 5 seconds by default, and is refused with a `RateLimited` error rather than
+  sent to be rejected by Dhan. Other programs using the same account still count against
+  Dhan's limits, so leave them headroom.
+- **Requests are checked before they are sent.** A quantity of zero, a LIMIT order without a
+  price or a malformed ID is a `Validation` error, and nothing leaves your machine.
+- **Secrets stay secret.** dhani keeps access tokens, client IDs, PINs and TOTP (time-based
+  one-time password) codes out of its own errors, spans, events, metric labels and `Debug`
+  output. Two things are yours to handle: raw messages you receive, such as unrecognised
+  order updates, may contain your client ID, and the WebSocket library underneath can log
+  credentials at TRACE (see [Observability](#observability)).
+- **Nothing grows without bound.** Every queue, body, frame and wait has a documented default
+  and a range. Exceeding one is an explicit error, not a slow leak.
+- **The feeds never drop data silently.** Reconnects restore your subscriptions, every
+  transition is reported as an event, and by default a consumer that falls behind gets an
+  error, not a gap. If you choose to skip ahead instead, every drop is reported as an event.
+  A packet that cannot be decoded is reported and skipped, never guessed at.
+- **Unknown values are kept, not guessed.** When Dhan adds an order status, a segment or a
+  message type, you receive it as an unknown value instead of a parse failure.
+- **You own your telemetry.** dhani reads no environment variables and installs nothing
+  globally. Plug in your own `tracing` subscriber and metrics recorder, or none at all.
+- **Take only what you need.** The REST client, the feeds and the decoders are separate
+  features. A decoder-only build has no Tokio or network dependency.
 
 ## Installation
 
@@ -40,28 +63,79 @@ and runs no background task for REST calls: everything is configured explicitly.
 [dependencies]
 dhani = "0.1"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+futures-util = "0.3" # for StreamExt, to read the feeds' event streams
 ```
 
-The minimum supported Rust version is 1.88. TLS is rustls with the aws-lc-rs provider, which
-needs a C compiler and, on some targets, CMake.
+`rest` and `feed` are on by default. To depend on less, turn off the defaults and pick what
+you use:
 
-| Feature | Enables |
-|---|---|
-| `rest` *(default)* | the REST client and every REST facade |
-| `feed` *(default)* | the WebSocket feeds (implies `decoder`) |
-| `decoder` | the pure binary and JSON feed decoders, with no async runtime or network code |
-| `instruments` | scrip master CSV download and parsing (implies `rest`) |
-| `metrics` | metric emission through the `metrics` facade |
-| `decimal` | `dhani::types::to_decimal()`, converting an `f64` price to `Option<rust_decimal::Decimal>` (`None` out of range) |
-| `live-tests` | compiles the crate's own live test lane (repository checkouts only); adds no library code |
+```toml
+dhani = { version = "0.1", default-features = false, features = ["rest"] }
+```
 
-## REST quick start
+dhani needs **Rust 1.88** or newer. The REST client and the feeds run on the Tokio runtime you
+already use, multi-threaded or not. TLS is rustls with the aws-lc-rs provider, which needs a C
+compiler and, on some targets, CMake.
+
+## Getting started
+
+### Before you start
+
+You need a Dhan trading account with DhanHQ API access. Dhan's Trading APIs are free for every
+Dhan user; its Data APIs, such as market quotes, historical data and the market feed, carry
+additional charges. Without access, Dhan rejects a call with `DH-902`, or with Data API error
+806 when the Data APIs are not subscribed. Two more things are worth knowing up front:
+
+- **Placing orders needs a static IP.** Dhan requires every account that places, modifies or
+  cancels orders through the API to whitelist a static IP address ([Dhan's authentication
+  guide](https://docs.dhanhq.co/api/v2/guides/authentication#setup-static-ip)). Reading order
+  and trade details works without one.
+- **The sandbox is separate.** A sandbox token comes from
+  [developer.dhanhq.co](https://developer.dhanhq.co/), and the sandbox serves only some calls:
+  see [step 2](#2-call-the-rest-api).
+
+### 1. Get an access token
+
+Dhan authenticates every call with your **client ID** and an **access token**. A token usually
+stays valid for about 24 hours; a generated one tells you exactly when it expires in
+`expiry_time`. You can generate the token on [web.dhan.co](https://web.dhan.co/) (My Profile, then
+Access DhanHQ APIs) or, once TOTP is enabled for your Dhan account, have dhani generate one
+from your PIN and the current TOTP code:
 
 ```rust,no_run
-use dhani::rest::PlaceOrderRequest;
-use dhani::types::{
-    ExchangeSegment, OrderType, ProductType, SecurityId, TransactionType, Validity,
-};
+use dhani::credentials::{Pin, Totp};
+use dhani::{ClientId, DhanClient};
+
+#[tokio::main]
+async fn main() -> dhani::Result<()> {
+    // Token generation needs no credentials, so the client starts without them.
+    let client = DhanClient::builder().build()?;
+    let token = client
+        .auth()
+        .generate_access_token(
+            &ClientId::new("1000000009")?,
+            &Pin::new("123456")?,
+            &Totp::new("654321")?, // the current code from your authenticator app
+        )
+        .await?;
+
+    // The same client, now with credentials for every other call.
+    let client = client.with_credentials(token.credentials());
+    // Storing the token is up to you: dhani keeps nothing on disk.
+    println!("token expires at {:?}", token.expiry_time);
+    let _ = client;
+    Ok(())
+}
+```
+
+dhani never computes TOTP codes, because that would mean holding your TOTP seed. Dhan issues
+at most one token every two minutes, and dhani enforces that locally too.
+
+### 2. Call the REST API
+
+Give the client your credentials, then reach each part of the API through it:
+
+```rust,no_run
 use dhani::{AccessToken, ClientId, Credentials, DhanClient};
 
 #[tokio::main]
@@ -73,6 +147,56 @@ async fn main() -> dhani::Result<()> {
     );
     let client = DhanClient::builder().credentials(credentials).build()?;
 
+    let funds = client.funds().limits().await?;
+    println!("available balance: {:?}", funds.available_balance);
+
+    let holdings = client.portfolio().holdings().await?;
+    let positions = client.portfolio().positions().await?;
+    println!("{} holdings, {} positions", holdings.len(), positions.len());
+    Ok(())
+}
+```
+
+A `DhanClient` is cheap to clone. Clones share one connection pool and one set of rate limits,
+so create it once and hand clones to the tasks that need it.
+
+To try orders without touching your account, point the client at Dhan's sandbox and give it a
+sandbox token:
+
+```rust,no_run
+use dhani::{Credentials, DhanClient, Environment};
+
+fn sandbox_client(sandbox_credentials: Credentials) -> dhani::Result<DhanClient> {
+    DhanClient::builder()
+        .environment(Environment::Sandbox)
+        .credentials(sandbox_credentials)
+        .build()
+}
+```
+
+Only the REST base URL changes. Of the calls in this release, Dhan's sandbox serves: placing,
+slicing, modifying and cancelling orders; the order book, orders by ID or correlation ID, the trade
+book and an order's trades; holdings, positions and position conversion; the fund limit and
+single-instrument margin; the ledger and trade history; and daily and intraday candles.
+Market quotes, option chains, multi-instrument margin, exiting all positions, the profile,
+token calls and the feeds are not in the sandbox. Dhan's sandbox also serves the kill switch
+and EDIS, which a later release of dhani will expose.
+
+### 3. Place an order, carefully
+
+Orders are built from a request type that is checked before anything is sent. Tag each order
+with a correlation ID: if the response is lost, it is how you find the order again.
+
+```rust,no_run
+use dhani::DhanClient;
+use dhani::rest::PlaceOrderRequest;
+use dhani::types::{
+    CorrelationId, ExchangeSegment, OrderType, ProductType, SecurityId, TransactionType,
+    Validity,
+};
+
+async fn buy(client: &DhanClient) -> dhani::Result<()> {
+    let tag = CorrelationId::new("rebalance-42")?;
     let order = PlaceOrderRequest::new(
         ExchangeSegment::NseEq,
         SecurityId::new("1333")?,
@@ -82,27 +206,38 @@ async fn main() -> dhani::Result<()> {
         ProductType::Cnc,
         Validity::Day,
     )
-    .with_price(1642.5);
-    let ack = client.orders().place(&order).await?;
-    println!("placed {}", ack.order_id);
+    .with_price(1642.5)
+    .with_correlation_id(tag.clone());
 
-    for o in client.orders().list().await? {
-        println!("{} {:?}", o.order_id, o.order_status);
+    match client.orders().place(&order).await {
+        Ok(ack) => println!("accepted as {}", ack.order_id),
+        Err(err) if err.may_have_reached_server() => {
+            // The request left the process, so the order may exist. Look it up before
+            // deciding to place it again.
+            match client.orders().get_by_correlation_id(&tag).await {
+                Ok(placed) => println!("it was placed: {}", placed.order_id),
+                Err(_) => println!("not found yet: check the order book before retrying"),
+            }
+        }
+        Err(err) => return Err(err),
     }
     Ok(())
 }
 ```
 
-- **Sandbox.** Add `.environment(Environment::Sandbox)` to the builder. It changes only the
-  REST host; the feeds have no sandbox.
-- **Tokens.** `client.auth().generate_access_token(&client_id, &pin, &totp)` issues a token from
-  a PIN and the current TOTP code; `client.with_credentials(token.credentials())` switches to it
-  and keeps the same transport and rate limiter. dhani does not compute TOTP codes.
-- **Errors.** `Error::kind()` says what went wrong. Reads and queries are retried on transient
-  failures; mutations and token calls never are, and `Error::may_have_reached_server()` says
-  whether a failed mutation might still have taken effect.
+An acknowledgement means Dhan accepted the order, not that it filled. Follow its progress with
+`orders().get(..)`, or with the order-update feed below.
 
-## Market feed
+Dhan identifies an instrument by its numeric **security ID** together with its **exchange
+segment**, not by its trading symbol: HDFC Bank on NSE is security ID 1333 in `NSE_EQ`. To
+look one up, use the scrip master, Dhan's CSV list of every instrument: with the `instruments`
+feature, `client.instruments().scrip_master(ScripMasterKind::Compact)` returns each one's
+security ID, trading symbol and segment.
+
+### 4. Stream live market data
+
+A feed is a single background task that owns the WebSocket connection. You talk to it through
+a handle and read everything it receives from one stream:
 
 ```rust,no_run
 use dhani::feed::{FeedEvent, Instrument, MarketFeed, Mode};
@@ -123,57 +258,205 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     while let Some(event) = events.next().await {
         match event? {
             FeedEvent::Data(d) => println!("{:?}", d.value),
-            FeedEvent::Lifecycle(l) => println!("{l:?}"),
+            FeedEvent::Lifecycle(change) => println!("{change:?}"),
             FeedEvent::DecodeError(e) => eprintln!("skipped a packet: {e:?}"),
-            _ => {}
+            _ => {} // FeedEvent is non-exhaustive: later versions may add events.
         }
     }
-    handle.shutdown().await?;
-    task.join().await;
+    println!("feed ended: {:?}", task.join().await);
     Ok(())
 }
 ```
 
-The feed reconnects and restores its subscriptions on its own, and reports every transition as
-a `FeedEvent::Lifecycle`. `OrderUpdateFeed::builder(credentials)` works the same way for order
-updates.
+A few things are worth knowing:
 
-> **Connection limit.** Dhan allows at most five WebSocket connections per user. Whether the limit
-> is shared across feed types is undocumented, so budget as if it is. A sixth connection evicts
-> the oldest one, which ends with disconnect code 805. dhani does not count connections for you,
-> and it treats an 805 as terminal instead of reconnecting.
+- **Subscriptions survive reconnects.** The feed remembers what you asked for and sends it
+  again on every new connection, reporting each step as a `Lifecycle` event.
+- **The stream tells you when it ends and why.** It ends with `None` only after you call
+  `handle.shutdown()`. Any other ending, such as a rejected token or reconnect attempts
+  running out, yields one error first.
+- **Read promptly.** Delivery is bounded. If your consumer falls too far behind, the feed
+  stops with an explicit error rather than dropping data you never saw. If you would rather
+  skip ahead, `OverflowPolicy::DropOldest` drops the oldest data and tells you how much with a
+  `Lifecycle::Lagged` event.
+- **`Active` is not freshness.** It means your subscriptions were written to the connection.
+  Whether a price is recent enough for your purpose is your call.
+- **Keep a handle.** Dropping every `FeedHandle` stops the feed: the stream yields one
+  `FeedError(TerminalReason::HandlesDropped)`, then ends. If you spawn the feed in a helper,
+  return the handle along with the stream.
+- **Mind the connection limit.** Dhan allows at most five WebSocket connections per user.
+  Whether the limit is shared across feed types is undocumented, so budget as if it is. A
+  sixth connection evicts the oldest one with disconnect code 805, which dhani treats as final
+  rather than reconnecting into a loop.
 
-## Rate limits
+`handle.status()` gives you a snapshot at any time: the connection state, how many
+subscriptions you want and whether the latest change has been sent (`desired_revision` and
+`sent_revision`), the queue's depth, how long ago the last frame arrived,
+recent failures and, once the feed has stopped, why.
 
-Every client applies Dhan's published limits locally before sending, and clones of a client
-share one limiter. A call that would wait longer than `max_wait` (5 s by default) fails with a
-`RateLimited` error instead.
+### 5. Follow your orders
+
+The order-update feed, `OrderUpdateFeed`, works the same way for your account's order updates:
+
+```rust,no_run
+use dhani::Credentials;
+use dhani::feed::{FeedEvent, OrderUpdateEvent, OrderUpdateFeed};
+use futures_util::StreamExt;
+
+async fn follow(credentials: Credentials) -> Result<(), Box<dyn std::error::Error>> {
+    let (handle, mut events, task) = OrderUpdateFeed::builder(credentials).spawn()?;
+    while let Some(event) = events.next().await {
+        if let FeedEvent::Data(d) = event? {
+            if let OrderUpdateEvent::Order(order) = d.value {
+                println!("{:?} is now {:?}", order.order_no, order.status);
+            }
+        }
+    }
+    drop(handle);
+    println!("feed ended: {:?}", task.join().await);
+    Ok(())
+}
+```
+
+Message types dhani does not recognise arrive as `OrderUpdateEvent::Other` with their raw JSON.
+A message it cannot parse arrives as `FeedEvent::DecodeError`, so nothing is skipped without
+you being told.
+
+### 6. Decode captured frames
+
+The market-feed decoder works on plain bytes and needs no runtime, so it is just as useful for
+replaying captured data. With `default-features = false, features = ["decoder"]` it builds
+with no network stack at all:
+
+```rust
+use dhani::decoder::split_market;
+
+fn decode(frame: &[u8]) {
+    for packet in split_market(frame) {
+        match packet {
+            Ok(packet) => println!("{packet:?}"),
+            Err(e) => eprintln!("the rest of the frame is unreadable: {e:?}"),
+        }
+    }
+}
+```
+
+Prices arrive exactly as Dhan sends them, as `f32`. Trade times are exposed raw, because
+their epoch is not documented; `ltt_unix()` reads them as Unix seconds without converting.
+
+## Handling errors
+
+Every failed call is a `dhani::Error`. Its **kind** tells you what happened, and its **stage**
+tells you how far the request got:
+
+```rust,no_run
+use dhani::{DhanClient, ErrorKind};
+
+async fn holdings(client: &DhanClient) {
+    match client.portfolio().holdings().await {
+        Ok(holdings) => println!("{} holdings", holdings.len()),
+        Err(e) if e.kind() == ErrorKind::Auth => {
+            // The access token expired or was revoked: get a new one.
+        }
+        Err(e) => eprintln!("{e} (may have reached Dhan: {})", e.may_have_reached_server()),
+    }
+}
+```
+
+| `ErrorKind` | What it means |
+|---|---|
+| `Validation` | your request was invalid; nothing was sent |
+| `Config` | the client could not be built, or has no credentials for this call; nothing was sent |
+| `Credential` | a client ID, token, PIN or TOTP was malformed; nothing was sent |
+| `RateLimited` | a local limit refused the request (nothing was sent), or Dhan answered 429 or `DH-904`; `rate_limit()` says which |
+| `Timeout` | an attempt or the whole operation ran out of time |
+| `Transport` | the connection, TLS or network failed, or a body was cut short |
+| `Auth` | Dhan rejected the credentials |
+| `Api` | Dhan returned an error, available through `api()` with its `DH-9xx` or data-API code and its message |
+| `HttpStatus` | an error status without Dhan's error body |
+| `Decode` | a response arrived but did not have the expected shape |
+
+The stage is `NotSent` only when dhani knows for certain that the request never left your
+machine. Anything later means Dhan may have acted on it, and `may_have_reached_server()` says
+so in one call. An error never contains a URL, a header, a request body, a credential or a
+value from the response; Dhan's own error message is kept, sanitised and bounded.
+
+## Cancellation and timeouts
+
+Every call is an ordinary future, so `tokio::select!` and `tokio::time::timeout` work as you'd
+expect, with one thing to keep in mind. A future does nothing until it is first polled, and
+dropping it before the request is sent cancels only local work. Dropping it after the request
+was sent does not cancel anything at Dhan: the order may still be placed. Treat a cancelled
+order call like a lost response, and look the order up.
+
+Feed commands are the same. Once `subscribe` has handed a command to the feed, dropping its
+future does not withdraw it; `desired_revision` in `handle.status()` shows what the feed is
+working towards.
+
+## Rate limits, retries and deadlines
+
+You don't need to configure anything to stay within Dhan's published limits:
 
 | Class | Limits | Applies to |
 |---|---|---|
 | Order | 10 per second, 250 per minute, 1000 per hour, 7000 per day | order placement, modification and cancellation |
 | Data | 5 per second, 100 000 per day | historical data, option chain, expiry list |
-| Quote | 1 per second | LTP, OHLC and full quote |
+| Quote | 1 per second | LTP (last traded price), OHLC (open, high, low, close) and full quote |
 | Non-trading | 20 per second | every other REST call, including order and trade books |
 | Token generation | 1 per 2 minutes | access token from PIN and TOTP |
-| Unmetered | none | other auth-host calls and scrip master downloads |
+| No local limit | none | scrip master downloads (Dhan's servers may still limit them) |
 
-Two more rules apply on top:
+Two more rules apply on top. The option chain allows one call per 3 seconds for the same
+underlying and expiry, and Dhan caps each order at 25 modifications. dhani enforces that cap
+with its own counter: it counts each modify attempt it sends, and resets the count at midnight
+IST (India Standard Time). Days are IST days, and a daily ceiling refuses the request straight
+away rather than waiting. The numbers follow the
+rate-limit table on Dhan's API overview.
 
-- The option chain allows one call per 3 seconds for the same underlying and expiry.
-- An order can be modified at most 25 times. dhani counts each modify attempt it sends and
-  resets the count at midnight IST.
+By default a request waits up to 5 seconds for capacity, and each operation has 30 seconds to
+finish. A read makes up to three attempts with jittered backoff between them. It retries a
+timeout or a transport failure before any response arrives, a 502, 503 or 504 answer, and one
+remote rate limit (429, `DH-904` or data error 805) after at least a second. A failure while
+reading a response body is returned without a retry. Calls that can change your account, and
+token calls, always make exactly one attempt.
 
-Days are IST days. A daily ceiling fails at once rather than waiting. The numbers follow the
-rate-limit table on Dhan's API overview; a second table elsewhere in the documentation swaps the
-daily figures, and dhani does not follow it.
+When your application needs different bounds, set them once on the builder:
+[`timeouts`](https://docs.rs/dhani/latest/dhani/rest/struct.DhanClientBuilder.html#method.timeouts),
+`retry`, `limits` (body sizes), `rate_limiter`, `http_client` (your own `reqwest` client) and
+`user_agent_suffix`. Every value is checked against a documented range:
+
+```rust,no_run
+use std::time::Duration;
+use dhani::DhanClient;
+use dhani::rest::{AdmissionLimits, QuotaProfile, RateLimiter, RetryPolicy, Timeouts};
+
+fn client() -> Result<DhanClient, Box<dyn std::error::Error>> {
+    let limiter = RateLimiter::new(
+        QuotaProfile::dhan_v2(),
+        AdmissionLimits::new(Duration::from_secs(2), 256)?, // wait at most 2 s for capacity
+    );
+    Ok(DhanClient::builder()
+        .timeouts(Timeouts::new(
+            Duration::from_secs(5),  // connect
+            Duration::from_secs(10), // one attempt
+            Duration::from_secs(20), // the whole operation
+        )?)
+        .retry(RetryPolicy::new(2, Duration::from_millis(250), Duration::from_secs(2))?)
+        .rate_limiter(limiter)
+        .build()?)
+}
+```
+
+Dhan applies its limits per account, so everything using the same account should share one
+limiter. Clones of a client already do. For clients built separately, pass the same one to
+each: `.rate_limiter(shared.clone())`.
 
 ## Observability
 
-dhani emits `tracing` spans and events and, with the `metrics` feature, metrics. Credentials,
-tokens and client IDs are redacted in every span, event, metric label, error message and `Debug`
-output dhani produces. To see INFO lifecycle lines plus warnings and
-errors (with `tracing-subscriber = { version = "0.3", features = ["env-filter"] }`):
+dhani emits `tracing` spans and events for every request and feed, and, with the `metrics`
+feature, metrics through the `metrics` facade. Nothing is installed for you. To see INFO
+lifecycle lines plus warnings and errors (with
+`tracing-subscriber = { version = "0.3", features = ["env-filter"] }`):
 
 ```rust,no_run
 tracing_subscriber::fmt()
@@ -181,72 +464,139 @@ tracing_subscriber::fmt()
     .init();
 ```
 
-To export metrics, enable the feature (`dhani = { version = "0.1", features = ["metrics"] }`) and
-install any `metrics` recorder, for example `metrics-exporter-prometheus`:
+To export metrics, enable the feature (`dhani = { version = "0.1", features = ["metrics"] }`)
+and install any `metrics` recorder, for example `metrics-exporter-prometheus`:
 
 ```rust,ignore
 metrics_exporter_prometheus::PrometheusBuilder::new().install()?;
 ```
 
-The market-feed URL and the order-update login message carry the access token. `tungstenite`
-logs both at TRACE through the `log` crate, which `tracing_subscriber::fmt().init()` forwards, so
-never enable TRACE for the `tungstenite` target (for example, use
-`RUST_LOG=trace,tungstenite=debug`).
+REST calls open a `dhani.http.request` span with one `dhani.http.attempt` child per attempt,
+and each feed opens a `dhani.ws.session` span with one `dhani.ws.connection` child per
+connection, so any `tracing-opentelemetry` layer shows them as traces.
+Metric labels come from small, closed sets, so they won't blow up your metrics backend.
+
+One caution: the market-feed URL and the order-update login message carry your access token.
+`tungstenite`, the WebSocket library underneath, logs both at TRACE through the `log` crate,
+which `tracing_subscriber::fmt().init()` forwards. Never enable TRACE for the `tungstenite`
+target; `RUST_LOG=trace,tungstenite=debug` keeps everything else at TRACE.
+
+## What dhani does not do
+
+Knowing the edges saves surprises:
+
+- It does not store, refresh or revoke credentials on its own, and it does not compute TOTP
+  codes.
+- It does not decide whether market data is fresh enough, or whether an order filled. It tells
+  you what Dhan said and when.
+- It does not persist anything: no caches, no files, no databases.
+- It never retries a request that could change your account.
+- It does not count WebSocket connections across feeds for you.
+- It does not yet cover super, forever or conditional orders, trader's control, EDIS, Global
+  Stocks (REST and feed), static IP management, the depth feeds, rolling options or the
+  consent flows. The REST facades for the first six exist with no calls yet; all of these
+  arrive in later 0.x releases.
+
+## How dhani is tested
+
+Trust has to be earned, so here is how dhani tries to earn it:
+
+- **Upstream fixtures.** Contract tests run against the response fixtures that ship with
+  [DhanHQ-py](https://github.com/dhan-oss/DhanHQ-py), Dhan's Python SDK, pinned to a commit,
+  plus fixtures written from Dhan's documentation and OpenAPI spec. All 82 are listed with
+  their origin and SHA-256. Expected values are written out by hand, and request bodies are
+  compared exactly.
+- **Every endpoint has a contract test.** A test fails the build if any shipped endpoint lacks
+  one, and another pins every public method's signature.
+- **Hostile networks.** A raw-TCP fault harness drops responses, stalls bodies, truncates
+  them, refuses connections and serves redirects, and checks that mutations are never resent and
+  reads retry only what is safe.
+- **Hostile inputs.** Seeded property campaigns feed the binary decoders tens of thousands of
+  generated, concatenated, truncated and mutated frames, checking that decoding never panics,
+  never loops and round-trips exactly.
+- **No leaked secrets.** A sentinel sweep plants a client ID, token, PIN and TOTP, drives
+  successes, broker errors and feed failures, and checks that none of them appears in any
+  span, event, metric label, error or `Debug` output.
+- **Nothing leaves your machine.** Every test runs against loopback servers. A separate live
+  lane, for a Dhan account and the sandbox, compiles in CI and runs only on demand with your
+  own credentials.
+- **Every claim has a source.** Behaviour that follows Dhan's documentation cites the exact
+  lines, and a test checks that every citation resolves.
+- **Every configuration is tested.** CI runs the tests in six feature configurations on Rust
+  1.88 and on stable, builds the packaged crate in each, and checks the dependency graph: a
+  decoder-only build pulls in no Tokio, HTTP or WebSocket stack, and `rest` and `feed` each
+  leave out the other's.
 
 ## Examples
 
-From a checkout of the repository, each example runs against a local mock server and needs no
-account.
+Each example runs against a local mock server, so you can try everything without an account.
+They are in the repository, not the published crate:
 
-| Example | Shows |
+| Example | What it shows |
 |---|---|
-| `cargo run --example rest_basic` | placing an order and listing the order book |
-| `cargo run --example totp_login` | a token from PIN and TOTP, then switching the client to it |
-| `cargo run --example market_feed` | subscribing and reading market-feed events |
-| `cargo run --example order_updates` | receiving an order update |
-| `cargo run --example observability` | the logging setup above, with a retry warning |
+| `rest_basic` | placing an order and listing the order book |
+| `totp_login` | a token from PIN and TOTP, then switching the client to it |
+| `market_feed` | subscribing and reading market-feed events, then a clean shutdown |
+| `order_updates` | receiving an order update |
+| `observability` | the logging setup above, with a retry warning |
 
-## Unverified against a live account
+```text
+cargo run --example rest_basic
+cargo run --example market_feed
+```
 
-0.1.0 was built without access to a Dhan account. Where Dhan's documentation is silent or
-contradicts itself, or disagrees with the Python SDK, dhani ships the default below. Each one is
-verified against a live account and the sandbox in Phase 2, after this release. A later release
-may change a default if the check disagrees with it. The IDs in brackets refer to the project's
-register of open questions (OQ) and source discrepancies (D, S).
+## Supported DhanHQ APIs
 
-**Defaults in effect in 0.1.0**
+- **Orders**: place, place sliced, modify and cancel; the order book, an order by ID or
+  correlation ID, the trade book, and an order's trades
+- **Portfolio**: holdings, positions, position conversion, and exiting all positions
+- **Funds**: fund limit, and margin for one instrument or many
+- **Statements**: ledger and trade history
+- **Market quote**: LTP, OHLC and full quote with market depth, typed or as raw JSON
+- **Historical data**: daily and intraday candles, with open interest
+- **Option chain**: the chain with greeks, and the expiry list
+- **Instruments**: the compact and detailed scrip master CSVs (feature `instruments`)
+- **Auth and account**: access token from PIN and TOTP, token renewal, and the profile
+- **WebSocket**: the Live Market Feed in ticker, quote and full modes, and the Live Order
+  Update feed for individual and partner accounts
+- **Environments**: live, and the REST sandbox
 
-| Topic | Default |
-|---|---|
-| Rate classes (OQ-3) | Dhan names the rate classes but does not map endpoints to them. Order mutations are `Order`; order and trade books, exit-all and every other unmapped REST call are `Non-trading`. |
-| Profile (OQ-6) | No schema is published, so `profile()` returns a `Profile` wrapping the raw JSON. |
-| Market feed packets (OQ-7) | Packet sizes are fixed by code, and every packet in a frame is decoded; after a packet with an unknown code, the rest of the frame is dropped unless the next code is documented. Trade times (`ltt`) are exposed raw, since their epoch and timezone are not established; `ltt_unix()` reads them as Unix seconds without converting. Index (1) and MarketStatus (7) packets arrive as `MarketPacket::Other`. `as_legacy_index()` decodes an Index packet with a layout found only in a commented-out legacy table. |
-| Order update feed (OQ-10) | The login acknowledgement, error format, keepalive and disconnect codes are undocumented. Unrecognised messages arrive as `OrderUpdateEvent::Other` with their raw JSON, and the client pings every 20 s. |
-| Detailed scrip master (OQ-14) | The security-ID column name is undocumented, so `SECURITY_ID` is also read. Unrecognised columns are kept in `extra`. |
-| Segment codes (OQ-16) | `NSE_COMM` has no known binary feed code: dhani sends a subscription for it, but its packets report no segment (`PacketHeader::segment()` is `None`). The currency segment codes 3 and 7 come from the Python SDK. |
-| Intraday interval (OQ-4) | The 25-minute interval, as the API spec, the guide and the Python SDK give it. Some endpoint pages say 30; there is no 30-minute option. |
-| Market-feed mode change (OQ-17) | It is undocumented whether subscribing in a new mode replaces the old one. dhani unsubscribes the old mode, then subscribes the new one. |
-| MARKET orders (OQ-21) | `price` is omitted, as the documentation allows. The Python SDK sends `0`. |
-| Sandbox feeds (OQ-22) | No sandbox WebSocket endpoints are documented. The feed builders take no environment and connect to the live endpoints unless given `.url(..)`; Dhan, not dhani, rejects a sandbox token on a live feed. |
-| Multi-instrument margin (OQ-24) | Between 1 and 50 instruments per call. The upper bound is dhani's own. |
-| Modification cap (OQ-28) | The 25-modification cap is applied to order modifications only, counted per attempt and reset at midnight IST. |
-| Correlation IDs (OQ-29) | Up to 30 characters from `A-Z a-z 0-9 _ -`. A `.` is refused locally, since it is unclear whether the documentation allows it, and so is a space, which the API spec allows but the order documentation does not list. |
-| Market quote data (OQ-31) | `data` is read as a two-level map, segment then security ID, as in the published example. |
-| Multi-margin response keys (D60) | The documentation shows camelCase numbers and the API spec shows snake_case strings. Both are accepted. |
+## Feature flags
 
-**Defaults fixed for later releases** (these features are not in 0.1.0)
+| Feature | What it adds | Default |
+|---|---|---|
+| `rest` | `DhanClient` and every REST call | yes |
+| `feed` | the WebSocket feeds (implies `decoder`) | yes |
+| `decoder` | pure decoders for binary feed packets and order-update JSON, with no runtime or network code | no |
+| `instruments` | scrip master CSV download and parsing (implies `rest`) | no |
+| `metrics` | metric emission through the `metrics` facade | no |
+| `decimal` | `dhani::types::to_decimal()`, converting an `f64` price to `Option<rust_decimal::Decimal>` (`None` out of range) | no |
+| `live-tests` | compiles the crate's own live test lane (repository checkouts only); adds no library code | no |
 
-| Topic | Default |
-|---|---|
-| Depth feeds (OQ-8, S1–S6) | (S1) The 200-level feed uses the documented `/twohundreddepth` path, overridable. (S2) Unsubscribe uses code 25. (S3, OQ-8) The disconnect reason is read at the documented offset, with the Python SDK's offset as a fallback and ambiguity reported. (S4) Packet 41 is buy and 51 is sell. (S5) 200-level packets are parsed by length and row count. (S6, OQ-8) The 200-level unsubscribe shape is configurable and defaults to flat. |
-| Global feed times (OQ-9) | The trade time is exposed raw, with a `lut_unix()` helper. The documentation's sample implies a 1980 epoch. |
-| Partner consent (OQ-13) | Consent generation uses POST, as labelled, and consumption uses GET, where the documentation's examples contradict the labels. |
-| Segment instruments (OQ-14) | `/instrument/{segment}` sends the segment as a string, with auth headers. |
-| Global orders (OQ-15) | Static-IP whitelisting is not checked locally. |
-| Modification cap scope (OQ-28) | Super and forever order modifications are not counted. |
-| Rolling options (OQ-30) | `expiryCode` takes 1 to 3, as the documentation says. The API spec says 0 to 2. |
-| Global market-status keys (D64) | Both documented spellings of each key are accepted. |
+Credentials, configuration, errors, the shared types and the telemetry schema are always
+available.
+
+## Documentation
+
+- [API reference on docs.rs](https://docs.rs/dhani)
+- [`CHANGELOG.md`](CHANGELOG.md): what changed in each release.
+- [`docs/dhan-sources.toml`](https://github.com/saxena-dev/dhani/blob/main/docs/dhan-sources.toml):
+  the Dhan documentation every `DOC:` citation in the API reference refers to.
+
+## Status and disclaimer
+
+dhani is pre-1.0 and still changing. Breaking changes ship only in minor-version bumps, each
+listed in the [changelog](CHANGELOG.md).
+
+dhani is an independent open-source project. It is not affiliated with Dhan in any way, and
+Dhan neither makes, endorses nor supports it. For questions and bug reports, please
+[open an issue](https://github.com/saxena-dev/dhani/issues).
+
+The software is provided "as is", without warranty of any kind. The author and contributors
+take no responsibility for any financial losses, damages or other issues arising from its use.
+Nothing in this crate is a statement that data is fresh, complete or fit for trading. Test
+against your own requirements, and in the sandbox, before trading real money.
 
 ## License
 
-MIT
+[MIT](LICENSE)

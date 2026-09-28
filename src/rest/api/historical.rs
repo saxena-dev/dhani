@@ -1,4 +1,4 @@
-//! REST facade for daily and intraday historical candles (§9 rows H1–H2).
+//! REST facade for daily and intraday historical candles.
 
 use super::json_body;
 use crate::error::Result;
@@ -6,7 +6,10 @@ use crate::rest::endpoint;
 use crate::rest::transport::Call;
 use crate::rest::{Candles, DailyRequest, DhanClient, IntradayRequest};
 
-/// The Historical facade, borrowed from a [`DhanClient`].
+/// Daily and intraday candles. Borrowed from a client with [`DhanClient::historical`].
+///
+/// Candles arrive as one array per field, index-aligned, in [`Candles`](crate::rest::Candles).
+/// Every call is read-only and follows the client's [retry rules](crate::rest#retries).
 pub struct Historical<'c> {
     client: &'c DhanClient,
 }

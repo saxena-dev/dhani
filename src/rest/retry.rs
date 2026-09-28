@@ -85,7 +85,7 @@ pub(crate) enum Decision {
 /// `rate_limit_retries` times.
 #[allow(
     clippy::too_many_arguments,
-    reason = "the inputs of step 9 of the pipeline, passed explicitly so the decision stays pure"
+    reason = "every input of the retry decision, passed explicitly so the decision stays pure"
 )]
 pub(crate) fn decide(
     ep: &Endpoint,

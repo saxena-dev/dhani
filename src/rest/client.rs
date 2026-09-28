@@ -261,7 +261,13 @@ impl Default for BodyLimits {
     }
 }
 
-/// Builds a [`DhanClient`]. Every value is validated at [`build`](DhanClientBuilder::build).
+/// Builds a [`DhanClient`], starting from the documented defaults.
+///
+/// Setters take typed values such as [`Timeouts`] and [`RetryPolicy`], which check their ranges
+/// when you create them. [`build`](DhanClientBuilder::build) checks every value again, together
+/// with the URLs and the user-agent suffix. A client
+/// built without [`rate_limiter`](Self::rate_limiter) gets its own; give clients built
+/// separately for one account the same [`RateLimiter`] so that they share Dhan's limits.
 #[derive(Default)]
 pub struct DhanClientBuilder {
     environment: Environment,
@@ -404,7 +410,47 @@ impl DhanClientBuilder {
     }
 }
 
-/// The DhanHQ REST client: cheap to clone, `Send + Sync`, one handle per set of credentials.
+/// An asynchronous REST client for the DhanHQ API.
+///
+/// Create one and reuse it. It holds a connection pool, and every clone shares that pool and
+/// the client's rate limiter, so hand clones to the tasks that need one. It is `Send + Sync`
+/// and runs on the Tokio runtime you already use.
+///
+/// # Creating a client
+///
+/// [`DhanClient::builder`] starts from the documented defaults: the live environment, 30-second
+/// operations, three attempts for reads, and Dhan's published rate limits. Set
+/// [`credentials`](DhanClientBuilder::credentials) for every call except token generation, and
+/// [`environment`](DhanClientBuilder::environment) to use the sandbox. Every value is checked
+/// when you call [`build`](DhanClientBuilder::build).
+///
+/// [`with_credentials`](Self::with_credentials) returns a client for other credentials, such as
+/// a freshly generated token, on the same pool and rate limiter, and leaves this one unchanged.
+///
+/// Each part of the API is reached through a method that borrows the client:
+/// [`orders`](Self::orders), [`portfolio`](Self::portfolio), [`funds`](Self::funds),
+/// [`statements`](Self::statements), [`market_quote`](Self::market_quote),
+/// [`historical`](Self::historical), [`option_chain`](Self::option_chain),
+/// [`account`](Self::account), [`auth`](Self::auth) and, with the `instruments` feature,
+/// `instruments`.
+///
+/// # Example
+///
+/// ```no_run
+/// use dhani::{AccessToken, ClientId, Credentials, DhanClient};
+///
+/// # async fn run() -> dhani::Result<()> {
+/// let client = DhanClient::builder()
+///     .credentials(Credentials::new(
+///         ClientId::new("1000000009")?,
+///         AccessToken::new("<access token>")?,
+///     ))
+///     .build()?;
+///
+/// let holdings = client.portfolio().holdings().await?;
+/// println!("{} holdings", holdings.len());
+/// # Ok(()) }
+/// ```
 #[derive(Clone)]
 pub struct DhanClient {
     transport: Arc<Transport>,
@@ -442,8 +488,8 @@ impl DhanClient {
         DhanClientBuilder::default()
     }
 
-    /// A new handle on the same transport and rate limiter with different credentials (token
-    /// rotation).
+    /// A client for `credentials` on the same connection pool and rate limiter, for example
+    /// after generating or renewing a token. This client is left unchanged.
     pub fn with_credentials(&self, credentials: Credentials) -> DhanClient {
         DhanClient {
             transport: Arc::clone(&self.transport),
@@ -467,39 +513,39 @@ impl DhanClient {
     }
 
     facades! {
-        /// Orders and trades.
+        /// Placing, modifying and cancelling orders, the order book and the trade book.
         orders => Orders;
-        /// Super orders.
+        /// Super orders. No calls yet: they arrive in a later 0.x release.
         super_orders => SuperOrders;
-        /// Forever orders.
+        /// Forever orders. No calls yet: they arrive in a later 0.x release.
         forever_orders => ForeverOrders;
-        /// Conditional and multi orders.
+        /// Conditional and multi orders. No calls yet: they arrive in a later 0.x release.
         conditional => ConditionalOrders;
-        /// Holdings and positions.
+        /// Holdings and positions, position conversion and exiting all positions.
         portfolio => Portfolio;
-        /// Funds and margin.
+        /// Fund limits and the margin calculators.
         funds => Funds;
-        /// Ledger and trade history.
+        /// The ledger and the trade history.
         statements => Statements;
-        /// Kill switch and P&L exit.
+        /// The kill switch and P&L exit. No calls yet: they arrive in a later 0.x release.
         trader_control => TraderControl;
-        /// EDIS.
+        /// EDIS. No calls yet: they arrive in a later 0.x release.
         edis => Edis;
-        /// Market quotes.
+        /// LTP, OHLC and full market quotes.
         market_quote => MarketQuote;
-        /// Historical data.
+        /// Daily and intraday candles.
         historical => Historical;
-        /// Option chain and expiry list.
+        /// The option chain and the expiry list.
         option_chain => OptionChain;
-        /// Token renewal, profile and static IP.
+        /// Token renewal and the profile.
         account => Account;
-        /// Consent flows and token generation on the auth host.
+        /// Access-token generation from a PIN and TOTP.
         auth => Auth;
-        /// Global Stocks.
+        /// Global Stocks. No calls yet: they arrive in a later 0.x release.
         global => GlobalStocks;
     }
 
-    /// The instrument master.
+    /// The compact and detailed scrip master CSVs.
     #[cfg(feature = "instruments")]
     pub fn instruments(&self) -> crate::rest::api::Instruments<'_> {
         crate::rest::api::Instruments::new(self)

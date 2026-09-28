@@ -1,4 +1,4 @@
-//! REST facade for orders and trades (§9 rows O1–O9).
+//! REST facade for orders and trades.
 
 use super::json_body as body;
 use crate::error::{Result, ValidationError};
@@ -8,7 +8,24 @@ use crate::rest::transport::Call;
 use crate::rest::{DhanClient, ModifyOrderRequest, Order, OrderAck, PlaceOrderRequest, Trade};
 use crate::types::{CorrelationId, OrderId};
 
-/// The Orders facade, borrowed from a [`DhanClient`].
+/// Placing, modifying and cancelling orders, the order book and the trade book. Borrowed from a
+/// client with [`DhanClient::orders`].
+///
+/// Placement, modification and cancellation make exactly one attempt and are validated before
+/// anything is sent. If one fails after the request may have reached Dhan
+/// ([`Error::may_have_reached_server`](crate::Error::may_have_reached_server)), the order may
+/// exist: look it up by its correlation ID with
+/// [`get_by_correlation_id`](Self::get_by_correlation_id) before placing it again. An
+/// acknowledgement means Dhan accepted the order, not that it filled. The reads follow the
+/// client's [retry rules](crate::rest#retries).
+///
+/// ```no_run
+/// # async fn run(client: &dhani::DhanClient) -> dhani::Result<()> {
+/// for order in client.orders().list().await? {
+///     println!("{} {:?}", order.order_id, order.order_status);
+/// }
+/// # Ok(()) }
+/// ```
 pub struct Orders<'c> {
     client: &'c DhanClient,
 }
@@ -49,7 +66,7 @@ impl<'c> Orders<'c> {
     /// `POST /orders/slicing` (DOC:3898-3954).
     ///
     /// The slicing endpoint requires a price (DOC:3924). The response may be one
-    /// acknowledgement or an array of them (Appendix A D30); an empty or `null` list decodes as
+    /// acknowledgement or an array of them; an empty or `null` list decodes as
     /// an empty `Vec`.
     pub async fn place_sliced(&self, req: &PlaceOrderRequest) -> Result<Vec<OrderAck>> {
         let acks: SlicedAcks = self
@@ -64,7 +81,7 @@ impl<'c> Orders<'c> {
 
     /// Modifies a pending order: `PUT /orders/{order-id}` (DOC:3109-3166).
     ///
-    /// Only the fields set on the request are sent (Appendix A D29).
+    /// Only the fields set on the request are sent.
     pub async fn modify(&self, req: &ModifyOrderRequest) -> Result<OrderAck> {
         let path = [req.order_id.as_ref()];
         self.client
@@ -105,7 +122,7 @@ impl<'c> Orders<'c> {
     }
 
     /// One order by ID: `GET /orders/{order-id}` (DOC:1305-1374). The response is a single
-    /// object (Appendix A D31).
+    /// object.
     pub async fn get(&self, order_id: &OrderId) -> Result<Order> {
         let path = [order_id.as_ref()];
         self.client
@@ -121,7 +138,7 @@ impl<'c> Orders<'c> {
     }
 
     /// One order by its correlation ID: `GET /orders/external/{correlation-id}`
-    /// (DOC:1236-1304). The response is a single object (Appendix A D31).
+    /// (DOC:1236-1304). The response is a single object.
     pub async fn get_by_correlation_id(&self, id: &CorrelationId) -> Result<Order> {
         let path = [id.as_ref()];
         self.client
@@ -136,8 +153,7 @@ impl<'c> Orders<'c> {
             .await
     }
 
-    /// The day's trades: `GET /trades` (DOC:1751-1800), with no trailing slash (Appendix A
-    /// D32).
+    /// The day's trades: `GET /trades` (DOC:1751-1800), with no trailing slash.
     pub async fn trades(&self) -> Result<Vec<Trade>> {
         self.client
             .execute(&endpoint::TRADES_LIST, || Ok(Call::empty()))

@@ -1,8 +1,9 @@
 //! Event-name constants and the `emit!` macro wrapper.
 //!
 //! Every event carries a constant `event` field naming it and is emitted under a fixed target;
-//! the human-readable message is not part of the contract. Levels are chosen at each call site
-//! (some events have two levels, see the architecture's event catalogue).
+//! the human-readable message may change between releases, so match on the `event` field.
+//! Levels are chosen at each call site, and some events are emitted at two levels, as listed in
+//! [`EVENT_CATALOGUE`].
 
 use super::{TARGET_AUTH, TARGET_DECODE, TARGET_HTTP, TARGET_RATELIMIT, TARGET_WS};
 

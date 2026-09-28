@@ -20,7 +20,7 @@ mod trader_control;
 
 #[allow(
     unused_imports,
-    reason = "glob re-export scheme is fixed before the items exist; each glob imports nothing until its module gains public items"
+    reason = "some re-exported modules intentionally have no public items"
 )]
 pub use self::{
     account::*, auth::*, conditional::*, edis::*, forever_orders::*, funds::*, global::*,

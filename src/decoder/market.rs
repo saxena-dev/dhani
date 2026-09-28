@@ -1,8 +1,8 @@
 //! Live Market Feed frame splitter and packet decoders.
 //!
-//! A frame may hold several packets back to back; [`split_market`] walks the whole frame (the Python
-//! SDK decodes only the first packet). Documented codes have fixed sizes. An undocumented code
-//! is taken as length-delimited by its header's length field and delivered as
+//! A frame may hold several packets back to back; [`split_market`] walks the whole frame (the
+//! Python SDK decodes only the first packet). Documented codes have fixed sizes. An undocumented
+//! code is taken as length-delimited by its header's length field and delivered as
 //! [`MarketPacket::Other`]; after one, the next packet must start with a documented code, or the
 //! rest of the frame is abandoned with [`DecodeErrorKind::TrailingBytes`]. Every error ends only
 //! the current frame.

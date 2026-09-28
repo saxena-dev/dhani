@@ -272,9 +272,9 @@ pub fn ws_frame(feed: FeedKind, bytes: usize) -> Span {
 mod tests {
     use super::*;
 
-    /// The spec of the span `build` makes. Another test thread can cache a callsite's interest
-    /// as "never" while this thread's scoped dispatcher is being registered; a disabled span is
-    /// then rebuilt after recomputing the interest cache.
+    /// The expected specification of the span that `build` makes. Another test thread can cache a
+    /// callsite's interest as "never" while this thread's scoped dispatcher is being registered; a
+    /// disabled span is then rebuilt after recomputing the interest cache.
     fn spec_of(build: impl Fn() -> Span) -> SpanSpec {
         for _ in 0..16 {
             let span = build();

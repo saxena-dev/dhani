@@ -98,7 +98,7 @@ fn code_from_text(code: &str, redactor: &Redactor) -> ApiErrorCode {
     .unwrap_or_else(|| ApiErrorCode::other(&redactor.sanitize(code)))
 }
 
-/// The error kind of a non-2xx response, first match wins (§5.6.3 of the design):
+/// The error kind of a non-2xx response, first match wins:
 ///
 /// 1. status 429, `DH-904` or data code 805: `RateLimited`, remote source;
 /// 2. status 401, `DH-901` or data codes 807–810: `Auth`;

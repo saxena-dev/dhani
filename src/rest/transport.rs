@@ -206,7 +206,7 @@ impl Transport {
         }
     }
 
-    /// Steps 2–5 of the pipeline: credentials, URL, headers and body. Nothing is sent.
+    /// Builds the request: credentials, URL, headers and body. Nothing is sent.
     fn prepare(
         &self,
         credentials: Option<&Credentials>,
@@ -370,7 +370,8 @@ impl Transport {
         b.build()
     }
 
-    /// Steps 1–9 of the pipeline, ending in a classified success.
+    /// Runs a call end to end: validation, admission, attempts and retries, ending in a
+    /// classified success.
     async fn run<'a>(
         &self,
         credentials: Option<&Credentials>,

@@ -146,19 +146,16 @@ macro_rules! endpoint_ids {
 }
 
 endpoint_ids! {
-    // A1–A5
     AuthGenerateConsent => "auth.generate_consent",
     AuthConsumeConsent => "auth.consume_consent",
     AuthPartnerGenerateConsent => "auth.partner_generate_consent",
     AuthPartnerConsumeConsent => "auth.partner_consume_consent",
     AuthGenerateAccessToken => "auth.generate_access_token",
-    // A6–A10
     AccountRenewToken => "account.renew_token",
     AccountProfile => "account.profile",
     AccountSetIp => "account.set_ip",
     AccountModifyIp => "account.modify_ip",
     AccountGetIp => "account.get_ip",
-    // O1–O9
     OrdersPlace => "orders.place",
     OrdersPlaceSliced => "orders.place_sliced",
     OrdersModify => "orders.modify",
@@ -168,63 +165,50 @@ endpoint_ids! {
     OrdersGetByCorrelation => "orders.get_by_correlation",
     TradesList => "trades.list",
     TradesForOrder => "trades.for_order",
-    // S1–S4
     SuperOrdersPlace => "super_orders.place",
     SuperOrdersModify => "super_orders.modify",
     SuperOrdersCancelLeg => "super_orders.cancel_leg",
     SuperOrdersList => "super_orders.list",
-    // F1–F4
     ForeverOrdersPlace => "forever_orders.place",
     ForeverOrdersModify => "forever_orders.modify",
     ForeverOrdersCancel => "forever_orders.cancel",
     ForeverOrdersList => "forever_orders.list",
-    // C1–C6
     ConditionalPlace => "conditional.place",
     ConditionalModify => "conditional.modify",
     ConditionalDelete => "conditional.delete",
     ConditionalGet => "conditional.get",
     ConditionalList => "conditional.list",
     ConditionalPlaceMulti => "conditional.place_multi",
-    // P1–P4
     PortfolioHoldings => "portfolio.holdings",
     PortfolioPositions => "portfolio.positions",
     PortfolioConvertPosition => "portfolio.convert_position",
     PortfolioExitAll => "portfolio.exit_all",
-    // M1–M3
     FundsLimits => "funds.limits",
     FundsMargin => "funds.margin",
     FundsMarginMulti => "funds.margin_multi",
-    // T1–T2
     StatementsLedger => "statements.ledger",
     StatementsTradeHistory => "statements.trade_history",
-    // K1–K5
     TraderControlSetKillSwitch => "trader_control.set_kill_switch",
     TraderControlKillSwitchStatus => "trader_control.kill_switch_status",
     TraderControlSetPnlExit => "trader_control.set_pnl_exit",
     TraderControlPnlExit => "trader_control.pnl_exit",
     TraderControlStopPnlExit => "trader_control.stop_pnl_exit",
-    // E1–E4
     EdisGenerateTpin => "edis.generate_tpin",
     EdisForm => "edis.form",
     EdisBulkForm => "edis.bulk_form",
     EdisInquire => "edis.inquire",
-    // Q1–Q3
     MarketQuoteLtp => "market_quote.ltp",
     MarketQuoteOhlc => "market_quote.ohlc",
     MarketQuoteQuote => "market_quote.quote",
-    // H1–H3
     HistoricalDaily => "historical.daily",
     HistoricalIntraday => "historical.intraday",
     HistoricalRollingOptions => "historical.rolling_options",
-    // X1–X2
     OptionChainChain => "option_chain.chain",
     OptionChainExpiries => "option_chain.expiries",
-    // I1–I4
     InstrumentsScripMasterCompact => "instruments.scrip_master_compact",
     InstrumentsScripMasterDetailed => "instruments.scrip_master_detailed",
     InstrumentsSegment => "instruments.segment",
     InstrumentsGlobalScripMaster => "instruments.global_scrip_master",
-    // G1–G12
     GlobalMarketStatus => "global.market_status",
     GlobalFundLimit => "global.fund_limit",
     GlobalHoldings => "global.holdings",
@@ -281,8 +265,8 @@ mod tests {
     }
 
     #[test]
-    fn endpoint_labels_match_the_design_table() {
-        // Copied from the design's EndpointId table (rows A1 to G12), in order.
+    fn endpoint_labels_are_stable() {
+        // Every endpoint label, in declaration order.
         let expected = [
             "auth.generate_consent",
             "auth.consume_consent",
