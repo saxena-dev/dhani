@@ -74,8 +74,8 @@ fn a_malformed_row_reports_only_its_index() {
     );
     let short = "SEM_EXM_EXCH_ID,SEM_SERIES\n1\n";
     assert_eq!(parse_scrip_master(short), Err(MalformedRow { row: 1 }));
-    let bad_number = "SEM_LOT_UNITS\n1\n2\nlots\n";
-    assert_eq!(parse_scrip_master(bad_number), Err(MalformedRow { row: 3 }));
+    let bad_id = "SEM_SMST_SECURITY_ID\n1\n2\n".to_owned() + &"x".repeat(200) + "\n";
+    assert_eq!(parse_scrip_master(&bad_id), Err(MalformedRow { row: 3 }));
 }
 
 #[test]
@@ -101,4 +101,26 @@ fn an_empty_file_has_no_records() {
         Err(MalformedRow { row: 0 })
     );
     assert_eq!(parse_scrip_master("SEM_EXM_EXCH_ID\n"), Ok(Vec::new()));
+}
+
+#[test]
+fn a_non_numeric_number_cell_is_none_with_its_text_in_extra() {
+    let csv = "SEM_EXM_EXCH_ID,SEM_LOT_UNITS,SEM_STRIKE_PRICE,SEM_TICK_SIZE\nNSE,NA,-0.01000,x\n";
+    let rows = parse_scrip_master(csv).unwrap();
+    let r = &rows[0];
+    assert_eq!(
+        (r.lot_size, r.strike_price, r.tick_size),
+        (None, Some(-0.01), None)
+    );
+    assert_eq!(r.extra.get("SEM_LOT_UNITS").map(String::as_str), Some("NA"));
+    assert_eq!(r.extra.get("SEM_TICK_SIZE").map(String::as_str), Some("x"));
+    assert_eq!(r.extra.len(), 2);
+}
+
+#[test]
+fn records_share_one_allocation_per_header() {
+    let csv = "SEM_EXM_EXCH_ID,BRACKET_FLAG\nNSE,N\nBSE,Y\n";
+    let rows = parse_scrip_master(csv).unwrap();
+    let key = |i: usize| rows[i].extra.keys().next().unwrap().clone();
+    assert!(std::sync::Arc::ptr_eq(&key(0), &key(1)));
 }

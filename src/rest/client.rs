@@ -574,11 +574,12 @@ impl DhanClient {
             .await
     }
 
-    pub(crate) async fn execute_csv<'a, T>(
+    #[cfg(feature = "instruments")]
+    pub(crate) async fn execute_csv<'a, T: Send + 'static>(
         &self,
         ep: &'static Endpoint,
         prepare: impl FnOnce() -> std::result::Result<Call<'a>, ValidationError>,
-        parse: impl FnOnce(&str) -> std::result::Result<T, String>,
+        parse: impl FnOnce(&str) -> std::result::Result<T, String> + Send + 'static,
     ) -> Result<T> {
         self.transport
             .execute_csv(self.credentials.as_ref(), ep, prepare, parse)

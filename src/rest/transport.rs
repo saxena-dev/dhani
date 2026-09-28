@@ -684,21 +684,35 @@ impl Transport {
     /// Runs a `Csv` endpoint and parses its text inside the traced call, so a parse failure is
     /// recorded as the call's outcome and carries its status and attempts. `parse` returns a
     /// detail for the `Decode` error; it must not quote the body.
-    pub(crate) async fn execute_csv<'a, T>(
+    ///
+    /// The parse runs on Tokio's blocking pool, so a large file never blocks the caller's
+    /// executor thread; a panic in `parse` is resumed on the calling task.
+    #[cfg(feature = "instruments")]
+    pub(crate) async fn execute_csv<'a, T: Send + 'static>(
         &self,
         credentials: Option<&Credentials>,
         ep: &'static Endpoint,
         prepare: impl FnOnce() -> Result<Call<'a>, ValidationError>,
-        parse: impl FnOnce(&str) -> Result<T, String>,
+        parse: impl FnOnce(&str) -> Result<T, String> + Send + 'static,
     ) -> Result<T, Error> {
         self.traced(ep, async {
             let mut done = self.run(credentials, ep, prepare).await?;
             let value = match std::mem::replace(&mut done.success, Success::Empty) {
-                Success::Csv(text) => parse(&text).map_err(|detail| {
-                    Error::new(ErrorKind::Decode, Stage::ResponseReceived)
-                        .with_endpoint(ep.id)
-                        .with_detail(&done.redactor, &detail)
-                }),
+                Success::Csv(text) => {
+                    let parsed = match tokio::task::spawn_blocking(move || parse(&text)).await {
+                        Ok(parsed) => parsed,
+                        Err(join) if join.is_panic() => {
+                            std::panic::resume_unwind(join.into_panic())
+                        }
+                        // The runtime is shutting down; nothing was decoded.
+                        Err(_) => Err("parsing was cancelled".to_owned()),
+                    };
+                    parsed.map_err(|detail| {
+                        Error::new(ErrorKind::Decode, Stage::ResponseReceived)
+                            .with_endpoint(ep.id)
+                            .with_detail(&done.redactor, &detail)
+                    })
+                }
                 other => Err(shape_mismatch(ep, &other)),
             };
             done.finish(value)

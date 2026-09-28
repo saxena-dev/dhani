@@ -44,7 +44,8 @@ feed = [
     "dep:webpki-roots",
 ]
 decoder = []
-instruments = ["rest", "dep:csv"]
+# tokio/rt: scrip master CSVs are parsed on the blocking pool (user decision, 2026-09-28).
+instruments = ["rest", "dep:csv", "tokio/rt"]
 metrics = ["dep:metrics"]
 decimal = ["dep:rust_decimal"]
 live-tests = []

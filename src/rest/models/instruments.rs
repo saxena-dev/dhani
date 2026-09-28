@@ -4,6 +4,7 @@
 //! (DOC:5756-5797); columns it does not type are kept in `extra`.
 
 use std::collections::BTreeMap;
+use std::sync::Arc;
 
 use serde::Deserialize;
 use serde::de::IntoDeserializer;
@@ -56,20 +57,25 @@ pub struct InstrumentRecord {
     pub instrument_type: Option<String>,
     /// The series: `SERIES` / `SEM_SERIES`.
     pub series: Option<String>,
-    /// The lot size: `LOT_SIZE` / `SEM_LOT_UNITS`.
+    /// The lot size: `LOT_SIZE` / `SEM_LOT_UNITS`; `None` when empty or not a number (its text
+    /// is then kept in `extra`).
     pub lot_size: Option<f64>,
     /// The expiry date: `SM_EXPIRY_DATE` / `SEM_EXPIRY_DATE`.
     pub expiry_date: Option<WireTime>,
-    /// The strike price: `STRIKE_PRICE` / `SEM_STRIKE_PRICE`.
+    /// The strike price: `STRIKE_PRICE` / `SEM_STRIKE_PRICE`; `None` when empty or not a number.
+    /// Dhan fills it with `-0.01` for instruments that have no strike.
     pub strike_price: Option<f64>,
     /// `CE` or `PE`: `OPTION_TYPE` / `SEM_OPTION_TYPE`.
     pub option_type: Option<String>,
-    /// The tick size: `TICK_SIZE` / `SEM_TICK_SIZE`.
+    /// The tick size: `TICK_SIZE` / `SEM_TICK_SIZE`; `None` when empty or not a number.
     pub tick_size: Option<f64>,
     /// `M` or `W`: `EXPIRY_FLAG` / `SEM_EXPIRY_FLAG`.
     pub expiry_flag: Option<String>,
-    /// Every other column by its header, such as `BRACKET_FLAG` or `MTF_LEVERAGE`.
-    pub extra: BTreeMap<String, String>,
+    /// Every other column by its header, such as `BRACKET_FLAG` or `MTF_LEVERAGE`, plus the
+    /// raw text of a lot size, strike or tick size cell that is not a number. The header names
+    /// are shared by every record of a file; look values up with a `&str`, for example
+    /// `record.extra.get("BRACKET_FLAG")`.
+    pub extra: BTreeMap<Arc<str>, String>,
 }
 
 /// Where one CSV column goes.
@@ -135,17 +141,9 @@ fn lenient<T: for<'de> Deserialize<'de>>(value: &str) -> Option<T> {
     T::deserialize(d).ok()
 }
 
-/// A number cell: empty is `None`, anything else must parse.
-fn number(value: &str) -> Result<Option<f64>, ()> {
-    if value.is_empty() {
-        return Ok(None);
-    }
-    value
-        .parse::<f64>()
-        .ok()
-        .filter(|v| v.is_finite())
-        .map(Some)
-        .ok_or(())
+/// A finite number, or `None` for an empty or non-numeric cell.
+fn number(value: &str) -> Option<f64> {
+    value.parse::<f64>().ok().filter(|v| v.is_finite())
 }
 
 /// Sets `slot` from a non-empty cell unless an earlier column already did.
@@ -156,7 +154,25 @@ fn fill<T>(slot: &mut Option<T>, value: Option<T>) {
 }
 
 impl InstrumentRecord {
-    fn set(&mut self, column: Column, header: &str, value: &str) -> Result<(), ()> {
+    /// A number column: parsed, or its raw text kept in `extra` when it is not a number.
+    fn set_number(
+        &mut self,
+        slot: fn(&mut Self) -> &mut Option<f64>,
+        header: &Arc<str>,
+        value: &str,
+    ) {
+        match number(value) {
+            Some(n) => fill(slot(self), Some(n)),
+            None if value.is_empty() => {}
+            None => {
+                self.extra
+                    .entry(Arc::clone(header))
+                    .or_insert_with(|| value.to_owned());
+            }
+        }
+    }
+
+    fn set(&mut self, column: Column, header: &Arc<str>, value: &str) -> Result<(), ()> {
         let text = || (!value.is_empty()).then(|| value.to_owned());
         match column {
             Column::Exchange => fill(&mut self.exchange, text()),
@@ -177,19 +193,19 @@ impl InstrumentRecord {
             Column::DisplayName => fill(&mut self.display_name, text()),
             Column::InstrumentType => fill(&mut self.instrument_type, text()),
             Column::Series => fill(&mut self.series, text()),
-            Column::LotSize => fill(&mut self.lot_size, number(value)?),
+            Column::LotSize => self.set_number(|r| &mut r.lot_size, header, value),
             Column::ExpiryDate if !value.is_empty() => {
                 fill(&mut self.expiry_date, Some(lenient(value).ok_or(())?));
             }
             Column::ExpiryDate => {}
-            Column::StrikePrice => fill(&mut self.strike_price, number(value)?),
+            Column::StrikePrice => self.set_number(|r| &mut r.strike_price, header, value),
             Column::OptionType => fill(&mut self.option_type, text()),
-            Column::TickSize => fill(&mut self.tick_size, number(value)?),
+            Column::TickSize => self.set_number(|r| &mut r.tick_size, header, value),
             Column::ExpiryFlag => fill(&mut self.expiry_flag, text()),
             Column::Extra => {
                 // Like the typed fields, a repeated header keeps its first value.
                 self.extra
-                    .entry(header.to_owned())
+                    .entry(Arc::clone(header))
                     .or_insert_with(|| value.to_owned());
             }
         }
@@ -197,20 +213,21 @@ impl InstrumentRecord {
     }
 }
 
-/// Parses a scrip master CSV by header name. A row with the wrong number of fields, or a number
-/// or ID column that does not parse, fails with that row's index and nothing else. One record
-/// buffer is reused across rows.
+/// Parses a scrip master CSV by header name. A row with the wrong number of fields, or an ID or
+/// expiry cell that does not parse, fails with that row's index and nothing else; a number cell
+/// that does not parse becomes `None` with its text kept in `extra`. One record buffer is
+/// reused across rows, and header names are shared by every record.
 pub(crate) fn parse_scrip_master(text: &str) -> Result<Vec<InstrumentRecord>, MalformedRow> {
     let mut reader = csv::ReaderBuilder::new()
         .trim(csv::Trim::All)
         .from_reader(text.as_bytes());
-    let headers: Vec<(Column, String)> = reader
+    let headers: Vec<(Column, Arc<str>)> = reader
         .headers()
         .map_err(|_| MalformedRow { row: 0 })?
         .iter()
         .map(|h| {
             let h = h.trim_start_matches('\u{feff}');
-            (column(h), h.to_owned())
+            (column(h), Arc::from(h))
         })
         .collect();
     // A body with no known column (an error page, say) is not a scrip master.

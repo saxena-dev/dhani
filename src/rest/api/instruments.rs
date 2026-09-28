@@ -20,9 +20,8 @@ impl<'c> Instruments<'c> {
     /// [`Urls`](crate::config::Urls) (DOC:5729, DOC:5735).
     ///
     /// The download sends no credentials, is not rate limited and is bounded by the CSV body
-    /// limit. Parsing runs on the calling task and blocks its executor thread for the whole
-    /// parse (a fraction of a second in release builds for the detailed file); a caller on a
-    /// busy runtime may prefer to run this inside `tokio::task::spawn_blocking` or its own task.
+    /// limit. Parsing runs on Tokio's blocking pool, not on the calling task. A lot size, strike
+    /// or tick size cell that is not a number reads as `None`, its text kept in `extra`.
     /// A malformed row is a `Decode` error whose detail names only the row (`row N`, counting
     /// data rows from 1).
     pub async fn scrip_master(&self, kind: ScripMasterKind) -> Result<Vec<InstrumentRecord>> {
