@@ -32,7 +32,8 @@ impl<'c> Portfolio<'c> {
 
     /// Converts an open position between product types: `POST /positions/convert`
     /// (DOC:281-325). The server answers `202` with no body (DOC:293); a JSON body is also
-    /// accepted.
+    /// accepted unless it is an object whose `status` is not `success`, which is an `Api`
+    /// error.
     pub async fn convert_position(&self, req: &ConvertPositionRequest) -> Result<()> {
         self.client
             .execute_empty(&endpoint::PORTFOLIO_CONVERT_POSITION, || {
@@ -47,7 +48,8 @@ impl<'c> Portfolio<'c> {
 
     /// Exits every open position and cancels every open order for the day:
     /// `DELETE /positions` (DOC:548-578). Documented as `202` with no body (DOC:560); the
-    /// OpenAPI spec shows a JSON status body, which is also accepted (OQ-18).
+    /// OpenAPI spec shows a `{status, message}` body (OQ-18), which succeeds only when `status`
+    /// is `success` (in any case) and is otherwise an `Api` error.
     pub async fn exit_all(&self) -> Result<()> {
         self.client
             .execute_empty(&endpoint::PORTFOLIO_EXIT_ALL, || Ok(Call::empty()))

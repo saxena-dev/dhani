@@ -109,11 +109,26 @@ fn classify_success_shapes() {
         classify_shape(EndpointId::OrdersList, 200, b"[]").unwrap(),
         Success::Json(b"[]".to_vec())
     );
-    // Empty (portfolio.convert_position): empty, whitespace or any JSON is fine; other text is not.
-    for body in [&b""[..], b" ", br#"{"status":"ok"}"#, b"null"] {
+    // Empty (portfolio.convert_position): empty, whitespace or JSON is fine unless it is an
+    // object whose status is not "success"; other text is not.
+    for body in [
+        &b""[..],
+        b" ",
+        br#"{"status":"SUCCESS"}"#,
+        br#"{"message":"done"}"#,
+        b"null",
+    ] {
         assert_eq!(
             classify_shape(EndpointId::PortfolioConvertPosition, 202, body).unwrap(),
             Success::Empty,
+            "{body:?}"
+        );
+    }
+    for body in [&br#"{"status":"ok"}"#[..], br#"{"status":"failure"}"#] {
+        let err = classify_shape(EndpointId::PortfolioConvertPosition, 200, body).unwrap_err();
+        assert_eq!(
+            (err.kind(), err.http_status()),
+            (ErrorKind::Api, Some(200)),
             "{body:?}"
         );
     }

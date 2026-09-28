@@ -57,12 +57,28 @@ pub(crate) fn classify(
     match ep.response {
         ResponseShape::Json if blank => Err(decode("empty response body")),
         ResponseShape::Json => Ok(Success::Json(bytes)),
-        ResponseShape::Empty
-            if blank || serde_json::from_slice::<serde::de::IgnoredAny>(&bytes).is_ok() =>
-        {
-            Ok(Success::Empty)
-        }
-        ResponseShape::Empty => Err(decode("response body is not JSON")),
+        ResponseShape::Empty if blank => Ok(Success::Empty),
+        ResponseShape::Empty => match serde_json::from_slice::<serde_json::Value>(&bytes) {
+            // A 2xx body that reports a failure is not a success (DHQ-ebr): exit-all, for one,
+            // answers 200 with {status, message}.
+            Ok(serde_json::Value::Object(body)) if failed_status(&body).is_some() => {
+                let error = Error::new(ErrorKind::Api, Stage::ResponseReceived)
+                    .with_endpoint(ep.id)
+                    .with_status(status);
+                Err(match ApiError::parse(status, &bytes, redactor) {
+                    Some(api) => error.with_api(api),
+                    None => error.with_detail(
+                        redactor,
+                        &format!(
+                            "the response reported status {:?}",
+                            failed_status(&body).unwrap_or_default()
+                        ),
+                    ),
+                })
+            }
+            Ok(_) => Ok(Success::Empty),
+            Err(_) => Err(decode("response body is not JSON")),
+        },
         ResponseShape::JsonOrEmpty => {
             let trimmed = bytes.trim_ascii();
             if blank || trimmed == b"{}" || trimmed == b"null" {
@@ -75,6 +91,13 @@ pub(crate) fn classify(
             .map(Success::Csv)
             .map_err(|_| decode("response body is not UTF-8")),
     }
+}
+
+/// The top-level `status` string of a body, when it is present and not `success` (any case).
+fn failed_status(body: &serde_json::Map<String, serde_json::Value>) -> Option<&str> {
+    body.get("status")
+        .and_then(serde_json::Value::as_str)
+        .filter(|s| !s.eq_ignore_ascii_case("success"))
 }
 
 /// Decodes a JSON success body; a mismatch reports only serde's category, line and column,

@@ -263,3 +263,76 @@ async fn a_conversion_to_cover_order_sends_nothing() {
         ("to_product_type", ValidationReason::UnknownEnumValue)
     );
 }
+
+// ---- A 2xx body that reports a failure (DHQ-ebr) ---------------------------------------------
+
+#[tokio::test]
+async fn a_200_exit_all_reporting_failure_is_an_api_error() {
+    let body = br#"{"status":"failure","message":"no open positions to exit"}"#.to_vec();
+    let server = serve("DELETE", "/v2/positions", None, json_reply(200, body)).await;
+    let err = client_for(&server)
+        .portfolio()
+        .exit_all()
+        .await
+        .unwrap_err();
+    assert_eq!(
+        (err.kind(), err.http_status(), err.attempts()),
+        (ErrorKind::Api, Some(200), 1)
+    );
+    assert_eq!(
+        err.detail(),
+        Some(r#"the response reported status "failure""#)
+    );
+    assert_eq!(requests(&server).await, 1);
+}
+
+#[tokio::test]
+async fn a_200_convert_reporting_failure_keeps_the_broker_error() {
+    let body = br#"{"status":"failure","errorType":"Input_Exception","errorCode":"DH-905","errorMessage":"Invalid quantity"}"#.to_vec();
+    let server = serve("POST", "/v2/positions/convert", None, json_reply(200, body)).await;
+    let err = client_for(&server)
+        .portfolio()
+        .convert_position(&convert())
+        .await
+        .unwrap_err();
+    assert_eq!(err.kind(), ErrorKind::Api);
+    let api = err.api().expect("the broker error is parsed");
+    assert_eq!(api.error_code, Some(dhani::error::ApiErrorCode::Dh905));
+    assert_eq!(
+        api.error_message.as_ref().map(|m| m.as_str()),
+        Some("Invalid quantity")
+    );
+}
+
+#[tokio::test]
+async fn success_statuses_in_any_case_and_bodies_without_status_still_succeed() {
+    for body in [
+        r#"{"status":"SUCCESS","message":"All positions exited"}"#,
+        r#"{"status":"success"}"#,
+        r#"{"message":"done"}"#,
+        "[]",
+    ] {
+        let server = serve(
+            "DELETE",
+            "/v2/positions",
+            None,
+            json_reply(200, body.as_bytes().to_vec()),
+        )
+        .await;
+        let result = client_for(&server).portfolio().exit_all().await;
+        assert_eq!(result.map_err(|e| e.kind()), Ok(()), "{body}");
+    }
+    let server = serve(
+        "DELETE",
+        "/v2/positions",
+        None,
+        json_reply(200, b"not json".to_vec()),
+    )
+    .await;
+    let err = client_for(&server)
+        .portfolio()
+        .exit_all()
+        .await
+        .unwrap_err();
+    assert_eq!(err.kind(), ErrorKind::Decode);
+}
