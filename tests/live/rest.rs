@@ -108,24 +108,43 @@ where
     result
 }
 
-/// Cancels every order in the book that carries `order`'s correlation ID.
+/// Cancels every order in the book that carries `order`'s correlation ID. Under
+/// [`Cleanup::Strict`] the book is read up to three times, a second apart, since a just-placed
+/// order may not be listed yet; finding none is then reported as a possibly open order.
 async fn cancel_tagged(client: &DhanClient, order: &PlaceOrderRequest, cleanup: Cleanup) {
     let tag = order
         .correlation_id
         .as_ref()
         .expect("every order here is tagged")
         .to_string();
-    let orders = match client.orders().list().await {
-        Ok(orders) => orders,
-        Err(e) if cleanup == Cleanup::Strict => {
-            panic!("could not list orders to find {tag}: {e}; check the order book by hand")
+    let attempts = if cleanup == Cleanup::Strict { 3 } else { 1 };
+    for attempt in 1..=attempts {
+        let orders = match client.orders().list().await {
+            Ok(orders) => orders,
+            Err(e) if cleanup == Cleanup::Strict => {
+                panic!("could not list orders to find {tag}: {e}; check the order book by hand")
+            }
+            Err(e) => return println!("could not list orders to find {tag}: {e}"),
+        };
+        let tagged: Vec<OrderId> = orders
+            .into_iter()
+            .filter(|o| o.correlation_id.as_deref() == Some(tag.as_str()))
+            .map(|o| o.order_id)
+            .collect();
+        if !tagged.is_empty() {
+            for id in &tagged {
+                cancel(client, id, cleanup).await;
+            }
+            return;
         }
-        Err(e) => return println!("could not list orders to find {tag}: {e}"),
-    };
-    for o in orders {
-        if o.correlation_id.as_deref() == Some(tag.as_str()) {
-            cancel(client, &o.order_id, cleanup).await;
+        if attempt < attempts {
+            tokio::time::sleep(Duration::from_secs(1)).await;
         }
+    }
+    if cleanup == Cleanup::Strict {
+        panic!(
+            "no order tagged {tag} was found, but one may be open: check the order book by hand"
+        );
     }
 }
 
@@ -473,8 +492,8 @@ async fn sandbox_h1_daily_candles() {
     assert_columnar(&candles);
 }
 
-/// 25-minute candles, where one table says 30: the endpoint accepts 25, and the candles are
-/// 1500 s apart.
+/// 25-minute candles: the API spec, the guide and the Python SDK give 25, while some endpoint
+/// pages say 30. The endpoint accepts 25, and the candles are 1500 s apart.
 #[tokio::test]
 #[ignore = "needs sandbox credentials"]
 async fn sandbox_h2_intraday_candles() {

@@ -52,6 +52,7 @@ pub use error::{Error, ErrorKind, Result};
 #[cfg(feature = "rest")]
 pub use rest::{DhanClient, DhanClientBuilder};
 
-#[cfg(doctest)]
+// The README's examples are complete programs using both the REST client and the feeds.
+#[cfg(all(doctest, feature = "rest", feature = "feed"))]
 #[doc = include_str!("../README.md")]
 pub struct ReadmeDoctests;

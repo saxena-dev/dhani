@@ -68,12 +68,13 @@ register of open questions (OQ) and source discrepancies (D, S).
 | Order update feed (OQ-10) | The login acknowledgement, error format, keepalive and disconnect codes are undocumented. Unrecognised messages arrive as `OrderUpdateEvent::Other` with their raw JSON, and the client pings every 20 s. |
 | Detailed scrip master (OQ-14) | The security-ID column name is undocumented, so `SECURITY_ID` is also read. Unrecognised columns are kept in `extra`. |
 | Segment codes (OQ-16) | `NSE_COMM` has no known binary feed code: dhani sends a subscription for it, but its packets report no segment (`PacketHeader::segment()` is `None`). The currency segment codes 3 and 7 come from the Python SDK. |
+| Intraday interval (OQ-4) | The 25-minute interval, as the API spec, the guide and the Python SDK give it. Some endpoint pages say 30; there is no 30-minute option. |
 | Market-feed mode change (OQ-17) | It is undocumented whether subscribing in a new mode replaces the old one. dhani unsubscribes the old mode, then subscribes the new one. |
 | MARKET orders (OQ-21) | `price` is omitted, as the documentation allows. The Python SDK sends `0`. |
 | Sandbox feeds (OQ-22) | No sandbox WebSocket endpoints are documented. The feed builders take no environment and connect to the live endpoints unless given `.url(..)`; Dhan, not dhani, rejects a sandbox token on a live feed. |
 | Multi-instrument margin (OQ-24) | Between 1 and 50 instruments per call. The upper bound is dhani's own. |
 | Modification cap (OQ-28) | The 25-modification cap is applied to order modifications only, counted per attempt and reset at midnight IST. |
-| Correlation IDs (OQ-29) | Up to 30 characters from `A-Z a-z 0-9 _ -`. A `.` is refused locally, since it is unclear whether the documentation allows it. |
+| Correlation IDs (OQ-29) | Up to 30 characters from `A-Z a-z 0-9 _ -`. A `.` is refused locally, since it is unclear whether the documentation allows it, and so is a space, which the API spec allows but the order documentation does not list. |
 | Market quote data (OQ-31) | `data` is read as a two-level map, segment then security ID, as in the published example. |
 | Multi-margin response keys (D60) | The documentation shows camelCase numbers and the API spec shows snake_case strings. Both are accepted. |
 

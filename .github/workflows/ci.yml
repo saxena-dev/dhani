@@ -67,7 +67,7 @@ jobs:
       - name: the package ships no vendored, test or local-only file
         run: |
           list=$(cargo package --locked --list)
-          if grep -E '^(vendor/|tests/|\.ignore/)|DhanHQ-py/' <<<"$list"; then echo "the package must not contain vendored, test or local-only files" >&2; exit 1; fi
+          if grep -E '^(vendor/|tests/|examples/|benches/|scripts/|\.ignore/|\.beads/|\.agents/|\.claude/|\.codex/)|DhanHQ-py/|^(AGENTS|CLAUDE)\.md$' <<<"$list"; then echo "the package must not contain vendored, test, tooling or local-only files" >&2; exit 1; fi
       - name: the packaged crate builds out of the tree in every feature row
         run: |
           pkg_dir=$(mktemp -d)

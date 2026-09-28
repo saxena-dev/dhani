@@ -56,11 +56,11 @@ unpacked=""
 trap 'rm -rf "$pkg_dir" "$unpacked"' EXIT
 package_check() {
   local list; list=$(cargo package --locked --allow-dirty --list)
-  if grep -E '^(vendor/|tests/|\.ignore/)|DhanHQ-py/' <<<"$list"; then
-    echo "the package must not contain vendored, test or local-only files" >&2
+  if grep -E '^(vendor/|tests/|examples/|benches/|scripts/|\.ignore/|\.beads/|\.agents/|\.claude/|\.codex/)|DhanHQ-py/|^(AGENTS|CLAUDE)\.md$' <<<"$list"; then
+    echo "the package must not contain vendored, test, tooling or local-only files" >&2
     exit 1
   fi
-  echo "+ package excludes vendor/, tests/ and .ignore/"
+  echo "+ package excludes vendored, test, tooling and local-only files"
   pkg_dir=$(mktemp -d)
   unpacked=$(mktemp -d)
   run cargo package --locked --allow-dirty --no-verify --target-dir "$pkg_dir"

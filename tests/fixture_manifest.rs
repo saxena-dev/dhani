@@ -336,8 +336,9 @@ fn is_row_id(id: &str) -> bool {
 }
 
 /// The row ids named by `// row: <id>` markers in `text`. A marker must name a known row and sit
-/// directly above a test named after it (`<id>_…`, lowercase), with only attributes between; a
-/// marker above an `#[ignore]` test does not count. Each misplaced or unknown marker is an error.
+/// directly above a `#[test]` or `#[tokio::test]` function named after it (`<id>_…`, lowercase),
+/// with only attributes between; a marker above an `#[ignore]` or `#[cfg(any())]` test does not
+/// count. Each misplaced or unknown marker is an error.
 fn row_markers(text: &str) -> (Vec<String>, Vec<String>) {
     let lines: Vec<&str> = text.lines().map(str::trim).collect();
     let (mut rows, mut errors) = (Vec::new(), Vec::new());
@@ -351,12 +352,17 @@ fn row_markers(text: &str) -> (Vec<String>, Vec<String>) {
         }
         let rest = &lines[i + 1..];
         let attrs = rest.iter().take_while(|l| l.starts_with("#[")).count();
-        let ignored = rest[..attrs].iter().any(|l| l.starts_with("#[ignore"));
+        let ignored = rest[..attrs]
+            .iter()
+            .any(|l| l.starts_with("#[ignore") || l.starts_with("#[cfg(any())"));
+        let is_test = rest[..attrs]
+            .iter()
+            .any(|l| *l == "#[test]" || l.starts_with("#[tokio::test"));
         let test = format!("fn {}_", id.to_lowercase());
         let named = rest
             .get(attrs)
             .is_some_and(|l| l.strip_prefix("async ").unwrap_or(l).starts_with(&test));
-        if ignored || !named {
+        if ignored || !is_test || !named {
             errors.push(format!(
                 "marker {id} is not directly above an active {test}… test"
             ));
@@ -524,6 +530,9 @@ mod checker {
             "// row: O01\n#[test]\nfn o01_x() {}\n",
             "// row: O1, O2\n#[test]\nfn o1_x() {}\n",
             "// row: O1\n",
+            "// row: O1\nfn o1_helper() {}\n",
+            "// row: O1\n#[allow(dead_code)]\nfn o1_helper() {}\n",
+            "// row: O1\n#[cfg(any())]\n#[test]\nfn o1_x() {}\n",
         ] {
             let (marked, errors) = row_markers(text);
             assert!(

@@ -1,6 +1,6 @@
 # dhani
 
-`dhani` is an asynchronous Rust client library for the [DhanHQ v2](https://dhanhq.co/docs/v2/)
+`dhani` is an asynchronous Rust client library for the [DhanHQ v2](https://docs.dhanhq.co/)
 developer API: REST trading and data calls, the streaming feeds, and `tracing`-based
 observability with redaction.
 
@@ -58,40 +58,39 @@ needs a C compiler and, on some targets, CMake.
 ## REST quick start
 
 ```rust,no_run
-# #[cfg(feature = "rest")]
-# async fn example() -> dhani::Result<()> {
 use dhani::rest::PlaceOrderRequest;
 use dhani::types::{
     ExchangeSegment, OrderType, ProductType, SecurityId, TransactionType, Validity,
 };
 use dhani::{AccessToken, ClientId, Credentials, DhanClient};
 
-// Load these however you like: dhani never reads the environment.
-let credentials = Credentials::new(
-    ClientId::new("1000000009")?,
-    AccessToken::new("<access token>")?,
-);
-let client = DhanClient::builder().credentials(credentials).build()?;
+#[tokio::main]
+async fn main() -> dhani::Result<()> {
+    // Load these however you like: dhani never reads the environment.
+    let credentials = Credentials::new(
+        ClientId::new("1000000009")?,
+        AccessToken::new("<access token>")?,
+    );
+    let client = DhanClient::builder().credentials(credentials).build()?;
 
-let order = PlaceOrderRequest::new(
-    ExchangeSegment::NseEq,
-    SecurityId::new("1333")?,
-    TransactionType::Buy,
-    1,
-    OrderType::Limit,
-    ProductType::Cnc,
-    Validity::Day,
-)
-.with_price(1642.5);
-let ack = client.orders().place(&order).await?;
-println!("placed {}", ack.order_id);
+    let order = PlaceOrderRequest::new(
+        ExchangeSegment::NseEq,
+        SecurityId::new("1333")?,
+        TransactionType::Buy,
+        1,
+        OrderType::Limit,
+        ProductType::Cnc,
+        Validity::Day,
+    )
+    .with_price(1642.5);
+    let ack = client.orders().place(&order).await?;
+    println!("placed {}", ack.order_id);
 
-for o in client.orders().list().await? {
-    println!("{} {:?}", o.order_id, o.order_status);
+    for o in client.orders().list().await? {
+        println!("{} {:?}", o.order_id, o.order_status);
+    }
+    Ok(())
 }
-# Ok(())
-# }
-# fn main() {}
 ```
 
 - **Sandbox.** Add `.environment(Environment::Sandbox)` to the builder. It changes only the
@@ -100,35 +99,39 @@ for o in client.orders().list().await? {
   a PIN and the current TOTP code; `client.with_credentials(token.credentials())` switches to it
   and keeps the same transport and rate limiter. dhani does not compute TOTP codes.
 - **Errors.** `Error::kind()` says what went wrong. Reads and queries are retried on transient
-  failures; mutations and token calls never are, and `Error::may_have_reached_server()` says whether a failed
-  mutation might still have taken effect.
+  failures; mutations and token calls never are, and `Error::may_have_reached_server()` says
+  whether a failed mutation might still have taken effect.
 
 ## Market feed
 
 ```rust,no_run
-# #[cfg(feature = "feed")]
-# async fn example(credentials: dhani::Credentials) -> Result<(), Box<dyn std::error::Error>> {
 use dhani::feed::{FeedEvent, Instrument, MarketFeed, Mode};
 use dhani::types::{ExchangeSegment, SecurityId};
+use dhani::{AccessToken, ClientId, Credentials};
 use futures_util::StreamExt; // futures-util = "0.3"
 
-let (handle, mut events, task) = MarketFeed::builder(credentials).spawn()?;
-let instrument = Instrument::new(ExchangeSegment::NseEq, SecurityId::new("1333")?)?;
-handle.subscribe([instrument], Mode::Ticker).await?;
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let credentials = Credentials::new(
+        ClientId::new("1000000009")?,
+        AccessToken::new("<access token>")?,
+    );
+    let (handle, mut events, task) = MarketFeed::builder(credentials).spawn()?;
+    let instrument = Instrument::new(ExchangeSegment::NseEq, SecurityId::new("1333")?)?;
+    handle.subscribe([instrument], Mode::Ticker).await?;
 
-while let Some(event) = events.next().await {
-    match event? {
-        FeedEvent::Data(d) => println!("{:?}", d.value),
-        FeedEvent::Lifecycle(l) => println!("{l:?}"),
-        FeedEvent::DecodeError(e) => eprintln!("skipped a packet: {e:?}"),
-        _ => {}
+    while let Some(event) = events.next().await {
+        match event? {
+            FeedEvent::Data(d) => println!("{:?}", d.value),
+            FeedEvent::Lifecycle(l) => println!("{l:?}"),
+            FeedEvent::DecodeError(e) => eprintln!("skipped a packet: {e:?}"),
+            _ => {}
+        }
     }
+    handle.shutdown().await?;
+    task.join().await;
+    Ok(())
 }
-handle.shutdown().await?;
-task.join().await;
-# Ok(())
-# }
-# fn main() {}
 ```
 
 The feed reconnects and restores its subscriptions on its own, and reports every transition as
@@ -161,7 +164,9 @@ Two more rules apply on top:
 - An order can be modified at most 25 times. dhani counts each modify attempt it sends and
   resets the count at midnight IST.
 
-Days are IST days. A daily ceiling fails at once rather than waiting.
+Days are IST days. A daily ceiling fails at once rather than waiting. The numbers follow the
+rate-limit table on Dhan's API overview; a second table elsewhere in the documentation swaps the
+daily figures, and dhani does not follow it.
 
 ## Observability
 
@@ -219,12 +224,13 @@ register of open questions (OQ) and source discrepancies (D, S).
 | Order update feed (OQ-10) | The login acknowledgement, error format, keepalive and disconnect codes are undocumented. Unrecognised messages arrive as `OrderUpdateEvent::Other` with their raw JSON, and the client pings every 20 s. |
 | Detailed scrip master (OQ-14) | The security-ID column name is undocumented, so `SECURITY_ID` is also read. Unrecognised columns are kept in `extra`. |
 | Segment codes (OQ-16) | `NSE_COMM` has no known binary feed code: dhani sends a subscription for it, but its packets report no segment (`PacketHeader::segment()` is `None`). The currency segment codes 3 and 7 come from the Python SDK. |
+| Intraday interval (OQ-4) | The 25-minute interval, as the API spec, the guide and the Python SDK give it. Some endpoint pages say 30; there is no 30-minute option. |
 | Market-feed mode change (OQ-17) | It is undocumented whether subscribing in a new mode replaces the old one. dhani unsubscribes the old mode, then subscribes the new one. |
 | MARKET orders (OQ-21) | `price` is omitted, as the documentation allows. The Python SDK sends `0`. |
 | Sandbox feeds (OQ-22) | No sandbox WebSocket endpoints are documented. The feed builders take no environment and connect to the live endpoints unless given `.url(..)`; Dhan, not dhani, rejects a sandbox token on a live feed. |
 | Multi-instrument margin (OQ-24) | Between 1 and 50 instruments per call. The upper bound is dhani's own. |
 | Modification cap (OQ-28) | The 25-modification cap is applied to order modifications only, counted per attempt and reset at midnight IST. |
-| Correlation IDs (OQ-29) | Up to 30 characters from `A-Z a-z 0-9 _ -`. A `.` is refused locally, since it is unclear whether the documentation allows it. |
+| Correlation IDs (OQ-29) | Up to 30 characters from `A-Z a-z 0-9 _ -`. A `.` is refused locally, since it is unclear whether the documentation allows it, and so is a space, which the API spec allows but the order documentation does not list. |
 | Market quote data (OQ-31) | `data` is read as a two-level map, segment then security ID, as in the published example. |
 | Multi-margin response keys (D60) | The documentation shows camelCase numbers and the API spec shows snake_case strings. Both are accepted. |
 
