@@ -57,6 +57,7 @@ fn issued() -> ResponseTemplate {
         .set_body_bytes(synth("auth_issued_token.json"))
 }
 
+// row: A5
 #[tokio::test]
 async fn a5_generate_access_token() {
     let (capture, _guard) = support::trace::install();

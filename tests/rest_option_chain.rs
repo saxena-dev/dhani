@@ -67,6 +67,7 @@ fn chain_body() -> serde_json::Value {
 
 // ---- X1 --------------------------------------------------------------------------------------
 
+// row: X1
 #[tokio::test]
 async fn x1_chain_decodes_two_strikes_with_greeks() {
     let server = serve(
@@ -100,6 +101,7 @@ async fn x1_chain_decodes_two_strikes_with_greeks() {
     assert_eq!(server.received_requests().await.unwrap().len(), 1);
 }
 
+// row: X1
 #[tokio::test]
 async fn x1_chain_raw_returns_the_body_unchanged() {
     let server = serve(
@@ -118,6 +120,7 @@ async fn x1_chain_raw_returns_the_body_unchanged() {
     assert_eq!(raw.0, expected);
 }
 
+// row: X1
 #[tokio::test]
 async fn x1_chain_raw_reads_the_upstream_placeholder() {
     // The Python SDK's fixture payload (its `data` member, as the loader serves it) is not a
@@ -145,6 +148,7 @@ fn expiries_body() -> serde_json::Value {
     json!({"UnderlyingScrip": 13, "UnderlyingSeg": "IDX_I", "dhanClientId": CLIENT_ID})
 }
 
+// row: X2
 #[tokio::test]
 async fn x2_expiries_decode_as_dates() {
     let server = serve(
@@ -165,6 +169,7 @@ async fn x2_expiries_decode_as_dates() {
     assert_eq!(server.received_requests().await.unwrap().len(), 1);
 }
 
+// row: X2
 #[tokio::test]
 async fn x2_an_unparsable_expiry_is_a_decode_error() {
     let server = serve(

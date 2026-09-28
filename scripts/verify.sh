@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Local quality gate: the same checks as the required CI job (.github/workflows/ci.yml).
 #
-#   scripts/verify.sh           feature rows on the stable toolchain, plus lint, docs and
-#                               dependency-graph checks
+#   scripts/verify.sh           feature rows on the stable toolchain, plus lint, docs, the
+#                               compiled-only live lane, packaging and dependency-graph checks
 #   scripts/verify.sh --msrv    additionally checks every feature row on the MSRV toolchain
 #                               (rustup toolchain 1.88) and runs the all-features tests on it;
 #                               CI runs every row's tests on both toolchains
@@ -48,6 +48,31 @@ dep_names() {
   cargo tree --locked -e normal --prefix none --format '{p}' "$@" | awk '{print $1}' | sort -u
 }
 
+# The package ships no vendored, test or local-only file, and the packaged crate builds out of
+# the tree in every feature row. --allow-dirty lets this run before a commit; CI packages a
+# clean checkout. The crate is written to a fresh directory, so a stale one is never unpacked.
+pkg_dir=""
+unpacked=""
+trap 'rm -rf "$pkg_dir" "$unpacked"' EXIT
+package_check() {
+  local list; list=$(cargo package --locked --allow-dirty --list)
+  if grep -E '^(vendor/|tests/|\.ignore/)|DhanHQ-py/' <<<"$list"; then
+    echo "the package must not contain vendored, test or local-only files" >&2
+    exit 1
+  fi
+  echo "+ package excludes vendor/, tests/ and .ignore/"
+  pkg_dir=$(mktemp -d)
+  unpacked=$(mktemp -d)
+  run cargo package --locked --allow-dirty --no-verify --target-dir "$pkg_dir"
+  local version; version=$(cargo pkgid | sed 's/.*[#@]//')
+  tar -xzf "$pkg_dir/package/dhani-$version.crate" -C "$unpacked"
+  local target_dir="$PWD/target/package-build"
+  for row in "${ROWS[@]}"; do
+    # shellcheck disable=SC2046
+    (cd "$unpacked/dhani-$version" && run cargo build --locked --target-dir "$target_dir" $(row_args "$row"))
+  done
+}
+
 forbid_deps() { # <row> <crate>...
   local row=$1; shift
   # shellcheck disable=SC2046
@@ -85,6 +110,7 @@ RUSTDOCFLAGS=-Dwarnings run cargo doc --locked --all-features --no-deps
 run cargo test --locked --doc --all-features
 # The live lane needs Dhan credentials: compile it, never run it.
 run cargo test --locked --features live-tests --test live --no-run
+package_check
 forbid_deps decoder tokio reqwest tungstenite tokio-tungstenite
 forbid_deps rest tungstenite tokio-tungstenite
 forbid_deps feed reqwest

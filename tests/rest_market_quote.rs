@@ -58,6 +58,7 @@ async fn requests(server: &MockServer) -> usize {
 
 // ---- Q1–Q3, typed ----------------------------------------------------------------------------
 
+// row: Q1
 #[tokio::test]
 async fn q1_ltp() {
     let server = serve("/v2/marketfeed/ltp", "quote_ltp.json").await;
@@ -72,6 +73,7 @@ async fn q1_ltp() {
     assert_eq!(requests(&server).await, 1);
 }
 
+// row: Q2
 #[tokio::test]
 async fn q2_ohlc() {
     let server = serve("/v2/marketfeed/ohlc", "quote_ohlc.json").await;
@@ -90,6 +92,7 @@ async fn q2_ohlc() {
     assert_eq!(requests(&server).await, 1);
 }
 
+// row: Q3
 #[tokio::test]
 async fn q3_quote_has_five_levels_each_side() {
     let server = serve("/v2/marketfeed/quote", "quote_full.json").await;

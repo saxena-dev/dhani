@@ -70,6 +70,7 @@ fn empty_replies() -> Vec<(&'static str, ResponseTemplate)> {
 
 // ---- P1–P4 -----------------------------------------------------------------------------------
 
+// row: P1
 #[tokio::test]
 async fn p1_holdings_from_the_upstream_fixture() {
     let server = serve(
@@ -103,6 +104,7 @@ async fn p1_holdings_from_the_upstream_fixture() {
     assert_eq!(requests(&server).await, 1);
 }
 
+// row: P1
 #[tokio::test]
 async fn p1_holdings_with_the_mtf_keys() {
     let server = serve(
@@ -123,6 +125,7 @@ async fn p1_holdings_with_the_mtf_keys() {
     assert_eq!(requests(&server).await, 1);
 }
 
+// row: P2
 #[tokio::test]
 async fn p2_positions() {
     let server = serve(
@@ -160,6 +163,7 @@ async fn p2_positions() {
     assert_eq!(requests(&server).await, 1);
 }
 
+// row: P3
 #[tokio::test]
 async fn p3_convert_position_accepts_202_empty_and_200_empty_object() {
     // The fixture body for the 200 case is the upstream `{}`.
@@ -184,6 +188,7 @@ async fn p3_convert_position_accepts_202_empty_and_200_empty_object() {
     }
 }
 
+// row: P3
 #[tokio::test]
 async fn p3_convert_position_sends_a_trading_symbol_when_set() {
     let body = json!({
@@ -212,6 +217,7 @@ async fn p3_convert_position_sends_a_trading_symbol_when_set() {
     assert_eq!(requests(&server).await, 1);
 }
 
+// row: P4
 #[tokio::test]
 async fn p4_exit_all_accepts_202_empty_and_200_empty_object() {
     // The OpenAPI spec shows exit-all answering with a status object (OQ-18).

@@ -52,6 +52,7 @@ async fn history_server(reply: Vec<u8>) -> MockServer {
 
 // ---- T1 --------------------------------------------------------------------------------------
 
+// row: T1
 #[tokio::test]
 async fn t1_ledger_from_the_object_fixture() {
     let server = ledger_server(upstream_payload("get_ledger_report.json")).await;
@@ -85,6 +86,7 @@ async fn t1_ledger_from_the_object_fixture() {
     );
 }
 
+// row: T1
 #[tokio::test]
 async fn t1_ledger_from_an_array() {
     let reply = json!([
@@ -113,6 +115,7 @@ async fn t1_ledger_from_an_array() {
 
 // ---- T2 --------------------------------------------------------------------------------------
 
+// row: T2
 #[tokio::test]
 async fn t2_trade_history_from_the_fixture_with_numeric_charges() {
     let server = history_server(upstream_payload("get_trade_history.json")).await;
@@ -156,6 +159,7 @@ async fn t2_trade_history_from_the_fixture_with_numeric_charges() {
     assert!(received[0].url.query().is_none());
 }
 
+// row: T2
 #[tokio::test]
 async fn t2_trade_history_with_string_charges() {
     let reply = json!([{

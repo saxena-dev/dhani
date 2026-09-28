@@ -104,6 +104,7 @@ fn assert_synth_candles(candles: &dhani::rest::Candles) {
 
 // ---- H1–H2 -----------------------------------------------------------------------------------
 
+// row: H1
 #[tokio::test]
 async fn h1_daily_from_the_empty_upstream_fixture() {
     let server = serve(
@@ -121,6 +122,7 @@ async fn h1_daily_from_the_empty_upstream_fixture() {
     assert_eq!(server.received_requests().await.unwrap().len(), 1);
 }
 
+// row: H1
 #[tokio::test]
 async fn h1_daily_candles() {
     let server = serve("/v2/charts/historical", daily_body(), synth("candles.json")).await;
@@ -133,6 +135,7 @@ async fn h1_daily_candles() {
     assert_eq!(server.received_requests().await.unwrap().len(), 1);
 }
 
+// row: H2
 #[tokio::test]
 async fn h2_intraday_from_the_empty_upstream_fixture() {
     let server = serve(
@@ -150,6 +153,7 @@ async fn h2_intraday_from_the_empty_upstream_fixture() {
     assert_eq!(server.received_requests().await.unwrap().len(), 1);
 }
 
+// row: H2
 #[tokio::test]
 async fn h2_intraday_sends_25_as_an_integer() {
     let server = serve(

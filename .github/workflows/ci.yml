@@ -57,6 +57,33 @@ jobs:
       # The live lane needs Dhan credentials: it is compiled, never run.
       - run: cargo test --locked --features live-tests --test live --no-run
 
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Checked out so that the exclusion of vendor/ is actually tested.
+      - run: git submodule update --init vendor/DhanHQ-py
+      - uses: dtolnay/rust-toolchain@stable
+      - name: the package ships no vendored, test or local-only file
+        run: |
+          list=$(cargo package --locked --list)
+          if grep -E '^(vendor/|tests/|\.ignore/)|DhanHQ-py/' <<<"$list"; then echo "the package must not contain vendored, test or local-only files" >&2; exit 1; fi
+      - name: the packaged crate builds out of the tree in every feature row
+        run: |
+          pkg_dir=$(mktemp -d)
+          cargo package --locked --no-verify --target-dir "$pkg_dir"
+          version=$(cargo pkgid | sed 's/.*[#@]//')
+          unpacked=$(mktemp -d)
+          tar -xzf "$pkg_dir/package/dhani-$version.crate" -C "$unpacked"
+          cd "$unpacked/dhani-$version"
+          for args in "--no-default-features" "--no-default-features --features decoder" "--no-default-features --features rest" "--no-default-features --features feed" "--no-default-features --features rest,instruments" "--all-features"; do
+            # shellcheck disable=SC2086 # args is deliberately word-split
+            cargo build --locked --target-dir "$GITHUB_WORKSPACE/target/package-build" $args
+          done
+      # CI only: scripts/verify.sh never runs any cargo publish command.
+      - name: publish dry run
+        run: cargo publish --locked --dry-run
+
   dependency-graph:
     runs-on: ubuntu-latest
     steps:

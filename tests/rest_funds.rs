@@ -91,6 +91,7 @@ fn multi_body() -> serde_json::Value {
 
 // ---- M1–M3 -----------------------------------------------------------------------------------
 
+// row: M1
 #[tokio::test]
 async fn m1_limits_keep_the_misspelled_wire_names() {
     let server = serve(
@@ -112,6 +113,7 @@ async fn m1_limits_keep_the_misspelled_wire_names() {
     assert_eq!(requests(&server).await, 1);
 }
 
+// row: M2
 #[tokio::test]
 async fn m2_margin() {
     let mut body = leg_body("52175", "SELL");
@@ -142,6 +144,7 @@ async fn m2_margin() {
     assert_eq!(requests(&server).await, 1);
 }
 
+// row: M3
 #[tokio::test]
 async fn m3_margin_multi_from_the_documented_camel_case() {
     let server = serve(
@@ -176,6 +179,7 @@ async fn m3_margin_multi_from_the_documented_camel_case() {
     assert_eq!(requests(&server).await, 1);
 }
 
+// row: M3
 #[tokio::test]
 async fn m3_margin_multi_from_the_openapi_snake_case_strings() {
     let reply = json!({

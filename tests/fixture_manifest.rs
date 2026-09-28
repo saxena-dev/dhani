@@ -3,7 +3,8 @@
 //! Checks: each `[[fixture]]` file exists with its recorded sha256 and byte length; every file
 //! under `tests/fixtures/` other than the manifest is listed; the `vendor/DhanHQ-py` submodule is
 //! checked out at the pinned commit (skipped with a message when the tree is not a git
-//! checkout).
+//! checkout); every MVP endpoint row has a fixture, and a contract test in a `tests/rest_*.rs`
+//! file marked with a `// row: <id>` comment.
 
 mod support;
 
@@ -306,6 +307,107 @@ fn every_mvp_row_has_a_fixture() {
     );
 }
 
+/// Every endpoint-matrix row id a marker may name: a prefix and its highest number.
+const ROW_IDS: &[(&str, u32)] = &[
+    ("A", 10),
+    ("O", 9),
+    ("S", 4),
+    ("F", 4),
+    ("C", 6),
+    ("P", 4),
+    ("M", 3),
+    ("T", 2),
+    ("K", 5),
+    ("E", 4),
+    ("Q", 3),
+    ("H", 3),
+    ("X", 2),
+    ("I", 4),
+    ("G", 12),
+];
+
+fn is_row_id(id: &str) -> bool {
+    ROW_IDS.iter().any(|&(prefix, max)| {
+        id.strip_prefix(prefix)
+            .filter(|n| !n.starts_with('0'))
+            .and_then(|n| n.parse::<u32>().ok())
+            .is_some_and(|n| (1..=max).contains(&n))
+    })
+}
+
+/// The row ids named by `// row: <id>` markers in `text`. A marker must name a known row and sit
+/// directly above a test named after it (`<id>_…`, lowercase), with only attributes between; a
+/// marker above an `#[ignore]` test does not count. Each misplaced or unknown marker is an error.
+fn row_markers(text: &str) -> (Vec<String>, Vec<String>) {
+    let lines: Vec<&str> = text.lines().map(str::trim).collect();
+    let (mut rows, mut errors) = (Vec::new(), Vec::new());
+    for (i, line) in lines.iter().enumerate() {
+        let Some(id) = line.strip_prefix("// row: ").map(str::trim) else {
+            continue;
+        };
+        if !is_row_id(id) {
+            errors.push(format!("marker names no endpoint row: {line:?}"));
+            continue;
+        }
+        let rest = &lines[i + 1..];
+        let attrs = rest.iter().take_while(|l| l.starts_with("#[")).count();
+        let ignored = rest[..attrs].iter().any(|l| l.starts_with("#[ignore"));
+        let test = format!("fn {}_", id.to_lowercase());
+        let named = rest
+            .get(attrs)
+            .is_some_and(|l| l.strip_prefix("async ").unwrap_or(l).starts_with(&test));
+        if ignored || !named {
+            errors.push(format!(
+                "marker {id} is not directly above an active {test}… test"
+            ));
+            continue;
+        }
+        rows.push(id.to_owned());
+    }
+    (rows, errors)
+}
+
+/// The MVP rows of `rows` that no marker in `marked` names.
+fn unmarked<'a>(rows: &[(&'a str, &[&str])], marked: &[String]) -> Vec<&'a str> {
+    rows.iter()
+        .map(|&(row, _)| row)
+        .filter(|row| !marked.iter().any(|m| m == row))
+        .collect()
+}
+
+#[test]
+fn every_mvp_row_has_a_contract_test() {
+    let mut sources = Vec::new();
+    for entry in fs::read_dir(Path::new(ROOT).join("tests")).expect("read tests/") {
+        let path = entry.expect("a directory entry").path();
+        let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
+        if name.starts_with("rest_") && name.ends_with(".rs") {
+            sources.push(fs::read_to_string(&path).expect("read a contract test file"));
+        }
+    }
+    let (mut marked, mut errors) = (Vec::new(), Vec::new());
+    for source in &sources {
+        let (rows, problems) = row_markers(source);
+        marked.extend(rows);
+        errors.extend(problems);
+    }
+    assert!(
+        errors.is_empty(),
+        "bad row markers:\n  {}",
+        errors.join("\n  ")
+    );
+    let missing = unmarked(&MVP_ROWS, &marked);
+    println!(
+        "contract-test check: {} MVP rows, {} markers",
+        MVP_ROWS.len(),
+        marked.len()
+    );
+    assert!(
+        missing.is_empty(),
+        "MVP rows without a `// row: <id>` contract test in tests/rest_*.rs: {missing:?}"
+    );
+}
+
 /// Checker self-tests on synthetic input.
 mod checker {
     use super::*;
@@ -397,5 +499,38 @@ mod checker {
         }
         let twice = parse_manifest(&format!("{ENTRY}{ENTRY}")).unwrap_err();
         assert!(twice.ends_with("listed twice"), "{twice}");
+    }
+
+    #[test]
+    fn row_markers_are_read_and_unmarked_rows_reported() {
+        let text = "// row: O1\n#[tokio::test]\nasync fn o1_place() {}\n\
+                    // row: O2\n#[test]\nfn o2_sliced() {}\n";
+        let (marked, errors) = row_markers(text);
+        assert_eq!(
+            (marked.as_slice(), errors.len()),
+            (&["O1".to_owned(), "O2".to_owned()][..], 0)
+        );
+        let rows: [(&str, &[&str]); 3] = [("O1", &[]), ("O2", &[]), ("O3", &[])];
+        assert_eq!(unmarked(&rows, &marked), ["O3"]);
+    }
+
+    #[test]
+    fn misplaced_ignored_and_unknown_markers_are_errors() {
+        for text in [
+            "// row: O1\nfn helper() {}\n",
+            "// row: O1\n#[tokio::test]\nasync fn o2_list() {}\n",
+            "// row: O1\n#[tokio::test]\n#[ignore]\nasync fn o1_place() {}\n",
+            "// row: O10\n#[test]\nfn o10_x() {}\n",
+            "// row: O01\n#[test]\nfn o01_x() {}\n",
+            "// row: O1, O2\n#[test]\nfn o1_x() {}\n",
+            "// row: O1\n",
+        ] {
+            let (marked, errors) = row_markers(text);
+            assert!(
+                marked.is_empty() && errors.len() == 1,
+                "{text:?}: {errors:?}"
+            );
+        }
+        assert!(is_row_id("G12") && is_row_id("A10") && !is_row_id("W1") && !is_row_id("K0"));
     }
 }

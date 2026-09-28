@@ -36,6 +36,7 @@ async fn serve(route: &str, fixture: &str) -> MockServer {
     server
 }
 
+// row: A6
 #[tokio::test]
 async fn a6_renew_token_sends_both_headers() {
     let (capture, _guard) = support::trace::install();
@@ -62,6 +63,7 @@ async fn a6_renew_token_sends_both_headers() {
     assert_eq!(issued[0].field("method"), Some("renew"));
 }
 
+// row: A7
 #[tokio::test]
 async fn a7_profile_is_raw_json() {
     let server = serve("/v2/profile", "profile.json").await;

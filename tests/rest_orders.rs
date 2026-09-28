@@ -157,6 +157,7 @@ fn assert_sentinel_trade(trade: &Trade) {
 
 // ---- O1–O9 contract tests ------------------------------------------------------------------
 
+// row: O1
 #[tokio::test]
 async fn o1_place() {
     let server = serve(
@@ -176,6 +177,7 @@ async fn o1_place() {
     assert_eq!(requests(&server).await, 1);
 }
 
+// row: O2
 #[tokio::test]
 async fn o2_place_sliced_decodes_an_array() {
     let server = serve(
@@ -200,6 +202,7 @@ async fn o2_place_sliced_decodes_an_array() {
     assert_eq!(requests(&server).await, 1);
 }
 
+// row: O3
 #[tokio::test]
 async fn o3_modify_sends_only_the_set_fields() {
     let body = json!({
@@ -228,6 +231,7 @@ async fn o3_modify_sends_only_the_set_fields() {
     assert_eq!(requests(&server).await, 1);
 }
 
+// row: O4
 #[tokio::test]
 async fn o4_cancel() {
     let server = serve(
@@ -252,6 +256,7 @@ async fn o4_cancel() {
     assert!(received[0].headers.get("content-type").is_none());
 }
 
+// row: O5
 #[tokio::test]
 async fn o5_list() {
     let server = serve("GET", "/v2/orders", None, "get-current-orders-list.json").await;
@@ -262,6 +267,7 @@ async fn o5_list() {
     assert_eq!(requests(&server).await, 1);
 }
 
+// row: O6
 #[tokio::test]
 async fn o6_get_decodes_the_sentinels() {
     let server = serve(
@@ -286,6 +292,7 @@ async fn o6_get_decodes_the_sentinels() {
     assert_eq!(requests(&server).await, 1);
 }
 
+// row: O7
 #[tokio::test]
 async fn o7_get_by_correlation_id() {
     let server = serve(
@@ -304,6 +311,7 @@ async fn o7_get_by_correlation_id() {
     assert_eq!(requests(&server).await, 1);
 }
 
+// row: O8
 #[tokio::test]
 async fn o8_trades_has_no_trailing_slash() {
     // Exactly /v2/trades (Appendix A D32); PY requests /trades/.
@@ -316,6 +324,7 @@ async fn o8_trades_has_no_trailing_slash() {
     assert_eq!(received[0].url.path(), "/v2/trades");
 }
 
+// row: O9
 #[tokio::test]
 async fn o9_trades_for_order() {
     let server = serve(

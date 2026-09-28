@@ -21,6 +21,13 @@ exclude = [
     ".agents/",
     ".claude/",
     ".codex/",
+    # Repository tooling, of no use in the published crate.
+    ".github/",
+    ".gitignore",
+    ".gitmodules",
+    "scripts/",
+    "AGENTS.md",
+    "CLAUDE.md",
 ]
 
 [package.metadata.docs.rs]

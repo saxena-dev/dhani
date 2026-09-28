@@ -35,6 +35,7 @@ async fn assert_no_credentials(server: &MockServer) {
     }
 }
 
+// row: I1
 #[tokio::test]
 async fn i1_compact_scrip_master() {
     let server = serve(
@@ -75,6 +76,7 @@ async fn i1_compact_scrip_master() {
     assert_no_credentials(&server).await;
 }
 
+// row: I2
 #[tokio::test]
 async fn i2_detailed_scrip_master_keeps_unknown_columns_in_extra() {
     let server = serve(
