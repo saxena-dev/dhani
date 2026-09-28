@@ -36,6 +36,23 @@ pub struct FeedBuilder<P: FeedProtocol> {
     capture_raw: bool,
 }
 
+/// Shows the settings, never the protocol (it holds the credentials) or the URL override.
+#[allow(
+    private_bounds,
+    reason = "the protocol trait is sealed and crate-private; users name the feed aliases"
+)]
+impl<P: FeedProtocol> std::fmt::Debug for FeedBuilder<P> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("FeedBuilder")
+            .field("feed", &P::FEED.as_str())
+            .field("url_overridden", &self.url.is_some())
+            .field("limits", &self.limits)
+            .field("overflow", &self.overflow)
+            .field("capture_raw", &self.capture_raw)
+            .finish_non_exhaustive()
+    }
+}
+
 #[allow(
     private_bounds,
     private_interfaces,
@@ -129,6 +146,7 @@ impl<P: FeedProtocol> FeedBuilder<P> {
             self.limits.queue_capacity,
             self.limits.lifecycle_capacity,
         );
+        let reader = reader.with_queue_depth(delivery.depth_counter());
         let stop = Arc::new(Stop::default());
         let owner = Owner {
             protocol: self.protocol,

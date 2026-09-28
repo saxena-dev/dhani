@@ -93,8 +93,8 @@ impl<P: FeedProtocol> Owner<P> {
                     _ => Vec::new(),
                 },
             };
-            if let Err(t) = self.data(FeedEvent::Raw(raw)).await {
-                return Some(Ended::Terminal(t));
+            if let Err(end) = self.data(FeedEvent::Raw(raw)).await {
+                return Some(end);
             }
         }
         let span = spans::ws_frame(P::FEED, len);
@@ -114,16 +114,16 @@ impl<P: FeedProtocol> Owner<P> {
                         received_at,
                         value,
                     };
-                    if let Err(t) = self.data(FeedEvent::Data(delivery)).await {
-                        return Some(Ended::Terminal(t));
+                    if let Err(end) = self.data(FeedEvent::Data(delivery)).await {
+                        return Some(end);
                     }
                 }
                 Decoded::Error(error) => {
                     failed = true;
                     self.decode_error(&error, len, sampler);
                     let _seq = self.next_seq();
-                    if let Err(t) = self.data(FeedEvent::DecodeError(error)).await {
-                        return Some(Ended::Terminal(t));
+                    if let Err(end) = self.data(FeedEvent::DecodeError(error)).await {
+                        return Some(end);
                     }
                 }
                 Decoded::ServerDisconnect { code, ambiguous } => {

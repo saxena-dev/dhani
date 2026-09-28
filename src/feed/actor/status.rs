@@ -73,6 +73,8 @@ pub(crate) struct StatusCell {
 pub(crate) struct StatusReader {
     rx: watch::Receiver<Versioned>,
     last_frame: Arc<LastFrame>,
+    /// The delivery queues' live depth, read at snapshot time.
+    queue_depth: Option<Arc<std::sync::atomic::AtomicUsize>>,
 }
 
 #[allow(dead_code, reason = "used by the feed owner task")]
@@ -90,6 +92,7 @@ impl StatusCell {
         let reader = StatusReader {
             rx,
             last_frame: Arc::clone(&last_frame),
+            queue_depth: None,
         };
         (StatusCell { tx, last_frame }, reader)
     }
@@ -150,7 +153,17 @@ impl StatusReader {
     fn read(&self, v: &Versioned) -> FeedStatus {
         let mut status = v.status.clone();
         status.last_frame_age = self.last_frame.age(Instant::now());
+        if let Some(depth) = &self.queue_depth {
+            status.queue_len = depth.load(std::sync::atomic::Ordering::Relaxed);
+        }
         status
+    }
+
+    /// Reads `queue_len` from the delivery queues' live counter instead of the last published
+    /// value, which is only refreshed when data is pushed.
+    pub(crate) fn with_queue_depth(mut self, depth: Arc<std::sync::atomic::AtomicUsize>) -> Self {
+        self.queue_depth = Some(depth);
+        self
     }
 }
 

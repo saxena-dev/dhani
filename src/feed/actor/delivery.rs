@@ -96,7 +96,8 @@ struct Shared<T> {
     consumer: AtomicWaker,
     /// Wakes a producer waiting for room.
     producer: Notify,
-    depth: AtomicUsize,
+    /// Shared with the status reader, so `FeedStatus::queue_len` is always current.
+    depth: Arc<AtomicUsize>,
     feed: FeedKind,
     data_capacity: usize,
     lifecycle_capacity: usize,
@@ -157,7 +158,7 @@ pub(crate) fn channel<T>(
         }),
         consumer: AtomicWaker::new(),
         producer: Notify::new(),
-        depth: AtomicUsize::new(0),
+        depth: Arc::new(AtomicUsize::new(0)),
         feed,
         data_capacity,
         lifecycle_capacity,
@@ -315,6 +316,11 @@ impl<T> DeliverySender<T> {
         }
         drop(state);
         self.shared.consumer.wake();
+    }
+
+    /// The live depth counter, for the status reader.
+    pub(crate) fn depth_counter(&self) -> Arc<AtomicUsize> {
+        Arc::clone(&self.shared.depth)
     }
 
     /// Items waiting in both queues.

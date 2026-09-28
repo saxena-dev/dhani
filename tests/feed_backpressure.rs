@@ -495,3 +495,78 @@ async fn dropping_the_stream_of_a_quiet_feed_ends_it_at_the_next_ping() {
         dhani::feed::TaskOutcome::Terminal(TerminalReason::ReceiverDropped)
     );
 }
+
+// ---- Epic-review follow-ups (DHQ-16f) --------------------------------------------------------
+
+#[tokio::test(flavor = "current_thread", start_paused = true)]
+async fn a_shutdown_while_waiting_for_room_closes_cleanly() {
+    // A full queue under Fail with a long delivery wait: the owner is waiting for room when
+    // the shutdown arrives, and must still close with the disconnect request and a Close.
+    let harness = WsHarness::start(vec![WsConnection::accept(vec![Step::SendBinary(burst(
+        100,
+    ))])])
+    .await;
+    let mut slow = limits(256);
+    slow.delivery_wait = Duration::from_secs(10);
+    let (handle, _events, _task) = MarketFeed::builder(credentials())
+        .url(harness.url())
+        .limits(slow)
+        .spawn()
+        .unwrap();
+    until("queue full", || handle.status().queue_len == 67).await;
+    let asked = tokio::time::Instant::now();
+    let h = handle.clone();
+    let shutdown = tokio::spawn(async move { h.shutdown().await });
+    until("shutdown", || shutdown.is_finished()).await;
+    assert_eq!(shutdown.await.unwrap(), Ok(()));
+    // Well before the 10 s delivery wait would have run out.
+    assert!(tokio::time::Instant::now() - asked < Duration::from_secs(6));
+    assert_eq!(terminal(&handle), Some(TerminalReason::Shutdown));
+    let frames = harness.frames(0);
+    assert!(
+        frames.iter().any(
+            |f| matches!(f, support::ws::ClientFrame::Text(t) if t.contains(r#""RequestCode":12"#))
+        ),
+        "{frames:?}"
+    );
+    assert!(
+        frames
+            .iter()
+            .any(|f| matches!(f, support::ws::ClientFrame::Close(_))),
+        "{frames:?}"
+    );
+}
+
+#[tokio::test(flavor = "current_thread", start_paused = true)]
+async fn queue_len_follows_the_consumer_without_new_data() {
+    let harness = WsHarness::start(vec![WsConnection::accept(vec![Step::SendBinary(burst(
+        50,
+    ))])])
+    .await;
+    let (handle, mut events, _task) = MarketFeed::builder(credentials())
+        .url(harness.url())
+        .limits(limits(256))
+        .spawn()
+        .unwrap();
+    // 3 opening lifecycle items + 50 ticks.
+    until("burst queued", || handle.status().queue_len == 53).await;
+    let read = drain(&mut events).len();
+    assert_eq!(read, 53);
+    // No data has arrived since, yet the status reports the drained queue.
+    assert_eq!(handle.status().queue_len, 0);
+}
+
+#[test]
+fn a_builder_debug_shows_settings_but_no_credentials() {
+    let debug = format!(
+        "{:?}",
+        MarketFeed::builder(credentials()).limits(limits(256))
+    );
+    for secret in ["9999888877", "eyJ"] {
+        assert!(!debug.contains(secret), "{secret} in {debug}");
+    }
+    assert!(
+        debug.starts_with("FeedBuilder { feed: \"market\""),
+        "{debug}"
+    );
+}

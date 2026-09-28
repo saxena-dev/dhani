@@ -105,6 +105,8 @@ enum Ended {
     Stop,
     /// A terminal reason decided locally (delivery, handles, interrupted write).
     Terminal(TerminalReason),
+    /// A shutdown arrived while waiting for room in the queue: close the connection cleanly.
+    CloseNow,
 }
 
 /// Decrements the connected gauge when a connection ends, however it ends.
@@ -187,6 +189,8 @@ impl<P: FeedProtocol> Owner<P> {
             s.terminal = Some(reason.clone());
         });
         if clean {
+            // A full lifecycle queue drops the final Stopped; the stream still ends cleanly
+            // with `None` once the consumer drains it.
             let _ = self.lifecycle(Lifecycle::Stopped);
             self.delivery.finish(None);
         } else {
@@ -218,14 +222,21 @@ impl<P: FeedProtocol> Owner<P> {
         })
     }
 
-    async fn data(&mut self, event: FeedEvent<P::Data>) -> Result<(), TerminalReason> {
-        self.delivery
-            .push_data(event, self.overflow, self.limits.delivery_wait)
-            .await
-            .map_err(|e| match e {
+    /// Queues a data item. Under `OverflowPolicy::Fail` this may wait for room; a shutdown
+    /// during that wait ends it with [`Ended::CloseNow`] so the connection still closes cleanly.
+    async fn data(&mut self, event: FeedEvent<P::Data>) -> Result<(), Ended> {
+        let stop = Arc::clone(&self.stop);
+        let pushed = tokio::select! {
+            biased;
+            () = stop.wait() => return Err(Ended::CloseNow),
+            pushed = self.delivery.push_data(event, self.overflow, self.limits.delivery_wait) => pushed,
+        };
+        pushed.map_err(|e| {
+            Ended::Terminal(match e {
                 PushError::Overload => TerminalReason::DeliveryOverload,
                 PushError::ReceiverDropped => TerminalReason::ReceiverDropped,
-            })?;
+            })
+        })?;
         // Publish only real changes, so status watchers are not woken per item.
         let (queue_len, dropped_total) = (self.delivery.queue_len(), self.delivery.dropped_total());
         let current = self.status_queue;
@@ -293,7 +304,8 @@ impl<P: FeedProtocol> Owner<P> {
             let span = spans::ws_connection(P::FEED, self.epoch, attempt, cause_label);
             let ended = self.connection(attempt).instrument(span.clone()).await;
             let (cause, http_status) = match ended {
-                Ended::Stop => return TerminalReason::Shutdown,
+                // serve() turns CloseNow into a clean close, which ends as Stop.
+                Ended::Stop | Ended::CloseNow => return TerminalReason::Shutdown,
                 Ended::Terminal(reason) => return reason,
                 Ended::Cause(cause, status) => (cause, status),
             };
@@ -383,8 +395,17 @@ impl<P: FeedProtocol> Owner<P> {
     async fn connection(&mut self, attempt: u32) -> Ended {
         // Commands queued since the last read apply before connecting, so the restore writes
         // them.
-        while let Ok(envelope) = self.mailbox.try_recv() {
-            self.apply(envelope);
+        loop {
+            match self.mailbox.try_recv() {
+                Ok(envelope) => {
+                    self.apply(envelope);
+                }
+                Err(tokio::sync::mpsc::error::TryRecvError::Empty) => break,
+                // Every handle is gone: do not connect only to notice it while serving.
+                Err(tokio::sync::mpsc::error::TryRecvError::Disconnected) => {
+                    return Ended::Terminal(TerminalReason::HandlesDropped);
+                }
+            }
         }
         self.status.update(|s| {
             s.state = FeedState::Connecting;
@@ -713,7 +734,10 @@ impl<P: FeedProtocol> Owner<P> {
                         return Ended::Terminal(TerminalReason::ReceiverDropped);
                     }
                     if let Some(end) = self.frame(frame, &mut sampler).await {
-                        return end;
+                        return match end {
+                            Ended::CloseNow => self.close(socket).await,
+                            other => other,
+                        };
                     }
                 }
                 () = tokio::time::sleep_until(liveness) => {
