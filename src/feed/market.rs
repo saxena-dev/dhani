@@ -191,7 +191,7 @@ impl MarketProtocol {
 
     /// The connection URL (test support).
     #[cfg(test)]
-    pub(crate) fn url_for_tests(&self) -> &str {
+    pub(crate) fn url_text(&self) -> &str {
         self.url.expose_secret()
     }
 

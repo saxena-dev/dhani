@@ -32,10 +32,7 @@ async fn fail_with(status: u16, content_type: &str, body: &str) -> Error {
         .retry(RetryPolicy::none())
         .build()
         .unwrap();
-    let err = client
-        .__execute_for_tests(EndpointId::OrdersList, &[], &[], None, None)
-        .await
-        .unwrap_err();
+    let err = client.orders().list().await.unwrap_err();
     assert_eq!(err.attempts(), 1);
     assert_eq!(err.endpoint(), Some(EndpointId::OrdersList));
     err
@@ -154,7 +151,8 @@ async fn an_html_500_is_an_http_status_error() {
 
 #[tokio::test]
 async fn a_malformed_success_body_is_a_decode_error_without_body_text() {
-    let err = fail_with(200, "application/json", r#"{"orderId": 1"#).await;
+    // A truncated order book: malformed JSON, not merely the wrong shape.
+    let err = fail_with(200, "application/json", r#"[{"orderId": "1""#).await;
     assert_eq!(
         (err.kind(), err.stage(), err.http_status()),
         (ErrorKind::Decode, Stage::ResponseReceived, Some(200))
@@ -163,7 +161,7 @@ async fn a_malformed_success_body_is_a_decode_error_without_body_text() {
     assert!(!detail.contains("orderId"), "{detail}");
     assert_eq!(
         detail,
-        "response body does not match the expected shape (eof error at line 1 column 13)"
+        "response body does not match the expected shape (eof error at line 1 column 16)"
     );
     let rendered = format!("{err} {err:?}");
     assert!(!rendered.contains("orderId"), "{rendered}");

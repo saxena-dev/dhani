@@ -140,7 +140,8 @@ macro_rules! endpoints {
             };
         )+
 
-        /// Every descriptor, in endpoint-matrix order.
+        /// Every descriptor, in endpoint-matrix order (unit-test support).
+        #[cfg(test)]
         pub(crate) static ALL: &[&Endpoint] = &[$(&$name),+];
     };
 }
@@ -301,7 +302,8 @@ endpoints! {
     GLOBAL_CANCEL = GlobalCancel, Delete, Rest, "/globalstocks/orders/{order_id}", Mutation, Order, AccessToken, None, Json, [], doc: "DOC:2127-2166";
 }
 
-/// The descriptor for `id`.
+/// The descriptor for `id` (unit-test support).
+#[cfg(test)]
 pub(crate) fn by_id(id: EndpointId) -> &'static Endpoint {
     ALL.iter()
         .copied()

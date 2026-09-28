@@ -4,7 +4,6 @@
 //! Every numeric bound here is SDK policy (a local decision, configurable within the stated
 //! ranges), except the one-second minimum rate-limit backoff.
 
-use std::borrow::Cow;
 use std::fmt;
 use std::sync::Arc;
 use std::time::Duration;
@@ -16,16 +15,14 @@ use crate::backoff::SplitMix64;
 use crate::config::{Environment, Urls};
 use crate::credentials::Credentials;
 use crate::error::{ConfigError, Error, Result, ValidationError};
-use crate::labels::EndpointId;
 use crate::rest::api::{
     Account, Auth, ConditionalOrders, Edis, ForeverOrders, Funds, GlobalStocks, Historical,
     MarketQuote, OptionChain, Orders, Portfolio, Statements, SuperOrders, TraderControl,
 };
-use crate::rest::endpoint::{self, Endpoint};
+use crate::rest::endpoint::Endpoint;
 use crate::rest::ratelimit::RateLimiter;
 use crate::rest::retry::RetryLimits;
 use crate::rest::transport::{Call, Transport, TransportSettings};
-use crate::types::{OrderId, RawJson};
 
 fn check(
     field: &'static str,
@@ -506,35 +503,6 @@ impl DhanClient {
     #[cfg(feature = "instruments")]
     pub fn instruments(&self) -> crate::rest::api::Instruments<'_> {
         crate::rest::api::Instruments::new(self)
-    }
-
-    /// Runs any endpoint through the full pipeline and returns its body as raw JSON (CSV text as
-    /// a JSON string; nothing for an empty body). Test support until every facade exists.
-    #[doc(hidden)]
-    pub async fn __execute_for_tests(
-        &self,
-        id: EndpointId,
-        path_args: &[&str],
-        query: &[(&'static str, String)],
-        body: Option<serde_json::Value>,
-        order_id: Option<&OrderId>,
-    ) -> Result<Option<RawJson>> {
-        let query: Vec<(&'static str, Cow<'_, str>)> = query
-            .iter()
-            .map(|(k, v)| (*k, Cow::Borrowed(v.as_str())))
-            .collect();
-        let prepare = || {
-            Ok(Call {
-                path_args,
-                query: &query,
-                body,
-                order_id,
-                ..Call::empty()
-            })
-        };
-        self.transport
-            .execute_raw(self.credentials.as_ref(), endpoint::by_id(id), prepare)
-            .await
     }
 }
 

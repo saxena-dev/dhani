@@ -100,13 +100,13 @@ impl<P: FeedProtocol> FeedBuilder<P> {
 
     /// The protocol (test support).
     #[cfg(test)]
-    pub(crate) fn into_protocol_for_tests(self) -> P {
+    pub(crate) fn into_protocol(self) -> P {
         self.protocol
     }
 
     /// The limits (test support).
     #[cfg(test)]
-    pub(crate) fn limits_for_tests(&self) -> FeedLimits {
+    pub(crate) fn configured_limits(&self) -> FeedLimits {
         self.limits
     }
 

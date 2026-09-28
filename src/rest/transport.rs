@@ -719,30 +719,6 @@ impl Transport {
         })
         .await
     }
-
-    /// Runs any endpoint and returns its body as raw JSON: a CSV body as a JSON string, an
-    /// empty body as `None`. Backs the client's test hook.
-    pub(crate) async fn execute_raw<'a>(
-        &self,
-        credentials: Option<&Credentials>,
-        ep: &'static Endpoint,
-        prepare: impl FnOnce() -> Result<Call<'a>, ValidationError>,
-    ) -> Result<Option<crate::types::RawJson>, Error> {
-        self.traced(ep, async {
-            let mut done = self.run(credentials, ep, prepare).await?;
-            let value = match std::mem::replace(&mut done.success, Success::Empty) {
-                Success::Json(bytes) | Success::JsonOrEmpty(Some(bytes)) => {
-                    decode_json(ep, &bytes, &done.redactor).map(Some)
-                }
-                Success::Empty | Success::JsonOrEmpty(None) => Ok(None),
-                Success::Csv(text) => {
-                    Ok(Some(crate::types::RawJson(serde_json::Value::String(text))))
-                }
-            };
-            done.finish(value)
-        })
-        .await
-    }
 }
 
 impl Done {

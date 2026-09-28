@@ -6,6 +6,7 @@ use metrics_util::debugging::{DebugValue, DebuggingRecorder, Snapshotter};
 
 use super::*;
 use dhani::obs::metrics as names;
+use dhani::types::OrderId;
 
 /// `(name, sorted labels, value)` of every series.
 type Series = (String, Vec<(String, String)>, DebugValue);
@@ -233,11 +234,8 @@ async fn distinct_order_ids_add_no_series() {
         .build()
         .unwrap();
     for n in 0..10_000u64 {
-        let id = format!("{}", 100_000_000_000 + n);
-        let err = client
-            .__execute_for_tests(EndpointId::OrdersCancel, &[&id], &[], None, None)
-            .await
-            .unwrap_err();
+        let id = OrderId::new(format!("{}", 100_000_000_000 + n)).unwrap();
+        let err = client.orders().cancel(&id).await.unwrap_err();
         assert_eq!(err.kind(), ErrorKind::Transport);
     }
     let all = series(&snapshotter);

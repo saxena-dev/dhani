@@ -1,6 +1,6 @@
 //! Observability contract tests (REST): catalogue conformance of the REST spans and events, and
 //! the eight REST scenarios of the architecture's observability test plan, driven through the
-//! client's test hook against the raw-TCP fault harness on a paused clock.
+//! public facades against the raw-TCP fault harness on a paused clock.
 //!
 //! Event coverage (every `http.*` and `ratelimit.*` event is asserted by at least one test):
 //! `http.request.completed` (success), `http.request.failed` (twice_429), `http.request.rejected`
@@ -13,11 +13,17 @@ use std::time::Duration;
 use crate::support::fault_http::{FaultHttp, Reply};
 use crate::support::trace::{Capture, SpanRecord, install};
 use dhani::config::{Environment, Urls};
+use dhani::credentials::{Pin, Totp};
 use dhani::labels::{EndpointId, Method, RateClass, RetryClass};
 use dhani::obs::{EVENT_CATALOGUE, SPAN_CATALOGUE, events, spans};
-use dhani::rest::{AdmissionLimits, BodyLimits, QuotaProfile, RateLimiter, Timeouts};
-use dhani::types::RawJson;
-use dhani::{DhanClient, ErrorKind};
+use dhani::rest::{
+    AdmissionLimits, BodyLimits, Order, OrderAck, PlaceOrderRequest, QuotaProfile, QuoteRequest,
+    RateLimiter, Timeouts,
+};
+use dhani::types::{
+    ExchangeSegment, OrderType, ProductType, RawJson, SecurityId, TransactionType, Validity,
+};
+use dhani::{ClientId, DhanClient, ErrorKind};
 use tokio::task::JoinHandle;
 
 const REQUEST: &str = "dhani.http.request";
@@ -25,8 +31,6 @@ const ATTEMPT: &str = "dhani.http.attempt";
 const ADMISSION: &str = "dhani.http.admission";
 const EMPTY_LIST: &str = "[]";
 const QUOTE_OK: &str = r#"{"data":{},"status":"success"}"#;
-
-type Outcome = dhani::Result<Option<RawJson>>;
 
 fn builder(
     server: &FaultHttp,
@@ -51,33 +55,53 @@ fn client(server: &FaultHttp, limiter: RateLimiter) -> DhanClient {
         .unwrap()
 }
 
-fn call(
-    client: &DhanClient,
-    id: EndpointId,
-    body: Option<serde_json::Value>,
-) -> impl Future<Output = Outcome> + Send + 'static {
+/// A MARKET intraday buy of `quantity` HDFC Bank shares; a quantity of 0 fails validation.
+fn market_buy(quantity: u32) -> PlaceOrderRequest {
+    PlaceOrderRequest::new(
+        ExchangeSegment::NseEq,
+        SecurityId::new("1333").unwrap(),
+        TransactionType::Buy,
+        quantity,
+        OrderType::Market,
+        ProductType::Intraday,
+        Validity::Day,
+    )
+}
+
+/// A Read-class call: the order book.
+fn read(client: &DhanClient) -> impl Future<Output = dhani::Result<Vec<Order>>> + Send + 'static {
     let client = client.clone();
-    async move { client.__execute_for_tests(id, &[], &[], body, None).await }
+    async move { client.orders().list().await }
 }
 
-fn read(client: &DhanClient) -> impl Future<Output = Outcome> + Send + 'static {
-    call(client, EndpointId::OrdersList, None)
+/// A Mutation-class call: placing an order.
+fn place(client: &DhanClient) -> impl Future<Output = dhani::Result<OrderAck>> + Send + 'static {
+    place_order(client, market_buy(1))
 }
 
-fn place(client: &DhanClient) -> impl Future<Output = Outcome> + Send + 'static {
-    call(
-        client,
-        EndpointId::OrdersPlace,
-        Some(serde_json::json!({"transactionType": "BUY"})),
-    )
+/// A placement that fails validation, so nothing is sent.
+fn place_invalid(
+    client: &DhanClient,
+) -> impl Future<Output = dhani::Result<OrderAck>> + Send + 'static {
+    place_order(client, market_buy(0))
 }
 
-fn quote(client: &DhanClient) -> impl Future<Output = Outcome> + Send + 'static {
-    call(
-        client,
-        EndpointId::MarketQuoteLtp,
-        Some(serde_json::json!({"NSE_EQ": [1333]})),
-    )
+fn place_order(
+    client: &DhanClient,
+    order: PlaceOrderRequest,
+) -> impl Future<Output = dhani::Result<OrderAck>> + Send + 'static {
+    let client = client.clone();
+    async move { client.orders().place(&order).await }
+}
+
+/// A Quote-class call: LTP for HDFC Bank.
+fn quote(client: &DhanClient) -> impl Future<Output = dhani::Result<RawJson>> + Send + 'static {
+    let client = client.clone();
+    async move {
+        let mut req = QuoteRequest::new();
+        req.add(ExchangeSegment::NseEq, SecurityId::new("1333").unwrap());
+        client.market_quote().ltp_raw(&req).await
+    }
 }
 
 /// Yields up to `rounds` times without advancing the clock; whether `task` finished.
@@ -292,17 +316,15 @@ async fn twice_429_fails_as_rate_limited_after_two_attempts() {
 async fn mutation_429_fails_after_one_attempt() {
     let server = FaultHttp::start(vec![
         Reply::text(429, "Too Many Requests"),
-        Reply::json(200, "{}"),
+        Reply::json(200, r#"{"orderId":"1","orderStatus":"TRANSIT"}"#),
     ])
     .await;
     let client = client(&server, RateLimiter::disabled());
     let (capture, _guard) = install();
     let err = run(place(&client)).await.unwrap_err();
     assert_eq!((err.kind(), err.attempts()), (ErrorKind::RateLimited, 1));
-    // A mutation without its body is rejected before anything is sent.
-    let err = run(call(&client, EndpointId::OrdersPlace, None))
-        .await
-        .unwrap_err();
+    // A mutation that fails validation is rejected before anything is sent.
+    let err = run(place_invalid(&client)).await.unwrap_err();
     assert_eq!(err.kind(), ErrorKind::Validation);
     assert_catalogued(&capture);
     assert_eq!(capture.spans_named(ATTEMPT).len(), 1);
@@ -322,7 +344,7 @@ async fn mutation_429_fails_after_one_attempt() {
             rejected[0].field("field"),
             rejected[0].field("reason")
         ),
-        (Some("validation"), Some("body"), Some("missing"))
+        (Some("validation"), Some("quantity"), Some("not_positive"))
     );
     assert_eq!(server.requests().len(), 1);
 }
@@ -456,7 +478,7 @@ fn terminal_events(capture: &Capture) -> Vec<(String, tracing::Level)> {
 enum Drive {
     Read,
     Place,
-    PlaceWithBody(serde_json::Value),
+    PlaceInvalid,
 }
 
 struct Case {
@@ -482,12 +504,11 @@ async fn every_error_kind_emits_exactly_one_terminal_event_at_its_level() {
     use tracing::Level;
     let failed = events::HTTP_REQUEST_FAILED.name;
     let rejected = events::HTTP_REQUEST_REJECTED.name;
-    let oversized = serde_json::json!({"remarks": "x".repeat(2 * 1024 * 1024)});
     let cases = vec![
         Case {
-            name: "validation (oversized body)",
+            name: "validation",
             replies: vec![],
-            drive: Drive::PlaceWithBody(oversized),
+            drive: Drive::PlaceInvalid,
             kind: ErrorKind::Validation,
             terminal: (rejected, Level::DEBUG),
         },
@@ -555,11 +576,9 @@ async fn every_error_kind_emits_exactly_one_terminal_event_at_its_level() {
             .unwrap();
         let (capture, guard) = install();
         let call = match case.drive {
-            Drive::Read => run(read(&client)).await,
-            Drive::Place => run(place(&client)).await,
-            Drive::PlaceWithBody(body) => {
-                run(call(&client, EndpointId::OrdersPlace, Some(body))).await
-            }
+            Drive::Read => run(read(&client)).await.map(drop),
+            Drive::Place => run(place(&client)).await.map(drop),
+            Drive::PlaceInvalid => run(place_invalid(&client)).await.map(drop),
         };
         drop(guard);
         let err = call.expect_err(case.name);
@@ -572,6 +591,42 @@ async fn every_error_kind_emits_exactly_one_terminal_event_at_its_level() {
         );
         assert_catalogued(&capture);
     }
+}
+
+/// A body over the request bound is refused by the transport itself before sending, with the
+/// same DEBUG `http.request.rejected` event as a model validation failure.
+#[tokio::test(start_paused = true)]
+async fn a_body_over_its_bound_is_rejected_before_sending() {
+    let server = FaultHttp::start(vec![]).await;
+    let client = builder(&server, RateLimiter::disabled(), Timeouts::default())
+        .limits(BodyLimits::new(1024, 1024 * 1024, 1024 * 1024).unwrap())
+        .credentials(crate::support::mock::credentials())
+        .build()
+        .unwrap();
+    // 300 instruments serialise to well over 1 KiB.
+    let mut req = QuoteRequest::new();
+    for id in 1..=300u32 {
+        req.add(
+            ExchangeSegment::NseEq,
+            SecurityId::new(id.to_string()).unwrap(),
+        );
+    }
+    let (capture, guard) = install();
+    let err = run(async move { client.market_quote().ltp_raw(&req).await })
+        .await
+        .unwrap_err();
+    drop(guard);
+    assert_eq!(err.kind(), ErrorKind::Validation);
+    assert!(!err.may_have_reached_server());
+    let rejected = capture.events_named(events::HTTP_REQUEST_REJECTED.name);
+    assert_eq!(rejected.len(), 1);
+    assert_eq!(rejected[0].level, tracing::Level::DEBUG);
+    assert_eq!(
+        (rejected[0].field("field"), rejected[0].field("reason")),
+        (Some("body"), Some("body_too_large"))
+    );
+    assert_catalogued(&capture);
+    assert!(server.requests().is_empty());
 }
 
 #[tokio::test(start_paused = true)]
@@ -652,23 +707,19 @@ async fn no_sentinel_reaches_spans_events_errors_or_credential_debug() {
         .retry(dhani::rest::RetryPolicy::none())
         .build()
         .unwrap();
-    let auth_query = || {
-        vec![
-            ("dhanClientId", SENTINEL_CLIENT_ID.to_owned()),
-            ("pin", SENTINEL_PIN.to_owned()),
-            ("totp", SENTINEL_TOTP.to_owned()),
-        ]
-    };
     let (capture, guard) = install();
     run(read(&client)).await.unwrap();
     let echoed = run(read(&client)).await.unwrap_err();
     let mut errors = vec![echoed];
     for _ in 0..2 {
         let client = client.clone();
-        let query = auth_query();
         let result = run(async move {
+            let client_id = ClientId::new(SENTINEL_CLIENT_ID).unwrap();
+            let pin = Pin::new(SENTINEL_PIN).unwrap();
+            let totp = Totp::new(SENTINEL_TOTP).unwrap();
             client
-                .__execute_for_tests(EndpointId::AuthGenerateAccessToken, &[], &query, None, None)
+                .auth()
+                .generate_access_token(&client_id, &pin, &totp)
                 .await
         })
         .await;
@@ -740,6 +791,15 @@ async fn no_sentinel_reaches_spans_events_errors_or_credential_debug() {
         .expect("the echoed broker message is kept");
     assert!(echoed_message.contains("<redacted>"), "{echoed_message}");
     assert_eq!(server.requests().len(), 4);
+    // Both token calls put the sentinels on the wire, so the sweep covers the auth path.
+    for r in &server.requests()[2..] {
+        for sentinel in [SENTINEL_CLIENT_ID, SENTINEL_PIN, SENTINEL_TOTP] {
+            assert!(
+                r.target.contains(sentinel),
+                "a sentinel is missing from a token call"
+            );
+        }
+    }
 }
 
 /// Metrics (architecture §6.7 item 6): a `DebuggingRecorder` installed for the whole test body

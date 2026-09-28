@@ -166,7 +166,7 @@ mod tests {
             ClientId::new("9999888877").unwrap(),
             AccessToken::new(TOKEN).unwrap(),
         );
-        OrderUpdateFeed::builder(credentials).into_protocol_for_tests()
+        OrderUpdateFeed::builder(credentials).into_protocol()
     }
 
     #[test]
@@ -186,7 +186,7 @@ mod tests {
             partner_id: PartnerId::new("PARTNER-7").unwrap(),
             partner_secret: PartnerSecret::new("S3CRET-7").unwrap(),
         };
-        let protocol = OrderUpdateFeed::partner(credentials).into_protocol_for_tests();
+        let protocol = OrderUpdateFeed::partner(credentials).into_protocol();
         assert_eq!(
             login(&protocol),
             serde_json::json!({
@@ -237,7 +237,7 @@ mod tests {
             ClientId::new("9999888877").unwrap(),
             AccessToken::new(TOKEN).unwrap(),
         ))
-        .limits_for_tests();
+        .configured_limits();
         assert_eq!(limits.liveness_timeout, Duration::from_secs(45));
     }
 }

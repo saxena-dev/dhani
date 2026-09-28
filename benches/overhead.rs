@@ -18,7 +18,6 @@ use std::alloc::{GlobalAlloc, Layout, System};
 use std::cell::Cell;
 
 use dhani::config::{Environment, Urls};
-use dhani::labels::EndpointId;
 use dhani::rest::RateLimiter;
 use dhani::{AccessToken, ClientId, Credentials, DhanClient};
 use wiremock::matchers::{method, path};
@@ -97,12 +96,14 @@ fn client(server: &MockServer) -> DhanClient {
         .unwrap()
 }
 
+/// One fund-limit call, a Read-class GET whose small object decodes into `FundLimits`.
 async fn one_call(client: &DhanClient) {
-    let body = client
-        .__execute_for_tests(EndpointId::OrdersList, &[], &[], None, None)
+    let limits = client
+        .funds()
+        .limits()
         .await
         .expect("the mocked call succeeds");
-    assert!(body.is_some());
+    assert_eq!(limits.available_balance, Some(98440.0));
 }
 
 /// Allocations made on this thread by one call.
@@ -114,6 +115,9 @@ async fn allocations_of_one_call(client: &DhanClient) -> u64 {
     COUNT.with(Cell::get)
 }
 
+/// A fund-limit answer with one field set (the wire spells it `availabelBalance`).
+const FUND_LIMIT: &str = r#"{"dhanClientId":"9999888877","availabelBalance":98440.0}"#;
+
 fn main() {
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
@@ -122,8 +126,8 @@ fn main() {
     runtime.block_on(async {
         let server = MockServer::start().await;
         Mock::given(method("GET"))
-            .and(path("/v2/orders"))
-            .respond_with(ResponseTemplate::new(200).set_body_string("[]"))
+            .and(path("/v2/fundlimit"))
+            .respond_with(ResponseTemplate::new(200).set_body_string(FUND_LIMIT))
             .mount(&server)
             .await;
         let client = client(&server);

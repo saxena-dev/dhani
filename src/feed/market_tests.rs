@@ -128,10 +128,10 @@ fn the_url_carries_percent_encoded_credentials_and_debug_hides_them() {
         &url::Url::parse("wss://api-feed.dhan.co").unwrap(),
     );
     assert!(
-        p.url_for_tests()
+        p.url_text()
             .ends_with("?version=2&token=fake%20tok&clientId=9999888877&authType=2"),
         "{}",
-        p.url_for_tests()
+        p.url_text()
     );
     assert_eq!(format!("{p:?}"), "MarketProtocol { .. }");
     // An override base gets the same credentials.

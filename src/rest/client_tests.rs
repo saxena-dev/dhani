@@ -206,12 +206,9 @@ fn facades_borrow_the_client() {
 }
 
 #[tokio::test]
-async fn the_test_hook_requires_credentials_for_authenticated_endpoints() {
+async fn an_authenticated_call_without_credentials_fails_before_sending() {
     let client = DhanClient::builder().build().unwrap();
-    let err = client
-        .__execute_for_tests(EndpointId::OrdersList, &[], &[], None, None)
-        .await
-        .unwrap_err();
+    let err = client.orders().list().await.unwrap_err();
     assert_eq!(
         (err.kind(), err.stage()),
         (ErrorKind::Config, crate::error::Stage::NotSent)

@@ -1,8 +1,9 @@
 //! Transport pipeline tests. Against a wiremock server: credential headers by auth mode, the
 //! client-id body injection, and nothing sent without credentials. Against the raw-TCP fault
 //! harness: response loss, connection failures, retry and rate-limit timing, timeouts, truncated
-//! and oversized bodies, and cancellation (architecture §10.4 cases 1–10). Requests are issued
-//! through the client's test hook until each endpoint's facade exists.
+//! and oversized bodies, and cancellation (architecture §10.4 cases 1–10). Every request goes
+//! through a public facade: the order book for a read, order placement for a mutation, LTP for a
+//! Quote-class call, and the token calls for the session and auth-host paths.
 
 mod support;
 
@@ -10,10 +11,16 @@ use std::future::Future;
 use std::time::Duration;
 
 use dhani::config::{Environment, Urls};
+use dhani::credentials::{Pin, Totp};
 use dhani::error::{RateLimitSource, Stage};
-use dhani::labels::EndpointId;
-use dhani::rest::{BodyLimits, RateLimiter, Timeouts};
-use dhani::{DhanClient, ErrorKind};
+use dhani::rest::{
+    BodyLimits, Order, OrderAck, PlaceOrderRequest, QuoteRequest, RateLimiter, Timeouts,
+};
+use dhani::types::{
+    ExchangeSegment, OrderId, OrderType, ProductType, RawJson, SecurityId, TransactionType,
+    Validity,
+};
+use dhani::{ClientId, DhanClient, ErrorKind};
 use support::fault_http::{FaultHttp, Reply, refused_base_url};
 use support::mock::{ACCESS_TOKEN, CLIENT_ID, body_json_eq, client_for, expect_headers, urls_for};
 use wiremock::matchers::{method, path};
@@ -38,11 +45,8 @@ async fn get_requests_carry_the_credential_headers_and_no_content_type() {
         .expect(1)
         .mount(&server)
         .await;
-    let body = client_for(&server)
-        .__execute_for_tests(EndpointId::OrdersList, &[], &[], None, None)
-        .await
-        .unwrap();
-    assert!(body.is_some());
+    let orders = client_for(&server).orders().list().await.unwrap();
+    assert!(!orders.is_empty());
     let requests = received(&server).await;
     assert_eq!(requests.len(), 1);
     let h = &requests[0].headers;
@@ -61,9 +65,14 @@ async fn get_requests_carry_the_credential_headers_and_no_content_type() {
 async fn json_bodies_get_the_client_id_at_the_top_level() {
     let server = MockServer::start().await;
     let expected = serde_json::json!({
-        "transactionType": "BUY",
-        "quantity": 5,
         "dhanClientId": CLIENT_ID,
+        "transactionType": "BUY",
+        "exchangeSegment": "NSE_EQ",
+        "productType": "INTRADAY",
+        "orderType": "MARKET",
+        "validity": "DAY",
+        "securityId": "1333",
+        "quantity": 5,
     });
     Mock::given(method("POST"))
         .and(path("/v2/orders"))
@@ -75,14 +84,13 @@ async fn json_bodies_get_the_client_id_at_the_top_level() {
         .expect(1)
         .mount(&server)
         .await;
-    // An existing dhanClientId in the input is overwritten.
-    let input =
-        serde_json::json!({"transactionType": "BUY", "quantity": 5, "dhanClientId": "0000000000"});
+    // Replacing a dhanClientId already in the body is unit-tested in the transport.
     let ack = client_for(&server)
-        .__execute_for_tests(EndpointId::OrdersPlace, &[], &[], Some(input), None)
+        .orders()
+        .place(&market_buy(5))
         .await
         .unwrap();
-    assert_eq!(ack.unwrap().0["orderId"], "string");
+    assert_eq!(ack.order_id.to_string(), "string");
     let requests = received(&server).await;
     assert_eq!(
         requests[0].headers.get("content-type").unwrap(),
@@ -97,10 +105,7 @@ async fn missing_credentials_send_nothing() {
         .urls(urls_for(&server))
         .build()
         .unwrap();
-    let err = client
-        .__execute_for_tests(EndpointId::OrdersList, &[], &[], None, None)
-        .await
-        .unwrap_err();
+    let err = client.orders().list().await.unwrap_err();
     assert_eq!(
         (err.kind(), err.stage()),
         (ErrorKind::Config, Stage::NotSent)
@@ -122,10 +127,7 @@ async fn renew_token_adds_the_dhan_client_id_header() {
         .expect(1)
         .mount(&server)
         .await;
-    client_for(&server)
-        .__execute_for_tests(EndpointId::AccountRenewToken, &[], &[], None, None)
-        .await
-        .unwrap();
+    client_for(&server).account().renew_token().await.unwrap();
     let requests = received(&server).await;
     assert_eq!(requests[0].headers.get("dhanclientid").unwrap(), CLIENT_ID);
 }
@@ -142,13 +144,13 @@ async fn token_generation_sends_no_auth_headers() {
         .expect(1)
         .mount(&server)
         .await;
-    let query = [
-        ("dhanClientId", CLIENT_ID.to_owned()),
-        ("pin", "1234".to_owned()),
-        ("totp", "123456".to_owned()),
-    ];
     client_for(&server)
-        .__execute_for_tests(EndpointId::AuthGenerateAccessToken, &[], &query, None, None)
+        .auth()
+        .generate_access_token(
+            &ClientId::new(CLIENT_ID).unwrap(),
+            &Pin::new("1234").unwrap(),
+            &Totp::new("123456").unwrap(),
+        )
         .await
         .unwrap();
     let requests = received(&server).await;
@@ -221,25 +223,29 @@ fn fault_client(server: &FaultHttp) -> DhanClient {
     )
 }
 
-type Outcome = dhani::Result<Option<dhani::types::RawJson>>;
-
-fn read(client: &DhanClient) -> impl Future<Output = Outcome> + Send + 'static {
-    let client = client.clone();
-    async move {
-        client
-            .__execute_for_tests(EndpointId::OrdersList, &[], &[], None, None)
-            .await
-    }
+/// A MARKET intraday buy of `quantity` HDFC Bank shares.
+fn market_buy(quantity: u32) -> PlaceOrderRequest {
+    PlaceOrderRequest::new(
+        ExchangeSegment::NseEq,
+        SecurityId::new("1333").unwrap(),
+        TransactionType::Buy,
+        quantity,
+        OrderType::Market,
+        ProductType::Intraday,
+        Validity::Day,
+    )
 }
 
-fn mutation(client: &DhanClient) -> impl Future<Output = Outcome> + Send + 'static {
+/// A Read-class call: the order book.
+fn read(client: &DhanClient) -> impl Future<Output = dhani::Result<Vec<Order>>> + Send + 'static {
     let client = client.clone();
-    async move {
-        let body = serde_json::json!({"transactionType": "BUY", "quantity": 1});
-        client
-            .__execute_for_tests(EndpointId::OrdersPlace, &[], &[], Some(body), None)
-            .await
-    }
+    async move { client.orders().list().await }
+}
+
+/// A Mutation-class call: placing an order.
+fn mutation(client: &DhanClient) -> impl Future<Output = dhani::Result<OrderAck>> + Send + 'static {
+    let client = client.clone();
+    async move { client.orders().place(&market_buy(1)).await }
 }
 
 /// Runs `call` to completion on the paused clock. The test task spins on `yield_now`, so the
@@ -281,7 +287,11 @@ fn gap(server: &FaultHttp, first: usize, second: usize) -> Duration {
 // Case 1.
 #[tokio::test(start_paused = true)]
 async fn a_mutation_whose_response_is_lost_is_not_resent() {
-    let server = FaultHttp::start(vec![Reply::DropAfterRequest, Reply::json(200, "{}")]).await;
+    let server = FaultHttp::start(vec![
+        Reply::DropAfterRequest,
+        Reply::json(200, r#"{"orderId":"1","orderStatus":"TRANSIT"}"#),
+    ])
+    .await;
     let err = drive(mutation(&fault_client(&server))).await.unwrap_err();
     assert_eq!(
         (err.kind(), err.stage(), err.attempts()),
@@ -300,8 +310,8 @@ async fn a_mutation_whose_response_is_lost_is_not_resent() {
 #[tokio::test(start_paused = true)]
 async fn a_read_retries_a_connection_closed_on_accept() {
     let server = FaultHttp::start(vec![Reply::CloseOnAccept, Reply::json(200, EMPTY_LIST)]).await;
-    let body = drive(read(&fault_client(&server))).await.unwrap();
-    assert_eq!(body.unwrap().0, serde_json::json!([]));
+    let orders = drive(read(&fault_client(&server))).await.unwrap();
+    assert!(orders.is_empty());
     // Two attempts: the first connection carried no request.
     assert_eq!((server.connections(), server.requests().len()), (2, 1));
 }
@@ -380,7 +390,7 @@ async fn a_second_429_ends_the_read_as_a_remote_rate_limit() {
 async fn a_mutation_is_not_retried_after_a_429() {
     let server = FaultHttp::start(vec![
         Reply::text(429, "Too Many Requests"),
-        Reply::json(200, "{}"),
+        Reply::json(200, r#"{"orderId":"1","orderStatus":"TRANSIT"}"#),
     ])
     .await;
     let err = drive(mutation(&fault_client(&server))).await.unwrap_err();
@@ -550,10 +560,7 @@ async fn a_body_at_the_bound_is_accepted() {
         limits,
         RateLimiter::disabled(),
     );
-    assert_eq!(
-        drive(read(&client)).await.unwrap().unwrap().0,
-        serde_json::json!([])
-    );
+    assert!(drive(read(&client)).await.unwrap().is_empty());
 }
 
 // Case 10. The admission shim never waits, so the future is dropped before its first poll;
@@ -608,9 +615,8 @@ async fn a_bodiless_delete_has_no_content_type() {
     .await;
     let client = fault_client(&server);
     let call = async move {
-        client
-            .__execute_for_tests(EndpointId::OrdersCancel, &["112111182198"], &[], None, None)
-            .await
+        let id = OrderId::new("112111182198").unwrap();
+        client.orders().cancel(&id).await
     };
     drive(call).await.unwrap();
     let requests = server.requests();
@@ -655,11 +661,7 @@ async fn token_renewal_is_not_retried() {
     ])
     .await;
     let client = fault_client(&server);
-    let call = async move {
-        client
-            .__execute_for_tests(EndpointId::AccountRenewToken, &[], &[], None, None)
-            .await
-    };
+    let call = async move { client.account().renew_token().await };
     let err = drive(call).await.unwrap_err();
     assert_eq!(
         (err.kind(), err.http_status(), err.attempts()),
@@ -668,13 +670,13 @@ async fn token_renewal_is_not_retried() {
     assert_eq!(server.requests().len(), 1);
 }
 
-fn quote(client: &DhanClient) -> impl Future<Output = Outcome> + Send + 'static {
+/// A Quote-class call: LTP for HDFC Bank.
+fn quote(client: &DhanClient) -> impl Future<Output = dhani::Result<RawJson>> + Send + 'static {
     let client = client.clone();
     async move {
-        let body = serde_json::json!({"NSE_EQ": [1333]});
-        client
-            .__execute_for_tests(EndpointId::MarketQuoteLtp, &[], &[], Some(body), None)
-            .await
+        let mut req = QuoteRequest::new();
+        req.add(ExchangeSegment::NseEq, SecurityId::new("1333").unwrap());
+        client.market_quote().ltp_raw(&req).await
     }
 }
 
@@ -735,40 +737,4 @@ async fn a_call_dropped_while_waiting_for_admission_sends_nothing() {
     assert_eq!(limiter.__outstanding(), before);
     tokio::time::advance(Duration::from_secs(2)).await;
     assert_eq!((server.requests().len(), server.connections()), (1, 1));
-}
-
-// Drift guard: the facade drives the same paths as `__execute_for_tests` above.
-#[tokio::test(start_paused = true)]
-async fn the_orders_facade_retries_a_read_and_never_resends_a_mutation() {
-    let unavailable = Reply::text(503, "Service Unavailable");
-    let server = FaultHttp::start(vec![unavailable, Reply::json(200, EMPTY_LIST)]).await;
-    let client = fault_client(&server);
-    let orders = drive(async move { client.orders().list().await }).await;
-    assert_eq!(orders.unwrap().len(), 0);
-    assert_eq!(server.requests().len(), 2);
-
-    let server = FaultHttp::start(vec![Reply::DropAfterRequest, Reply::json(200, "{}")]).await;
-    let client = fault_client(&server);
-    let req = dhani::rest::PlaceOrderRequest::new(
-        dhani::types::ExchangeSegment::NseEq,
-        dhani::types::SecurityId::new("1333").unwrap(),
-        dhani::types::TransactionType::Buy,
-        1,
-        dhani::types::OrderType::Market,
-        dhani::types::ProductType::Intraday,
-        dhani::types::Validity::Day,
-    );
-    let err = drive(async move { client.orders().place(&req).await })
-        .await
-        .unwrap_err();
-    assert_eq!(
-        (err.kind(), err.stage(), err.attempts()),
-        (ErrorKind::Transport, Stage::Sent, 1)
-    );
-    let requests = server.requests();
-    assert_eq!(requests.len(), 1);
-    assert_eq!(
-        (requests[0].method.as_str(), requests[0].target.as_str()),
-        ("POST", "/v2/orders")
-    );
 }

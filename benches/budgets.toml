@@ -1,7 +1,9 @@
 # Allocation budgets checked by benches/overhead.rs (see its header for how to re-baseline).
 #
-# Allocations on the calling thread for one warm, mocked REST call with no tracing subscriber
-# and no metrics recorder. Measured 69 with `--features rest` and 73 with `--all-features` (the
-# `metrics` macros build their label sets even without a recorder); budget = 73 + 10 %, rounded
-# up.
+# Allocations on the calling thread for one warm, mocked REST call (`funds().limits()`) with no
+# tracing subscriber and no metrics recorder. Measured 70 with `--features rest` and 74 with
+# `--all-features` (the `metrics` macros build their label sets even without a recorder). The
+# budget was set at 73 + 10 %, rounded up, from a raw call on the order-book endpoint through a
+# since-removed test hook (69 and 73). It is kept at 81, one tighter than re-baselining from 74
+# would give, since the fund-limit call allocates only one more.
 rest_call_allocs_max = 81
