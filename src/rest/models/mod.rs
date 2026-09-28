@@ -1,0 +1,32 @@
+//! REST request and response models, one private module per API group, each glob re-exported.
+
+mod account;
+mod auth;
+mod conditional;
+mod edis;
+mod forever_orders;
+mod funds;
+mod global;
+mod historical;
+#[cfg(feature = "instruments")]
+mod instruments;
+mod market_quote;
+mod option_chain;
+mod orders;
+mod portfolio;
+mod statements;
+mod super_orders;
+mod trader_control;
+
+#[allow(
+    unused_imports,
+    reason = "some re-exported modules intentionally have no public items"
+)]
+pub use self::{
+    account::*, auth::*, conditional::*, edis::*, forever_orders::*, funds::*, global::*,
+    historical::*, market_quote::*, option_chain::*, orders::*, portfolio::*, statements::*,
+    super_orders::*, trader_control::*,
+};
+
+#[cfg(feature = "instruments")]
+pub use self::instruments::*;

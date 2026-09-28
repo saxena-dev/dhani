@@ -1,0 +1,33 @@
+{
+  "alertId": "12345",
+  "alertStatus": "ACTIVE",
+  "createdTime": "2019-08-24T14:15:22Z",
+  "triggeredTime": null,
+  "lastPrice": "245.50",
+  "condition": {
+    "comparisonType": "TECHNICAL_WITH_VALUE",
+    "exchangeSegment": "NSE_EQ",
+    "securityId": "12345",
+    "indicatorName": "SMA_5",
+    "timeFrame": "DAY",
+    "operator": "CROSSING_UP",
+    "comparingValue": "250.00",
+    "expDate": "2019-08-24",
+    "frequency": "ONCE",
+    "userNote": "Price crossing SMA"
+  },
+  "orders": [
+    {
+      "transactionType": "BUY",
+      "exchangeSegment": "NSE_EQ",
+      "productType": "CNC",
+      "orderType": "LIMIT",
+      "securityId": "12345",
+      "quantity": 10,
+      "validity": "DAY",
+      "price": "250.00",
+      "discQuantity": "0",
+      "triggerPrice": "0"
+    }
+  ]
+}

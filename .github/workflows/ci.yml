@@ -1,0 +1,129 @@
+# Required checks. scripts/verify.sh runs the same commands locally.
+# CI never fetches or hashes DhanHQ documentation and never runs the live test lane.
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+
+defaults:
+  run:
+    # bash -eo pipefail: a failing command anywhere in a pipeline fails the step.
+    shell: bash
+
+jobs:
+  test:
+    name: test (${{ matrix.toolchain }}, ${{ matrix.row.name }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        toolchain: ["1.88", stable]
+        row:
+          - { name: "no features", args: "--no-default-features" }
+          - { name: decoder, args: "--no-default-features --features decoder" }
+          - { name: rest, args: "--no-default-features --features rest" }
+          - { name: feed, args: "--no-default-features --features feed" }
+          - { name: "rest,instruments", args: "--no-default-features --features rest,instruments" }
+          - { name: "all features", args: "--all-features" }
+    steps:
+      - uses: actions/checkout@v4
+      - run: git submodule update --init vendor/DhanHQ-py
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.toolchain }}
+      - run: cargo test --locked ${{ matrix.row.args }}
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: git submodule update --init vendor/DhanHQ-py
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - run: cargo fmt --all -- --check
+      - run: cargo clippy --locked --all-targets --all-features -- -D warnings
+      - run: cargo doc --locked --all-features --no-deps
+        env:
+          RUSTDOCFLAGS: -Dwarnings
+      - run: cargo test --locked --doc --all-features
+      # The live lane needs Dhan credentials: it is compiled, never run.
+      - run: cargo test --locked --features live-tests --test live --no-run
+
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: git submodule update --init vendor/DhanHQ-py
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: llvm-tools-preview
+      - uses: taiki-e/install-action@cargo-llvm-cov
+      # The live lane is compiled here too; its tests are all ignored, so none of them runs.
+      - run: cargo llvm-cov --locked --all-features --lcov --output-path lcov.info
+      - name: coverage summary
+        run: |
+          {
+            echo '```'
+            cargo llvm-cov report --summary-only
+            echo '```'
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+      # Needs the CODECOV_TOKEN repository secret; an upload failure does not fail the build.
+      - uses: codecov/codecov-action@v5
+        with:
+          files: lcov.info
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
+
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Checked out so that the exclusion of vendor/ is actually tested.
+      - run: git submodule update --init vendor/DhanHQ-py
+      - uses: dtolnay/rust-toolchain@stable
+      - name: the package ships no vendored, test or local-only file
+        run: |
+          list=$(cargo package --locked --list)
+          if grep -E '^(vendor/|tests/|examples/|benches/|scripts/|\.ignore/|\.beads/|\.agents/|\.claude/|\.codex/)|DhanHQ-py/|^(AGENTS|CLAUDE)\.md$' <<<"$list"; then echo "the package must not contain vendored, test, tooling or local-only files" >&2; exit 1; fi
+      - name: the packaged crate builds out of the tree in every feature row
+        run: |
+          pkg_dir=$(mktemp -d)
+          cargo package --locked --no-verify --target-dir "$pkg_dir"
+          version=$(cargo pkgid | sed 's/.*[#@]//')
+          unpacked=$(mktemp -d)
+          tar -xzf "$pkg_dir/package/dhani-$version.crate" -C "$unpacked"
+          cd "$unpacked/dhani-$version"
+          for args in "--no-default-features" "--no-default-features --features decoder" "--no-default-features --features rest" "--no-default-features --features feed" "--no-default-features --features rest,instruments" "--all-features"; do
+            # shellcheck disable=SC2086 # args is deliberately word-split
+            cargo build --locked --target-dir "$GITHUB_WORKSPACE/target/package-build" $args
+          done
+      # CI only: scripts/verify.sh never runs any cargo publish command.
+      - name: publish dry run
+        run: cargo publish --locked --dry-run
+
+  dependency-graph:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      # Each step captures the crate list first so that a cargo failure fails the step.
+      - name: decoder row has no tokio, reqwest or tungstenite
+        run: |
+          names=$(cargo tree --locked --no-default-features --features decoder -e normal --prefix none --format '{p}' | awk '{print $1}')
+          if grep -xE 'tokio|reqwest|tungstenite|tokio-tungstenite' <<<"$names"; then echo "forbidden dependency in this row" >&2; exit 1; fi
+      - name: rest row has no tungstenite
+        run: |
+          names=$(cargo tree --locked --no-default-features --features rest -e normal --prefix none --format '{p}' | awk '{print $1}')
+          if grep -xE 'tungstenite|tokio-tungstenite' <<<"$names"; then echo "forbidden dependency in this row" >&2; exit 1; fi
+      - name: feed row has no reqwest
+        run: |
+          names=$(cargo tree --locked --no-default-features --features feed -e normal --prefix none --format '{p}' | awk '{print $1}')
+          if grep -xE 'reqwest' <<<"$names"; then echo "forbidden dependency in this row" >&2; exit 1; fi
