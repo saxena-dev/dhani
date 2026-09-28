@@ -54,6 +54,8 @@ jobs:
         env:
           RUSTDOCFLAGS: -Dwarnings
       - run: cargo test --locked --doc --all-features
+      # The live lane needs Dhan credentials: it is compiled, never run.
+      - run: cargo test --locked --features live-tests --test live --no-run
 
   dependency-graph:
     runs-on: ubuntu-latest

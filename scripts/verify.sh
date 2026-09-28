@@ -83,6 +83,8 @@ if [ "$msrv" = 1 ]; then
 fi
 RUSTDOCFLAGS=-Dwarnings run cargo doc --locked --all-features --no-deps
 run cargo test --locked --doc --all-features
+# The live lane needs Dhan credentials: compile it, never run it.
+run cargo test --locked --features live-tests --test live --no-run
 forbid_deps decoder tokio reqwest tungstenite tokio-tungstenite
 forbid_deps rest tungstenite tokio-tungstenite
 forbid_deps feed reqwest
